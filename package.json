@@ -12,7 +12,8 @@
     "next": "15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sass": "^1.87.0"
+    "sass": "^1.87.0",
+    "webdav": "^5.8.0"
   },
   "devDependencies": {
     "@types/node": "^20",
