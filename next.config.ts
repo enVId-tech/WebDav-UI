@@ -1,7 +1,15 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    // Fix your rewrites configuration
+    async rewrites() {
+        return [
+            {
+                source: '/webdav/:path*',
+                destination: '/api/webdav/:path*',
+            },
+        ];
+    }
 };
 
-export default nextConfig;
+module.exports = nextConfig;
