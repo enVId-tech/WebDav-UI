@@ -26,6 +26,10 @@ export default function ShareFileBrowser() {
   const pathSegments = Array.isArray(params.path) ? params.path : [];
   const relativePath = pathSegments.length > 0 ? `/${pathSegments.join('/')}` : '/';
 
+  console.log(`Share: ${share}`);
+    console.log(`Path Segments: ${pathSegments}`);
+    console.log(`Relative Path: ${relativePath}`);
+
   // Build navigation breadcrumbs
   const breadcrumbs = [
     { name: share, path: `/${share}` },
@@ -85,7 +89,7 @@ export default function ShareFileBrowser() {
       // Properly encode the path segments while preserving the path structure
       const encodedPath = relativeFolderPath === ''
           ? `/${share}`
-          : `/${share}/${relativeFolderPath.split('/')
+          : `/${share}/${relativePath}/${relativeFolderPath.split()
               .filter(segment => segment)
               .map(segment => encodeURIComponent(segment))
               .join('/')}`;
@@ -98,11 +102,9 @@ export default function ShareFileBrowser() {
 
   // Navigate to parent directory
   const navigateUp = () => {
-    if (relativePath === '/') return;
-    // Get the parent path and ensure we're working with decoded values
-    const decodedPath = relativePath.split('/').map(decodeURIComponent).join('/');
-    const parentPath = decodedPath.substring(0, decodedPath.lastIndexOf('/')) || '/';
-    navigateToFolder(`/${share}${parentPath}`);
+    const parentPath = relativePath.split('/').slice(0, -1).join('/');
+    const newPath = parentPath === '' ? `/${share}` : `/${share}${parentPath}`;
+    router.push(newPath);
   };
 
   // Get file icon based on extension
@@ -149,7 +151,9 @@ export default function ShareFileBrowser() {
               {index > 0 && <span className={styles.separator}>/</span>}
                   <span
                       className={styles.breadcrumbItem}
-                      onClick={() => navigateToFolder(crumb.path)}
+                      onClick={() => {
+                        router.push(crumb.path);
+                      }}
                   >
                 {crumb.name}
               </span>
