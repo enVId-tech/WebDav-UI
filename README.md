@@ -2,7 +2,7 @@
 
 A modern, web-based file explorer for browsing and managing WebDAV shares with an intuitive interface.
 
-![WebDAV File Explorer](https://placeholder-for-screenshot.png)
+Accessible at [webdavui.etran.dev](https://webdevui.etran.dev)
 
 ## Features
 
