@@ -5,10 +5,19 @@ import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
 import styles from '@/app/FileServer.module.scss';
 
+// File type definitions
+type FileItem = {
+  filename: string;
+  basename: string;
+  type: 'file' | 'directory';
+  size: number;
+  lastmod: string;
+};
+
 export default function ShareFileBrowser() {
   const router = useRouter();
   const params = useParams();
-  const [currentData, setCurrentData] = useState<any[]>([]);
+  const [currentData, setCurrentData] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,6 +26,24 @@ export default function ShareFileBrowser() {
   const pathSegments = Array.isArray(params.path) ? params.path : [];
   const relativePath = pathSegments.length > 0 ? `/${pathSegments.join('/')}` : '/';
 
+  // Build navigation breadcrumbs
+  const breadcrumbs = [
+    { name: share, path: `/${share}` },
+    ...pathSegments.map((segment, index) => {
+      // Decode for display
+      const decodedName = decodeURIComponent(segment);
+      // Create properly encoded path for navigation
+      const encodedPath = `/${share}/${pathSegments
+          .slice(0, index + 1)
+          .map(seg => encodeURIComponent(decodeURIComponent(seg)))
+          .join('/')}`;
+
+      return {
+        name: decodedName,
+        path: encodedPath
+      };
+    })
+  ];
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -38,9 +65,10 @@ export default function ShareFileBrowser() {
 
   // Format file size
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes === 0) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(1))} ${sizes[i]}`;
   };
 
   // Format date
@@ -52,37 +80,89 @@ export default function ShareFileBrowser() {
 
   // Navigate to a folder
   const navigateToFolder = (folderPath: string) => {
-    // Extract the relative path from the full path
-    const sharePath = `/${share}`;
-    const relativeFolderPath = folderPath.replace(sharePath, '');
+    try {
+      const relativeFolderPath = folderPath.replace(`/${share}`, '');
+      // Properly encode the path segments while preserving the path structure
+      const encodedPath = relativeFolderPath === ''
+          ? `/${share}`
+          : `/${share}/${relativeFolderPath.split('/')
+              .filter(segment => segment)
+              .map(segment => encodeURIComponent(segment))
+              .join('/')}`;
 
-    if (relativeFolderPath === '') {
-      router.push(`/${share}`);
-    } else {
-      router.push(`/${share}${relativeFolderPath}`);
+      router.push(encodedPath);
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
   };
 
-  // File icon logic
+  // Navigate to parent directory
+  const navigateUp = () => {
+    if (relativePath === '/') return;
+    // Get the parent path and ensure we're working with decoded values
+    const decodedPath = relativePath.split('/').map(decodeURIComponent).join('/');
+    const parentPath = decodedPath.substring(0, decodedPath.lastIndexOf('/')) || '/';
+    navigateToFolder(`/${share}${parentPath}`);
+  };
+
+  // Get file icon based on extension
   const getFileIcon = (filename: string): string => {
     const extension = filename.split('.').pop()?.toLowerCase() || '';
     switch (extension) {
       case 'pdf': return '📄';
       case 'docx': case 'doc': return '📝';
-      case 'xlsx': case 'xls': return '📊';
-      case 'png': case 'jpg': case 'jpeg': case 'gif': return '🖼️';
+      case 'xlsx': case 'xls': case 'csv': return '📊';
+      case 'png': case 'jpg': case 'jpeg': case 'gif': case 'svg': return '🖼️';
+      case 'mp4': case 'mov': case 'avi': case 'webm': return '🎬';
+      case 'mp3': case 'wav': case 'ogg': case 'flac': return '🎵';
+      case 'zip': case 'rar': case '7z': case 'tar': case 'gz': return '📦';
       default: return '📄';
     }
   };
 
-  if (loading) return <div className={styles.loading}>Loading...</div>;
-  if (error) return <div className={styles.error}>{error}</div>;
+  if (loading) return (
+      <div className={styles.fileServer}>
+        <div className={styles.loading}>
+          <div className={styles.spinner}></div>
+          <p>Loading files...</p>
+        </div>
+      </div>
+  );
+
+  if (error) return (
+      <div className={styles.fileServer}>
+        <div className={styles.error}>
+          <h3>Error</h3>
+          <p>{error}</p>
+          <button onClick={() => router.push(`/${share}`)}>Go to root</button>
+        </div>
+      </div>
+  );
 
   return (
       <div className={styles.fileServer}>
         <div className={styles.header}>
-          <h1>WebDAV Files - {share}{relativePath !== '/' ? relativePath : ''}</h1>
+          <h1>File Explorer</h1>
+          <div className={styles.breadcrumb}>
+            {breadcrumbs.map((crumb, index) => (
+                <span key={index}>
+              {index > 0 && <span className={styles.separator}>/</span>}
+                  <span
+                      className={styles.breadcrumbItem}
+                      onClick={() => navigateToFolder(crumb.path)}
+                  >
+                {crumb.name}
+              </span>
+            </span>
+            ))}
+          </div>
         </div>
+
+        {relativePath !== '/' && (
+            <button className={styles.navButton} onClick={navigateUp}>
+              ↑ Up
+            </button>
+        )}
 
         <div className={styles.fileList}>
           <div className={styles.fileHeader}>
@@ -90,27 +170,6 @@ export default function ShareFileBrowser() {
             <div className={styles.dateColumn}>Modified</div>
             <div className={styles.sizeColumn}>Size</div>
           </div>
-
-          {/* Parent directory link (show only if not at root) */}
-          {relativePath !== '/' && (
-              <div
-                  className={styles.fileItem}
-                  onClick={() => {
-                    // Go to parent directory
-                    const parentPath = relativePath.substring(0, relativePath.lastIndexOf('/')) || '/';
-                    navigateToFolder(`/${share}${parentPath}`);
-                  }}
-              >
-                <div className={styles.folderRow}>
-                  <div className={styles.nameColumn}>
-                    <span className={styles.icon}>📁</span>
-                    <span>..</span>
-                  </div>
-                  <div className={styles.dateColumn}></div>
-                  <div className={styles.sizeColumn}></div>
-                </div>
-              </div>
-          )}
 
           {currentData.map((item) => (
               <div key={item.filename} className={styles.fileItem}>
@@ -121,7 +180,7 @@ export default function ShareFileBrowser() {
                     >
                       <div className={styles.nameColumn}>
                         <span className={styles.icon}>📁</span>
-                        <span>{item.basename}</span>
+                        <span className={styles.name}>{item.basename}</span>
                       </div>
                       <div className={styles.dateColumn}>
                         {formatDate(item.lastmod)}
@@ -130,14 +189,14 @@ export default function ShareFileBrowser() {
                     </div>
                 ) : (
                     <a
-                        href={`${process.env.NEXT_PUBLIC_WEBDAV_URL}${item.filename}`}
+                        href={`${process.env.NEXT_PUBLIC_WEBDAV_URL || '/'}${encodeURIComponent(item.filename)}`}
                         className={styles.fileRow}
                         target="_blank"
                         rel="noopener noreferrer"
                     >
                       <div className={styles.nameColumn}>
                         <span className={styles.icon}>{getFileIcon(item.basename)}</span>
-                        <span>{item.basename}</span>
+                        <span className={styles.name}>{item.basename}</span>
                       </div>
                       <div className={styles.dateColumn}>
                         {formatDate(item.lastmod)}

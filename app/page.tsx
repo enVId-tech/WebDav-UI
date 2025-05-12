@@ -184,10 +184,10 @@ const FileServer = () => {
                       <div className={styles.sizeColumn}>-</div>
                     </div>
                 ) : (
-                    <a href={item.url} className={styles.fileRow} target="_blank" rel="noopener noreferrer">
+                    <a href={`${item.url}`} className={styles.fileRow} target="_blank" rel="noopener noreferrer">
                       <div className={styles.nameColumn}>
                         <span className={styles.icon}>{getFileIcon(item.extension)}</span>
-                        <span>{item.name}</span>
+                        <span className={styles.name}>{item.name}</span>
                       </div>
                       <div className={styles.dateColumn}>{formatDate(item.lastModified)}</div>
                       <div className={styles.sizeColumn}>{formatFileSize(item.size)}</div>

@@ -114,6 +114,11 @@
   }
 }
 
+.name {
+    font-weight: 500;
+    color: #212529 !important;
+}
+
 .dateColumn, .sizeColumn {
   display: flex;
   align-items: center;
@@ -126,4 +131,58 @@
   text-align: center;
   color: #6c757d;
   font-style: italic;
+}
+
+.loading, .error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.error {
+  h3 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+  }
+
+  button {
+    margin-top: 1.5rem;
+    padding: 0.5rem 1.5rem;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+
+    &:hover {
+      background-color: #0b5ed7;
+    }
+  }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 123, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: #0d6efd;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon {
+  display: inline-block;
+  width: 24px;
+  text-align: center;
 }
