@@ -121,7 +121,7 @@ export default function ShareFileBrowser() {
       const relativeFolderPath = folderPath.replace(`/${share}`, '');
       const encodedPath = relativeFolderPath === ''
           ? `/${share}`
-          : `/${share}/${relativeFolderPath.split('/')
+          : `/${share}/${relativePath}/${relativeFolderPath.split('/')
               .filter(segment => segment)
               .map(segment => encodeURIComponent(segment))
               .join('/')}`;

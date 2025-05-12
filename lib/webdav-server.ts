@@ -43,11 +43,12 @@ class WebDavService {
     }
 
     /**
-     * Get the current URL of the WebDAV server.
-     * @returns {string} The current URL.
+     * Get the current directory contents from the WebDAV server.
+     * @param {string} path - The path to the directory. Defaults to '/'.
      */
     async getDirectoryContents(path: string = '/'): Promise<any[]> {
-        return this.client.getDirectoryContents(path);
+        const contents = await this.client.getDirectoryContents(path);
+        return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
     }
 }
 

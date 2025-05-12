@@ -1,0 +1,41 @@
+# Ignore node_modules
+node_modules
+
+# Ignore logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore build output
+build
+dist
+
+# Ignore Dockerfile and .dockerignore
+Dockerfile
+.dockerignore
+
+# Ignore git and related files
+.git
+.gitignore
+.gitattributes
+
+# Ignore IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Ignore operating system files
+.DS_Store
+Thumbs.db
+
+.idea
+.idea/*
+
+CLI
+CLI/*
+
+data
+data/*

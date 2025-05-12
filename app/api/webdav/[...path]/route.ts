@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from "@/lib/webdav-server";
 
-export async function POST(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function POST(request: NextRequest) {
     try {
         // Extract both path and sharePath from the request body
         const body = await request.json();
