@@ -1,207 +1,135 @@
 'use client';
 
 import { useState } from 'react';
-import { FileSystemItem, FolderItem, FileItem } from './types/file-system';
-import styles from './FileServer.module.scss';
+import { useRouter } from 'next/navigation';
+import styles from '@/app/homepage.module.scss';
 
-const fileSystemData: FileSystemItem[] = [
-  {
-    id: 'folder-1',
-    name: 'Documents',
-    type: 'folder',
-    lastModified: '2023-10-15T14:00:00Z',
-    items: [
-      {
-        id: 'file-1',
-        name: 'Project Proposal.pdf',
-        type: 'file',
-        size: 2500000,
-        extension: 'pdf',
-        lastModified: '2023-10-14T10:30:00Z',
-        url: '/files/project-proposal.pdf'
-      },
-      {
-        id: 'file-2',
-        name: 'Meeting Notes.docx',
-        type: 'file',
-        size: 150000,
-        extension: 'docx',
-        lastModified: '2023-10-15T09:15:00Z',
-        url: '/files/meeting-notes.docx'
-      }
-    ]
-  },
-  {
-    id: 'folder-2',
-    name: 'Images',
-    type: 'folder',
-    lastModified: '2023-10-10T16:20:00Z',
-    items: [
-      {
-        id: 'file-3',
-        name: 'Logo.png',
-        type: 'file',
-        size: 500000,
-        extension: 'png',
-        lastModified: '2023-10-05T11:45:00Z',
-        url: '/files/logo.png'
-      },
-      {
-        id: 'file-4',
-        name: 'Team Photo.jpg',
-        type: 'file',
-        size: 3500000,
-        extension: 'jpg',
-        lastModified: '2023-10-09T15:30:00Z',
-        url: '/files/team-photo.jpg'
-      }
-    ]
-  },
-  {
-    id: 'file-5',
-    name: 'Report.xlsx',
-    type: 'file',
-    size: 750000,
-    extension: 'xlsx',
-    lastModified: '2023-10-12T13:20:00Z',
-    url: '/files/report.xlsx'
-  }
-];
+export default function HomePage() {
+    const router = useRouter();
+    const [shareInput, setShareInput] = useState('');
+    const [error, setError] = useState('');
 
-const FileServer = () => {
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
-  const [currentData, setCurrentData] = useState<FileSystemItem[]>(fileSystemData);
+    // Handle accessing a share
+    const accessShare = (e: React.FormEvent) => {
+        e.preventDefault();
 
-  // Format file size to human-readable format
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+        if (!shareInput.trim()) {
+            setError('Please enter a share name');
+            return;
+        }
 
-  // Format date
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+        // Clean the input and navigate to the share
+        const cleanedShare = shareInput.trim().replace(/[^a-zA-Z0-9-_]/g, '');
+        router.push(`/${cleanedShare}`);
+    };
 
-  // Navigate to a folder
-  const navigateToFolder = (folder: FolderItem) => {
-    setCurrentPath([...currentPath, folder.name]);
-    setCurrentData(folder.items);
-  };
+    return (
+        <div className={styles.homePage}>
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <h1>WebDAV File Explorer</h1>
+                    <p className={styles.subtitle}>Access, browse, and manage your files with ease</p>
+                </header>
 
-  // Navigate to root
-  const navigateToRoot = () => {
-    setCurrentPath([]);
-    setCurrentData(fileSystemData);
-  };
+                <section className={styles.heroSection}>
+                    <div className={styles.heroContent}>
+                        <h2>Your files, anywhere, anytime</h2>
+                        <p>
+                            WebDAV File Explorer provides a simple and intuitive interface to access
+                            your WebDAV shares. Browse directories, view files, and manage your content
+                            from any device with a web browser.
+                        </p>
 
-  // Navigate up one level
-  const navigateUp = () => {
-    if (currentPath.length === 0) return;
-
-    const newPath = currentPath.slice(0, -1);
-    setCurrentPath(newPath);
-
-    if (newPath.length === 0) {
-      setCurrentData(fileSystemData);
-      return;
-    }
-
-    // Find the current folder based on the path
-    let tempData = fileSystemData;
-    for (let i = 0; i < newPath.length - 1; i++) {
-      const folderItem = tempData.find(
-          item => item.type === 'folder' && item.name === newPath[i]
-      ) as FolderItem | undefined;
-
-      if (folderItem) {
-        tempData = folderItem.items;
-      }
-    }
-
-    const lastFolder = tempData.find(
-        item => item.type === 'folder' && item.name === newPath[newPath.length - 1]
-    ) as FolderItem | undefined;
-
-    if (lastFolder) {
-      setCurrentData(lastFolder.items);
-    }
-  };
-
-  // Get file icon based on extension
-  const getFileIcon = (extension: string): string => {
-    switch (extension) {
-      case 'pdf': return '📄';
-      case 'docx': case 'doc': return '📝';
-      case 'xlsx': case 'xls': return '📊';
-      case 'png': case 'jpg': case 'jpeg': case 'gif': return '🖼️';
-      default: return '📄';
-    }
-  };
-
-  return (
-      <div className={styles.fileServer}>
-        <div className={styles.header}>
-          <h1>File Server</h1>
-          <div className={styles.breadcrumb}>
-            <span className={styles.breadcrumbItem} onClick={navigateToRoot}>Home</span>
-            {currentPath.map((folder, index) => (
-                <span key={index}>
-              <span className={styles.separator}>/</span>
-              <span className={styles.breadcrumbItem}>{folder}</span>
-            </span>
-            ))}
-          </div>
-        </div>
-
-        {currentPath.length > 0 && (
-            <button className={styles.navButton} onClick={navigateUp}>
-              ↑ Up
-            </button>
-        )}
-
-        <div className={styles.fileList}>
-          <div className={styles.fileHeader}>
-            <div className={styles.nameColumn}>Name</div>
-            <div className={styles.dateColumn}>Modified</div>
-            <div className={styles.sizeColumn}>Size</div>
-          </div>
-
-          {currentData.map((item) => (
-              <div key={item.id} className={styles.fileItem}>
-                {item.type === 'folder' ? (
-                    <div className={styles.folderRow} onClick={() => navigateToFolder(item)}>
-                      <div className={styles.nameColumn}>
-                        <span className={styles.icon}>📁</span>
-                        <span>{item.name}</span>
-                      </div>
-                      <div className={styles.dateColumn}>{formatDate(item.lastModified)}</div>
-                      <div className={styles.sizeColumn}>-</div>
+                        <form className={styles.accessForm} onSubmit={accessShare}>
+                            <div className={styles.inputGroup}>
+                                <input
+                                    type="text"
+                                    value={shareInput}
+                                    onChange={(e) => setShareInput(e.target.value)}
+                                    placeholder="Enter share name"
+                                    className={styles.shareInput}
+                                />
+                                <button type="submit" className={styles.accessButton}>
+                                    Access Files
+                                </button>
+                            </div>
+                            {error && <div className={styles.errorMessage}>{error}</div>}
+                        </form>
                     </div>
-                ) : (
-                    <a href={`${item.url}`} className={styles.fileRow} target="_blank" rel="noopener noreferrer">
-                      <div className={styles.nameColumn}>
-                        <span className={styles.icon}>{getFileIcon(item.extension)}</span>
-                        <span className={styles.name}>{item.name}</span>
-                      </div>
-                      <div className={styles.dateColumn}>{formatDate(item.lastModified)}</div>
-                      <div className={styles.sizeColumn}>{formatFileSize(item.size)}</div>
-                    </a>
-                )}
-              </div>
-          ))}
+                    <div className={styles.heroImage}>
+                        <div className={styles.fileExplorerImage}>
+                            <div className={styles.mockTreeView}>
+                                <div className={styles.mockFolder}>📁 Documents</div>
+                                <div className={styles.mockFolder}>📁 Images</div>
+                                <div className={styles.mockFolder}>📁 Projects</div>
+                            </div>
+                            <div className={styles.mockFileView}>
+                                <div className={styles.mockFileRow}><span>📄</span> Report.pdf</div>
+                                <div className={styles.mockFileRow}><span>📊</span> Data.xlsx</div>
+                                <div className={styles.mockFileRow}><span>🖼️</span> Image.jpg</div>
+                                <div className={styles.mockFileRow}><span>📝</span> Notes.docx</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-          {currentData.length === 0 && (
-              <div className={styles.emptyFolder}>This folder is empty</div>
-          )}
+                <section className={styles.featuresSection}>
+                    <h2>Key Features</h2>
+                    <div className={styles.featureGrid}>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>🌲</div>
+                            <h3>Folder Hierarchy</h3>
+                            <p>Navigate through your folder structure with an intuitive tree view</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>🔍</div>
+                            <h3>File Preview</h3>
+                            <p>Preview files directly in your browser without downloading</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>📱</div>
+                            <h3>Responsive Design</h3>
+                            <p>Access your files from any device with a consistent experience</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>🔒</div>
+                            <h3>Secure Access</h3>
+                            <p>Your files are accessed securely through WebDAV protocol</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section className={styles.quickStartSection}>
+                    <h2>Quick Start</h2>
+                    <div className={styles.quickStartSteps}>
+                        <div className={styles.step}>
+                            <div className={styles.stepNumber}>1</div>
+                            <div className={styles.stepContent}>
+                                <h3>Enter Share Name</h3>
+                                <p>Type the name of your WebDAV share in the input field above</p>
+                            </div>
+                        </div>
+                        <div className={styles.step}>
+                            <div className={styles.stepNumber}>2</div>
+                            <div className={styles.stepContent}>
+                                <h3>Browse Your Files</h3>
+                                <p>Navigate through folders using the tree view or file list</p>
+                            </div>
+                        </div>
+                        <div className={styles.step}>
+                            <div className={styles.stepNumber}>3</div>
+                            <div className={styles.stepContent}>
+                                <h3>Access Your Content</h3>
+                                <p>View, download, or interact with your files directly in the browser</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <footer className={styles.footer}>
+                    <p>Erick Tran © {new Date().getFullYear()}</p>
+                </footer>
+            </div>
         </div>
-      </div>
-  );
-};
-
-export default FileServer;
+    );
+}

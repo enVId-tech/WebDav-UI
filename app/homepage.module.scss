@@ -1,0 +1,276 @@
+.homePage {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #333;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(45deg, #0d6efd, #6610f2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+  }
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+.heroSection {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 4rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.heroContent {
+  flex: 1;
+
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #212529;
+  }
+
+  p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #495057;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.heroImage {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.fileExplorerImage {
+  width: 100%;
+  max-width: 450px;
+  height: 300px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #e3e6f0;
+}
+
+.mockTreeView {
+  width: 30%;
+  background-color: #f1f3f5;
+  padding: 1rem;
+  border-right: 1px solid #e3e6f0;
+}
+
+.mockFolder {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: #e9ecef;
+  }
+}
+
+.mockFileView {
+  width: 70%;
+  padding: 1rem;
+}
+
+.mockFileRow {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+
+  span {
+    margin-right: 0.5rem;
+  }
+
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
+
+.featuresSection {
+  margin-bottom: 4rem;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #212529;
+  }
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.featureCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  h3 {
+    margin: 1rem 0 0.5rem;
+    color: #0d6efd;
+  }
+
+  p {
+    color: #6c757d;
+    font-size: 0.95rem;
+  }
+}
+
+.featureIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.accessForm {
+  margin-top: 2rem;
+}
+
+.inputGroup {
+  display: flex;
+  max-width: 500px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.shareInput {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #dee2e6;
+  border-radius: 4px 0 0 4px;
+  outline: none;
+  transition: border-color 0.15s ease-in-out;
+
+  &:focus {
+    border-color: #0d6efd;
+  }
+
+  @media (max-width: 768px) {
+    border-radius: 4px 4px 0 0;
+  }
+}
+
+.accessButton {
+  padding: 0.75rem 1.5rem;
+  background-color: #0d6efd;
+  color: white;
+  font-weight: 500;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+
+  &:hover {
+    background-color: #0b5ed7;
+  }
+
+  @media (max-width: 768px) {
+    border-radius: 0 0 4px 4px;
+  }
+}
+
+.errorMessage {
+  color: #dc3545;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.quickStartSection {
+  margin-bottom: 4rem;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #212529;
+  }
+}
+
+.quickStartSteps {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.step {
+  display: flex;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.stepNumber {
+  background-color: #0d6efd;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.stepContent {
+  h3 {
+    margin: 0 0 0.5rem;
+    color: #212529;
+  }
+
+  p {
+    color: #6c757d;
+    margin: 0;
+  }
+}
+
+.footer {
+  text-align: center;
+  padding-top: 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid #dee2e6;
+  color: #6c757d;
+}

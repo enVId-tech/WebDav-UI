@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
-import styles from '@/app/FileServer.module.scss';
+import styles from '../../fileserver.module.scss';
 
 // File type definitions
 type FileItem = {
@@ -165,6 +165,9 @@ export default function ShareFileBrowser() {
               style={{ paddingLeft: `${level * 16}px` }}
               onClick={() => navigateToFolder(`/${share}${node.path}`)}
           >
+          <span className={styles.folderExpandIcon}>
+            {node.children.length > 0 ? (node.isExpanded ? '▾' : '▸') : '○'}
+          </span>
             <span className={styles.folderIcon}>📁</span>
             <span className={styles.folderName}>{node.name}</span>
           </div>
@@ -175,17 +178,15 @@ export default function ShareFileBrowser() {
   };
 
   if (loading) return (
-      <div className={styles.fileServer}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading files...</p>
-        </div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading files...</p>
       </div>
   );
 
   if (error) return (
-      <div className={styles.fileServer}>
-        <div className={styles.error}>
+      <div className={styles.errorContainer}>
+        <div className={styles.errorContent}>
           <h3>Error</h3>
           <p>{error}</p>
           <button onClick={() => router.push(`/${share}`)}>Go to root</button>
@@ -194,12 +195,13 @@ export default function ShareFileBrowser() {
   );
 
   return (
-      <div className={styles.fileExplorerContainer}>
-        <div className={styles.folderSidebar}>
+      <div className={styles.modernExplorerContainer}>
+        {/* Left sidebar with folder hierarchy */}
+        <div className={styles.modernSidebar}>
           <div className={styles.sidebarHeader}>
             <h3>Folders</h3>
           </div>
-          <div className={styles.folderTree}>
+          <div className={styles.modernFolderTree}>
             {renderFolderNode({
               name: share,
               path: `/${share}`,
@@ -209,78 +211,91 @@ export default function ShareFileBrowser() {
           </div>
         </div>
 
-        <div className={styles.fileExplorerContent}>
-          <div className={styles.header}>
-            <h1>File Explorer</h1>
-            <div className={styles.breadcrumb}>
-              {breadcrumbs.map((crumb, index) => (
-                  <span key={index}>
-                {index > 0 && <span className={styles.separator}>/</span>}
-                    <span
-                        className={styles.breadcrumbItem}
-                        onClick={() => router.push(crumb.path)}
-                    >
-                  {crumb.name}
+        {/* Main content area */}
+        <div className={styles.modernContent}>
+          <div className={styles.topBar}>
+            <div className={styles.modernHeader}>
+              <h1 className={styles.explorerTitle}>File Explorer</h1>
+              <div className={styles.modernBreadcrumb}>
+                {breadcrumbs.map((crumb, index) => (
+                    <span key={index}>
+                  {index > 0 && <span className={styles.separator}>/</span>}
+                      <span
+                          className={styles.breadcrumbItem}
+                          onClick={() => router.push(crumb.path)}
+                      >
+                    {crumb.name}
+                  </span>
                 </span>
-              </span>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.modernActions}>
+              {relativePath !== '/' && (
+                  <button className={styles.modernButton} onClick={navigateUp}>
+                    ↑ Up
+                  </button>
+              )}
+              <div className={styles.searchBarPlaceholder}>
+                Search files (coming soon)
+              </div>
             </div>
           </div>
 
-          {relativePath !== '/' && (
-              <button className={styles.navButton} onClick={navigateUp}>
-                ↑ Up
-              </button>
-          )}
-
-          <div className={styles.fileList}>
-            <div className={styles.fileHeader}>
+          <div className={styles.modernFileList}>
+            <div className={styles.modernFileHeader}>
               <div className={styles.nameColumn}>Name</div>
               <div className={styles.dateColumn}>Modified</div>
               <div className={styles.sizeColumn}>Size</div>
             </div>
 
-            {currentData.map((item) => (
-                <div key={item.filename} className={styles.fileItem}>
-                  {item.type === 'directory' ? (
-                      <div
-                          className={styles.folderRow}
-                          onClick={() => navigateToFolder(item.filename)}
-                      >
-                        <div className={styles.nameColumn}>
-                          <span className={styles.icon}>📁</span>
-                          <span className={styles.name}>{item.basename}</span>
+            <div className={styles.modernFileItems}>
+              {currentData.map((item) => (
+                  <div key={item.filename} className={styles.fileItem}>
+                    {item.type === 'directory' ? (
+                        <div
+                            className={styles.modernFolderRow}
+                            onClick={() => navigateToFolder(item.filename)}
+                        >
+                          <div className={styles.nameColumn}>
+                            <span className={styles.icon}>📁</span>
+                            <span className={styles.name}>{item.basename}</span>
+                          </div>
+                          <div className={styles.dateColumn}>
+                            {formatDate(item.lastmod)}
+                          </div>
+                          <div className={styles.sizeColumn}>-</div>
                         </div>
-                        <div className={styles.dateColumn}>
-                          {formatDate(item.lastmod)}
-                        </div>
-                        <div className={styles.sizeColumn}>-</div>
-                      </div>
-                  ) : (
-                      <a
-                          href={`/${share}${relativePath}/${encodeURIComponent(item.basename)}`}
-                          className={styles.fileRow}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                      >
-                        <div className={styles.nameColumn}>
-                          <span className={styles.icon}>{getFileIcon(item.basename)}</span>
-                          <span className={styles.name}>{item.basename}</span>
-                        </div>
-                        <div className={styles.dateColumn}>
-                          {formatDate(item.lastmod)}
-                        </div>
-                        <div className={styles.sizeColumn}>
-                          {formatFileSize(item.size)}
-                        </div>
-                      </a>
-                  )}
-                </div>
-            ))}
+                    ) : (
+                        <a
+                            href={`/${share}${relativePath}/${encodeURIComponent(item.basename)}`}
+                            className={styles.modernFileRow}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                          <div className={styles.nameColumn}>
+                            <span className={styles.icon}>{getFileIcon(item.basename)}</span>
+                            <span className={styles.name}>{item.basename}</span>
+                          </div>
+                          <div className={styles.dateColumn}>
+                            {formatDate(item.lastmod)}
+                          </div>
+                          <div className={styles.sizeColumn}>
+                            {formatFileSize(item.size)}
+                          </div>
+                        </a>
+                    )}
+                  </div>
+              ))}
 
-            {currentData.length === 0 && (
-                <div className={styles.emptyFolder}>This folder is empty</div>
-            )}
+              {currentData.length === 0 && (
+                  <div className={styles.modernEmptyFolder}>
+                    <div className={styles.emptyIcon}>📂</div>
+                    <p>This folder is empty</p>
+                  </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
