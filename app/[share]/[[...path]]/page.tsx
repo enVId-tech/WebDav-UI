@@ -14,40 +14,40 @@ type FileItem = {
   lastmod: string;
 };
 
+type FolderNode = {
+  name: string;
+  path: string;
+  children: FolderNode[];
+  isExpanded?: boolean;
+};
+
 export default function ShareFileBrowser() {
   const router = useRouter();
   const params = useParams();
   const [currentData, setCurrentData] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [folderStructure, setFolderStructure] = useState<FolderNode>({ name: '', path: '', children: [] });
 
   // Extract share and path from URL params
   const share = params.share as string;
   const pathSegments = Array.isArray(params.path) ? params.path : [];
   const relativePath = pathSegments.length > 0 ? `/${pathSegments.join('/')}` : '/';
 
-  console.log(`Share: ${share}`);
-    console.log(`Path Segments: ${pathSegments}`);
-    console.log(`Relative Path: ${relativePath}`);
-
   // Build navigation breadcrumbs
   const breadcrumbs = [
     { name: share, path: `/${share}` },
     ...pathSegments.map((segment, index) => {
-      // Decode for display
       const decodedName = decodeURIComponent(segment);
-      // Create properly encoded path for navigation
       const encodedPath = `/${share}/${pathSegments
           .slice(0, index + 1)
           .map(seg => encodeURIComponent(decodeURIComponent(seg)))
           .join('/')}`;
 
-      return {
-        name: decodedName,
-        path: encodedPath
-      };
+      return { name: decodedName, path: encodedPath };
     })
   ];
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -55,6 +55,10 @@ export default function ShareFileBrowser() {
         console.log(`Fetching data for share: /${share}${relativePath}`);
         const data = await getDirectoryContents(relativePath, `/${share}`);
         setCurrentData(data);
+
+        // Update folder structure
+        updateFolderStructure(data);
+
         setError(null);
       } catch (err: any) {
         console.error('Error fetching data:', err);
@@ -66,6 +70,35 @@ export default function ShareFileBrowser() {
 
     fetchData();
   }, [share, relativePath]);
+
+  // Update folder structure with the current data
+  const updateFolderStructure = (data: FileItem[]) => {
+    // Create root if it doesn't exist
+    if (folderStructure.name === '') {
+      setFolderStructure({
+        name: share,
+        path: `/${share}`,
+        children: [],
+        isExpanded: true
+      });
+    }
+
+    // Add current folders to the structure
+    const folders = data.filter(item => item.type === 'directory');
+
+    // This is a simple implementation - for a real app, you'd need more complex
+    // logic to maintain the full hierarchy across navigation
+    const newChildren = folders.map(folder => ({
+      name: folder.basename,
+      path: `${relativePath === '/' ? '' : relativePath}/${folder.basename}`,
+      children: [],
+      isExpanded: false
+    }));
+
+    // Update the structure with current path marked as expanded
+    // Note: In a real app, you'd need more sophisticated tree manipulation
+    setFolderStructure(prev => ({...prev, children: newChildren}));
+  };
 
   // Format file size
   const formatFileSize = (bytes: number): string => {
@@ -86,10 +119,9 @@ export default function ShareFileBrowser() {
   const navigateToFolder = (folderPath: string) => {
     try {
       const relativeFolderPath = folderPath.replace(`/${share}`, '');
-      // Properly encode the path segments while preserving the path structure
       const encodedPath = relativeFolderPath === ''
           ? `/${share}`
-          : `/${share}/${relativePath}/${relativeFolderPath.split()
+          : `/${share}/${relativeFolderPath.split('/')
               .filter(segment => segment)
               .map(segment => encodeURIComponent(segment))
               .join('/')}`;
@@ -122,6 +154,26 @@ export default function ShareFileBrowser() {
     }
   };
 
+  // Render folder tree node recursively
+  const renderFolderNode = (node: FolderNode, level = 0) => {
+    const isCurrentPath = node.path === relativePath || `/${share}${relativePath}` === node.path;
+
+    return (
+        <div key={node.path} className={styles.folderTreeNode}>
+          <div
+              className={`${styles.folderTreeItem} ${isCurrentPath ? styles.activePath : ''}`}
+              style={{ paddingLeft: `${level * 16}px` }}
+              onClick={() => navigateToFolder(`/${share}${node.path}`)}
+          >
+            <span className={styles.folderIcon}>📁</span>
+            <span className={styles.folderName}>{node.name}</span>
+          </div>
+
+          {node.isExpanded && node.children.map(child => renderFolderNode(child, level + 1))}
+        </div>
+    );
+  };
+
   if (loading) return (
       <div className={styles.fileServer}>
         <div className={styles.loading}>
@@ -142,80 +194,94 @@ export default function ShareFileBrowser() {
   );
 
   return (
-      <div className={styles.fileServer}>
-        <div className={styles.header}>
-          <h1>File Explorer</h1>
-          <div className={styles.breadcrumb}>
-            {breadcrumbs.map((crumb, index) => (
-                <span key={index}>
-              {index > 0 && <span className={styles.separator}>/</span>}
-                  <span
-                      className={styles.breadcrumbItem}
-                      onClick={() => {
-                        router.push(crumb.path);
-                      }}
-                  >
-                {crumb.name}
-              </span>
-            </span>
-            ))}
+      <div className={styles.fileExplorerContainer}>
+        <div className={styles.folderSidebar}>
+          <div className={styles.sidebarHeader}>
+            <h3>Folders</h3>
+          </div>
+          <div className={styles.folderTree}>
+            {renderFolderNode({
+              name: share,
+              path: `/${share}`,
+              children: folderStructure.children,
+              isExpanded: true
+            })}
           </div>
         </div>
 
-        {relativePath !== '/' && (
-            <button className={styles.navButton} onClick={navigateUp}>
-              ↑ Up
-            </button>
-        )}
-
-        <div className={styles.fileList}>
-          <div className={styles.fileHeader}>
-            <div className={styles.nameColumn}>Name</div>
-            <div className={styles.dateColumn}>Modified</div>
-            <div className={styles.sizeColumn}>Size</div>
+        <div className={styles.fileExplorerContent}>
+          <div className={styles.header}>
+            <h1>File Explorer</h1>
+            <div className={styles.breadcrumb}>
+              {breadcrumbs.map((crumb, index) => (
+                  <span key={index}>
+                {index > 0 && <span className={styles.separator}>/</span>}
+                    <span
+                        className={styles.breadcrumbItem}
+                        onClick={() => router.push(crumb.path)}
+                    >
+                  {crumb.name}
+                </span>
+              </span>
+              ))}
+            </div>
           </div>
 
-          {currentData.map((item) => (
-              <div key={item.filename} className={styles.fileItem}>
-                {item.type === 'directory' ? (
-                    <div
-                        className={styles.folderRow}
-                        onClick={() => navigateToFolder(item.filename)}
-                    >
-                      <div className={styles.nameColumn}>
-                        <span className={styles.icon}>📁</span>
-                        <span className={styles.name}>{item.basename}</span>
-                      </div>
-                      <div className={styles.dateColumn}>
-                        {formatDate(item.lastmod)}
-                      </div>
-                      <div className={styles.sizeColumn}>-</div>
-                    </div>
-                ) : (
-                    <a
-                        href={`${process.env.NEXT_PUBLIC_WEBDAV_URL || '/'}${encodeURIComponent(item.filename)}`}
-                        className={styles.fileRow}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                      <div className={styles.nameColumn}>
-                        <span className={styles.icon}>{getFileIcon(item.basename)}</span>
-                        <span className={styles.name}>{item.basename}</span>
-                      </div>
-                      <div className={styles.dateColumn}>
-                        {formatDate(item.lastmod)}
-                      </div>
-                      <div className={styles.sizeColumn}>
-                        {formatFileSize(item.size)}
-                      </div>
-                    </a>
-                )}
-              </div>
-          ))}
-
-          {currentData.length === 0 && (
-              <div className={styles.emptyFolder}>This folder is empty</div>
+          {relativePath !== '/' && (
+              <button className={styles.navButton} onClick={navigateUp}>
+                ↑ Up
+              </button>
           )}
+
+          <div className={styles.fileList}>
+            <div className={styles.fileHeader}>
+              <div className={styles.nameColumn}>Name</div>
+              <div className={styles.dateColumn}>Modified</div>
+              <div className={styles.sizeColumn}>Size</div>
+            </div>
+
+            {currentData.map((item) => (
+                <div key={item.filename} className={styles.fileItem}>
+                  {item.type === 'directory' ? (
+                      <div
+                          className={styles.folderRow}
+                          onClick={() => navigateToFolder(item.filename)}
+                      >
+                        <div className={styles.nameColumn}>
+                          <span className={styles.icon}>📁</span>
+                          <span className={styles.name}>{item.basename}</span>
+                        </div>
+                        <div className={styles.dateColumn}>
+                          {formatDate(item.lastmod)}
+                        </div>
+                        <div className={styles.sizeColumn}>-</div>
+                      </div>
+                  ) : (
+                      <a
+                          href={`/${share}${relativePath}/${encodeURIComponent(item.basename)}`}
+                          className={styles.fileRow}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                      >
+                        <div className={styles.nameColumn}>
+                          <span className={styles.icon}>{getFileIcon(item.basename)}</span>
+                          <span className={styles.name}>{item.basename}</span>
+                        </div>
+                        <div className={styles.dateColumn}>
+                          {formatDate(item.lastmod)}
+                        </div>
+                        <div className={styles.sizeColumn}>
+                          {formatFileSize(item.size)}
+                        </div>
+                      </a>
+                  )}
+                </div>
+            ))}
+
+            {currentData.length === 0 && (
+                <div className={styles.emptyFolder}>This folder is empty</div>
+            )}
+          </div>
         </div>
       </div>
   );
