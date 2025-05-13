@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
 import styles from '../../fileserver.module.scss';
@@ -429,7 +429,7 @@ export default function ShareFileBrowser() {
     }
   }, []);
 
-  const getFilePreview = useCallback((filename: string, path: string): JSX.Element => {
+  const getFilePreview = useCallback((filename: string, path: string): React.JSX.Element => {
     const extension = filename.split('.').pop()?.toLowerCase() || '';
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension);
 
@@ -591,7 +591,7 @@ export default function ShareFileBrowser() {
     thumbnail: {
       width: '100px',
       height: '100px',
-      objectFit: 'cover',
+      objectFit: 'cover' as 'cover',
       borderRadius: '4px',
     }
   };

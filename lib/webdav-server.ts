@@ -13,7 +13,7 @@ class WebDavService {
     private client: WebDAVClient;
     private currentUrl: string;
 
-    constructor(webdavUrl: string) {
+    public constructor(webdavUrl: string) {
         this.client = createClient(webdavUrl);
         this.currentUrl = webdavUrl;
     }
@@ -32,7 +32,7 @@ class WebDavService {
      * @param {string} newUrl - The new URL to set.
      * @returns {string} The current URL.
      */
-    updateUrl(newUrl: string): boolean {
+    public updateUrl(newUrl: string): boolean {
         if (newUrl !== this.currentUrl) {
             console.log(`Updating WebDAV client URL from ${this.currentUrl} to ${newUrl}`);
             this.currentUrl = newUrl;
@@ -46,7 +46,7 @@ class WebDavService {
      * Get the current directory contents from the WebDAV server.
      * @param {string} path - The path to the directory. Defaults to '/'.
      */
-    async getDirectoryContents(path: string = '/'): Promise<any[]> {
+    public async getDirectoryContents(path: string = '/'): Promise<any[]> {
         const contents = await this.client.getDirectoryContents(path);
         return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
     }
