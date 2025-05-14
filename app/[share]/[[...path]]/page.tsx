@@ -311,6 +311,43 @@ export default function ShareFileBrowser() {
     searchFiles();
   }, [searchFiles]);
 
+  const handleFileClick = async (fileName: string) => {
+    try {
+      // Get full path relative to current location
+      const filePath = relativePath === '/'
+          ? `/${fileName}`
+          : `${relativePath}/${fileName}`;
+
+      // Make API request with isFile flag set to true
+      const response = await fetch('/api/webdav', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path: filePath,
+          sharePath: `/${share}`,
+          isFile: true  // This is the important flag
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch file');
+
+      // Create blob from response and download it
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
   // Utility functions - memoized to maintain stable references
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -748,7 +785,7 @@ export default function ShareFileBrowser() {
                                         if (item.type === 'directory') {
                                           navigateToFolder(item.filename);
                                         } else {
-                                          window.open(`/${share}${relativePath}/${encodeURIComponent(item.basename)}`, '_blank');
+                                          handleFileClick(item.basename);
                                         }
                                       }}
                                       onMouseOver={(e) => {
@@ -801,11 +838,9 @@ export default function ShareFileBrowser() {
                                         <div className={styles.sizeColumn}>-</div>
                                       </div>
                                   ) : (
-                                      <a
-                                          href={`/${share}${relativePath}/${encodeURIComponent(item.basename)}`}
+                                      <div
                                           className={styles.modernFileRow}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                          onClick={() => handleFileClick(item.basename)}
                                       >
                                         <div className={styles.nameColumn}>
                                           <span className={styles.icon}>{getFileIcon(item.basename)}</span>
@@ -817,7 +852,7 @@ export default function ShareFileBrowser() {
                                         <div className={styles.sizeColumn}>
                                           {formatFileSize(item.size)}
                                         </div>
-                                      </a>
+                                      </div>
                                   )}
                                 </div>
                             ))

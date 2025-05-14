@@ -50,6 +50,26 @@ class WebDavService {
         const contents = await this.client.getDirectoryContents(path);
         return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
     }
+
+    async getFileContents() {
+        try {
+            const response = await fetch(this.currentUrl, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Basic ${btoa(`${process.env.WEBDAV_USERNAME}:${process.env.WEBDAV_PASSWORD}`)}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+            }
+
+            return await response.arrayBuffer();
+        } catch (error) {
+            console.error('Error fetching file:', error);
+            throw error;
+        }
+    }
 }
 
 // Singleton instance of WebDavService
