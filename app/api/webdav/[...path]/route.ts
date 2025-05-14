@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from "@/lib/webdav-server";
+import { lookup } from 'mime-types';
 
 export async function POST(request: NextRequest) {
     try {
@@ -59,27 +60,9 @@ export async function POST(request: NextRequest) {
 
 // Helper function to determine content type
 function getContentType(path: string): string {
-    const extension = path.split('.').pop()?.toLowerCase();
-
-    const mimeTypes: {[key: string]: string} = {
-        'pdf': 'application/pdf',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'svg': 'image/svg+xml',
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'xls': 'application/vnd.ms-excel',
-        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'txt': 'text/plain',
-        'html': 'text/html',
-        'mp4': 'video/mp4',
-        'mp3': 'audio/mpeg',
-        // Add more as needed
-    };
-
-    return extension && mimeTypes[extension] ? mimeTypes[extension] : 'application/octet-stream';
+    // Uses the mime-types library to look up the appropriate MIME type
+    // Falls back to 'application/octet-stream' if no match is found
+    return lookup(path) || 'application/octet-stream';
 }
 
 // Helper function to extract filename from path

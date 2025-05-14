@@ -9,13 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "material-file-icons": "^2.4.0",
+    "mime-types": "^3.0.1",
     "next": "15.3.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "sass": "^1.87.0",
     "webdav": "^5.8.0"
   },
   "devDependencies": {
+    "@types/mime-types": "^2.1.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
