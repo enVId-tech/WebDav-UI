@@ -312,42 +312,20 @@ export default function ShareFileBrowser() {
     searchFiles();
   }, [searchFiles]);
 
-  const handleFileClick = async (fileName: string) => {
+  const handleFileClick = useCallback((fileName: string) => {
     try {
       // Get full path relative to current location
       const filePath = relativePath === '/'
           ? `/${fileName}`
           : `${relativePath}/${fileName}`;
 
-      // Make API request with isFile flag set to true
-      const response = await fetch('/api/webdav', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          path: filePath,
-          sharePath: `/${share}`,
-          isFile: true  // This is the important flag
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch file');
-
-      // Create blob from response and download it
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Instead of downloading, navigate to a preview page
+      const previewUrl = `/preview/${share}${filePath}`;
+      window.open(previewUrl, '_blank');
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error opening file preview:', error);
     }
-  };
+  }, [relativePath, share]);
 
   // Utility functions - memoized to maintain stable references
   const formatFileSize = useCallback((bytes: number): string => {
