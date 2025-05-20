@@ -25,56 +25,32 @@ export default function FilePreview() {
   }, []);
 
   useEffect(() => {
-    const fetchFile = async () => {
+    const init = async () => {
       try {
         setLoading(true);
+        const segments = Array.isArray(params.filepath) ? params.filepath : [];
+        if (segments.length < 2) throw new Error('Invalid file path');
 
-        // Extract filepath from URL params
-        const pathSegments = Array.isArray(params.filepath)
-            ? params.filepath
-            : [];
-
-        if (pathSegments.length < 2) {
-          throw new Error('Invalid file path');
-        }
-
-        // First segment is the share ID
-        const shareId = pathSegments[0];
-
-        // Remaining segments form the file path
-        const filePath = `/${pathSegments.slice(1).join('/')}`;
-
-        // Get filename from the path
-        const pathParts = filePath.split('/');
-        const filename = pathParts[pathParts.length - 1];
-        setFileName(filename);
-
-        // Determine mime type
-        const mime = lookup(filename) || 'application/octet-stream';
+        const shareId = segments[0];
+        const filePath = '/' + segments.slice(1).join('/');
+        const name = filePath.split('/').pop()!;
+        setFileName(name);
+        const mime = lookup(name) || 'application/octet-stream';
         setMimeType(mime);
 
-        // Create a direct URL to the file instead of fetching and creating a blob
-        // This will stream the file directly from your API endpoint
-        const directUrl = `/api/webdav?path=${encodeURIComponent(filePath)}&sharePath=${encodeURIComponent(`/${shareId}`)}&isFile=true`;
-
-        setFileUrl(directUrl);
+        const url = `${window.location.origin}/api/webdav?` +
+            `path=${encodeURIComponent(filePath)}` +
+            `&sharePath=${encodeURIComponent('/' + shareId)}` +
+            `&isFile=true`;
+        setFileUrl(url);
         setError(null);
       } catch (err: any) {
-        console.error('Error setting up file preview:', err);
-        setError(err.message || 'Failed to load file');
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchFile();
-
-    // Clean up object URL on unmount
-    return () => {
-      if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
-      }
-    };
+    init();
   }, [params.filepath]);
 
   const handleDownload = () => {
@@ -110,6 +86,7 @@ export default function FilePreview() {
     );
   }
 
+  const commonProps = { crossOrigin: 'anonymous' as const };
   return (
       <div className={styles.previewContainer}>
         <div className={`${styles.previewHeader} ${isMobile ? styles.mobileHeader : ''}`}>
@@ -123,21 +100,13 @@ export default function FilePreview() {
           {fileUrl && (
               <>
                 {mimeType.startsWith('image/') && (
-                    <img src={fileUrl} alt={fileName} className={styles.imagePreview} />
+                    <img src={fileUrl} alt={fileName} {...commonProps} className={styles.imagePreview} />
                 )}
-
                 {(mimeType.startsWith('video/') || mimeType === 'application/mp4') && (
-                    <div className={styles.videoContainer}>
-                      <video controls className={styles.videoPreview}>
-                        <source src={fileUrl} type={mimeType} />
-                        Your browser does not support video playback.
-                      </video>
-                      <p className={styles.fallbackMessage}>
-                        If video doesn't play, you can <a href={fileUrl} download={fileName}>download it</a> to view.
-                      </p>
-                    </div>
+                    <video controls {...commonProps} className={styles.videoPreview}>
+                      <source src={fileUrl} type={mimeType} />
+                    </video>
                 )}
-
               {mimeType.startsWith('audio/') && (
                 <audio controls className={styles.audioPreview}>
                   <source src={fileUrl} type={mimeType} />
