@@ -1,6 +1,23 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from 'webdav';
+import { createClient, FileStat, ResponseDataDetailed } from 'webdav';
+import { Readable } from 'stream';
+import https from 'https';
+
+function nodeStreamToWebReadable(nodeStream: Readable): ReadableStream {
+  return new ReadableStream({
+    start(controller) {
+      nodeStream.on('data', (chunk) => controller.enqueue(chunk));
+      nodeStream.on('end', () => controller.close());
+      nodeStream.on('error', (err) => controller.error(err));
+    },
+  });
+}
+
+function isDetailedStat(
+    stat: FileStat | ResponseDataDetailed<FileStat>
+): stat is ResponseDataDetailed<FileStat> {
+  return (stat as ResponseDataDetailed<FileStat>).data !== undefined;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,50 +30,42 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Replace with your actual WebDAV server URL and credentials
-    const client = createClient("https://192.168.1.89:30001", {
-      username: process.env.WEBDAV_USERNAME || "username",
-      password: process.env.WEBDAV_PASSWORD || "password",
+    const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+    const client = createClient('https://192.168.1.89:30001', {
+      username: process.env.WEBDAV_USERNAME || 'username',
+      password: process.env.WEBDAV_PASSWORD || 'password',
+      httpsAgent,
     });
 
-    // Decode the path parameters to prevent double encoding
     const decodedPath = decodeURIComponent(path);
     const decodedSharePath = decodeURIComponent(sharePath);
     const fullPath = `${decodedSharePath}${decodedPath}`;
 
-    console.log("Accessing WebDAV path:", fullPath);
-
     if (isFile) {
-      // Get file stats first to confirm it exists
       const stats = await client.stat(fullPath);
-
-      if (!stats.exists) {
+      if (!stats) {
         return NextResponse.json({ error: 'File not found' }, { status: 404 });
       }
 
-      // Get the file stream
+      const fileStat = isDetailedStat(stats) ? stats.data : stats;
       const fileStream = await client.createReadStream(fullPath);
+      const mimeType = fileStat.props?.getcontenttype || 'application/octet-stream';
 
-      // Determine mime type
-      const mimeType = stats.mime || 'application/octet-stream';
-
-      // Create a streaming response
-      return new Response(fileStream, {
+      return new Response(nodeStreamToWebReadable(fileStream), {
         headers: {
           'Content-Type': mimeType,
           'Content-Disposition': `inline; filename="${decodedPath.split('/').pop()}"`,
         },
       });
     } else {
-      // Handle directory listing case
       const directoryItems = await client.getDirectoryContents(fullPath);
       return NextResponse.json(directoryItems);
     }
   } catch (error: any) {
     console.error('WebDAV error:', error);
-    return NextResponse.json({
-      error: error.message,
-      details: error.code || 'unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+        { error: error.message, details: error.code || 'unknown error' },
+        { status: 500 }
+    );
   }
 }
