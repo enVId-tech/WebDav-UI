@@ -12,6 +12,17 @@ export default function FilePreview() {
   const [fileName, setFileName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchFile = async () => {
@@ -100,57 +111,73 @@ export default function FilePreview() {
   }
 
   return (
-    <div className={styles.previewContainer}>
-      <div className={styles.previewHeader}>
-        <h2>{fileName}</h2>
-        <button className={styles.modernButton} onClick={handleDownload}>
-          Download
-        </button>
-      </div>
+      <div className={styles.previewContainer}>
+        <div className={`${styles.previewHeader} ${isMobile ? styles.mobileHeader : ''}`}>
+          <h2>{fileName}</h2>
+          <button className={styles.modernButton} onClick={handleDownload}>
+            Download
+          </button>
+        </div>
 
-      <div className={styles.previewContent}>
-        {fileUrl && (
-          <>
-            {mimeType.startsWith('image/') && (
-              <img src={fileUrl} alt={fileName} className={styles.imagePreview} />
-            )}
+        <div className={`${styles.previewContent} ${isMobile ? styles.mobileContent : ''}`}>
+          {fileUrl && (
+              <>
+                {mimeType.startsWith('image/') && (
+                    <img src={fileUrl} alt={fileName} className={styles.imagePreview} />
+                )}
 
-            {(mimeType.startsWith('video/') || mimeType === 'application/mp4') && (
-                <video controls className={styles.videoPreview}>
-                  <source src={fileUrl} type={mimeType} />
-                  Your browser does not support video playback.
-                </video>
-            )}
-
-            {mimeType.startsWith('audio/') && (
-              <audio controls className={styles.audioPreview}>
-                <source src={fileUrl} type={mimeType} />
-                Your browser does not support audio playback.
-              </audio>
-            )}
-
-            {mimeType === 'application/pdf' && (
-              <iframe
-                src={fileUrl}
-                className={styles.pdfPreview}
-                title={fileName}
-              />
-            )}
-
-            {!mimeType.startsWith('image/') &&
-                !(mimeType.startsWith('video/') || mimeType === 'application/mp4') &&
-                !mimeType.startsWith('audio/') &&
-                mimeType !== 'application/pdf' && (
-                    <div className={styles.genericPreview}>
-                      <p>Preview not available for this file type ({mimeType}).</p>
-                      <button className={styles.modernButton} onClick={handleDownload}>
-                        Download to view
-                      </button>
+                {(mimeType.startsWith('video/') || mimeType === 'application/mp4') && (
+                    <div className={styles.videoContainer}>
+                      <video controls className={styles.videoPreview}>
+                        <source src={fileUrl} type={mimeType} />
+                        Your browser does not support video playback.
+                      </video>
+                      <p className={styles.fallbackMessage}>
+                        If video doesn't play, you can <a href={fileUrl} download={fileName}>download it</a> to view.
+                      </p>
                     </div>
                 )}
-          </>
+
+              {mimeType.startsWith('audio/') && (
+                <audio controls className={styles.audioPreview}>
+                  <source src={fileUrl} type={mimeType} />
+                  Your browser does not support audio playback.
+                </audio>
+              )}
+
+              {mimeType === 'application/pdf' && (
+                <iframe
+                  src={fileUrl}
+                  className={styles.pdfPreview}
+                  title={fileName}
+                />
+              )}
+
+              {!mimeType.startsWith('image/') &&
+                  !(mimeType.startsWith('video/') || mimeType === 'application/mp4') &&
+                  !mimeType.startsWith('audio/') &&
+                  mimeType !== 'application/pdf' && (
+                      <div className={styles.genericPreview}>
+                        <p>Preview not available for this file type ({mimeType}).</p>
+                        <button className={styles.modernButton} onClick={handleDownload}>
+                          Download to view
+                        </button>
+                      </div>
+                  )}
+            </>
+          )}
+        </div>
+
+        {isMobile && (
+            <div className={styles.mobileActions}>
+              <button className={styles.backButton} onClick={() => window.history.back()}>
+                Back
+              </button>
+              <button className={styles.downloadButton} onClick={handleDownload}>
+                Download
+              </button>
+            </div>
         )}
-      </div>
     </div>
   );
 }

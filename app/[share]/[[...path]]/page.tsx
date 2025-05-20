@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
 import styles from '../../fileserver.module.scss';
 import {lookup} from "mime-types";
+import MobileNav from "@/app/components/MobileNav";
 
 type FileItem = {
   filename: string;
@@ -170,6 +171,10 @@ export default function ShareFileBrowser() {
       return [];
     }
   }, [share, loadDirectoryContents, updateFolderInTree]);
+
+  const navigateToPath = useCallback((path: string) => {
+    router.push(path);
+  }, [router]);
 
   // Toggle folder expansion with stable reference
   const toggleFolderExpansion = useCallback((path: string) => {
@@ -677,6 +682,13 @@ export default function ShareFileBrowser() {
           <div className={styles.topBar}>
             <div className={styles.modernHeader}>
               <h1 className={styles.explorerTitle}>File Explorer</h1>
+
+              <MobileNav
+                  currentPath={relativePath}
+                  onNavigate={navigateToPath}
+                  breadcrumbs={breadcrumbs}
+              />
+
               <div className={styles.modernBreadcrumb}>
                 {breadcrumbs.map((crumb, index) => (
                     <span key={index}>

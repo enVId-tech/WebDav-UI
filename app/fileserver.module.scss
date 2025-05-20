@@ -344,3 +344,239 @@
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 767px) {
+  .previewContainer {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobileHeader {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+
+    h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      word-break: break-word;
+    }
+
+    button {
+      display: none; // Hide top button on mobile, we'll show it at bottom
+    }
+  }
+
+  .mobileContent {
+    padding: 1rem;
+    align-items: flex-start;
+
+    .imagePreview {
+      max-width: 100%;
+      width: 100%;
+      max-height: 70vh;
+    }
+
+    .videoPreview, .audioPreview {
+      width: 100%;
+      max-height: 50vh;
+    }
+
+    .pdfPreview {
+      height: 70vh;
+      width: 100%;
+    }
+
+    .genericPreview {
+      width: 100%;
+      padding: 1.5rem;
+    }
+  }
+
+  .mobileActions {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background-color: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+
+    button {
+      flex: 1;
+      margin: 0 0.5rem;
+      padding: 0.75rem 0;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .backButton {
+      background-color: #f1f3f5;
+      color: #212529;
+    }
+
+    .downloadButton {
+      background-color: #0d6efd;
+      color: white;
+    }
+  }
+
+  .videoContainer {
+    width: 100%;
+
+    .fallbackMessage {
+      text-align: center;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+// Mobile optimizations for the file listing page
+@media (max-width: 767px) {
+  .modernExplorerContainer {
+    flex-direction: column;
+  }
+
+  .modernSidebar {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e3e6f0;
+  }
+
+  .modernFileHeader {
+    grid-template-columns: 2fr 1fr;
+
+    .sizeColumn {
+      display: none; // Hide size column on mobile
+    }
+  }
+
+  .modernFolderRow, .modernFileRow {
+    grid-template-columns: 2fr 1fr;
+
+    .sizeColumn {
+      display: none;
+    }
+  }
+
+  .modernBreadcrumb {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none; // Firefox
+
+    &::-webkit-scrollbar {
+      display: none; // Webkit browsers
+    }
+  }
+
+  .modernActions {
+    flex-wrap: wrap;
+
+    .searchBarPlaceholder {
+      order: -1;
+      width: 100%;
+      margin-bottom: 0.75rem;
+    }
+  }
+}
+
+// Add touch-friendly tap targets for mobile
+@media (max-width: 767px) {
+  .folderTreeItem {
+    padding: 0.75rem 1rem;
+  }
+
+  .modernButton {
+    min-height: 44px; // Better touch target
+  }
+
+  .modernFolderRow, .modernFileRow {
+    padding: 0.85rem 1rem;
+  }
+}
+
+.mobileNav {
+  display: none;
+  position: relative;
+  z-index: 100;
+}
+
+.mobileMenuButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: white;
+  border: none;
+  border-bottom: 1px solid #e3e6f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+
+  &::after {
+    content: '▼';
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+  }
+}
+
+.mobileBreadcrumbMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.mobileBreadcrumbItem {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f3f5;
+
+  &:last-child {
+    font-weight: 500;
+    color: #0d6efd;
+  }
+
+  .mobileIndent {
+    color: #6c757d;
+    margin-right: 0.5rem;
+  }
+}
+
+.mobileCloseMenu {
+  width: 100%;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border: none;
+  font-weight: 500;
+  color: #495057;
+
+  &:active {
+    background-color: #e9ecef;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobileNav {
+    display: block;
+  }
+
+  .modernBreadcrumb {
+    display: none;
+  }
+}
