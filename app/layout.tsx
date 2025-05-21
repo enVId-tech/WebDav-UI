@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.scss";
+import WebDavLogoSrc from "@/public/webdavlogo.jpg";
+import Head from "next/head";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WebDav UI",
-  description: "Developed by Erick Tran",
+    title: "WebDav UI",
+    description: "Developed by Erick Tran",
+    keywords: ["WebDav", "Web", "Dav", "UI"],
+    icons: {
+        icon: WebDavLogoSrc.src,
+        apple: WebDavLogoSrc.src,
+    },
 };
 
 export default function RootLayout({
@@ -25,6 +32,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <Head>
+          <link rel="apple-touch-icon" href={WebDavLogoSrc.src} />
+          <link rel="icon" href={WebDavLogoSrc.src} />
+          <link rel="manifest" href={WebDavLogoSrc.src} />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <meta name="theme-color" content="#000000" />
+          <meta name="description" content="Developed by Erick Tran" />
+          <meta name="keywords" content="WebDav, Web, Dav, UI" />
+      </Head>
         {children}
       </body>
     </html>
