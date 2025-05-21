@@ -1,152 +1,77 @@
-'use client';
-
+"use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { lookup } from 'mime-types';
 import styles from '@/app/fileserver.module.scss';
+import VideoPreview from '@/app/components/VideoPreview'; // Ensure this path is correct
+import { lookup } from 'mime-types';
 
-export default function FilePreview() {
+const FilePreview = () => {
   const params = useParams();
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [mimeType, setMimeType] = useState<string>('');
-  const [fileName, setFileName] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [mimeType, setMimeType] = useState('');
+  const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    if (!params.filepath) return;
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    try {
+      // Convert filepath array to path string
+      const filePath = Array.isArray(params.filepath)
+          ? params.filepath.join('/')
+          : params.filepath;
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setLoading(true);
-        const segments = Array.isArray(params.filepath) ? params.filepath : [];
-        if (segments.length < 2) throw new Error('Invalid file path');
+      // IMPORTANT: Remove any leading "etran/" from the filepath to prevent duplication
+      const cleanPath = filePath.replace(/^etran\//, '');
 
-        const shareId = segments[0];
-        const filePath = '/' + segments.slice(1).join('/');
-        const name = filePath.split('/').pop()!;
-        setFileName(name);
-        const mime = lookup(name) || 'application/octet-stream';
-        setMimeType(mime);
+      // Get filename for mime type detection
+      const fileNameOnly = cleanPath.split('/').pop() || '';
+      setFileName(fileNameOnly);
+      const detectedMimeType = lookup(fileNameOnly) || 'application/octet-stream';
+      setMimeType(detectedMimeType);
 
-        const url = `${window.location.origin}/api/webdav?` +
-            `path=${encodeURIComponent(filePath)}` +
-            `&sharePath=${encodeURIComponent('/' + shareId)}` +
-            `&isFile=true`;
-        setFileUrl(url);
-        setError(null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
+      // Construct WebDAV API URL with proper encoding - use the cleaned path
+      const apiUrl = `/api/webdav?path=${encodeURIComponent(cleanPath)}&sharePath=${encodeURIComponent('/etran')}&isFile=true&debug=true`;
+
+      console.log('WebDAV API URL:', apiUrl);
+      console.log('File type:', detectedMimeType);
+
+      // Set the file URL for the video player
+      setFileUrl(apiUrl);
+      setIsLoading(false);
+
+    } catch (err: any) {
+      console.error('Error setting up file preview:', err);
+      setError(err.message || 'Failed to load file preview');
+      setIsLoading(false);
+    }
   }, [params.filepath]);
 
-  const handleDownload = () => {
-    if (fileUrl) {
-      const a = document.createElement('a');
-      a.href = fileUrl;
-      a.download = fileName;
-      a.setAttribute('target', '_blank'); // This helps with large files
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading file preview...</p>
-      </div>
-    );
+  if (isLoading) {
+    return <div className={styles.loading}>Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div className={styles.errorContainer}>
-        <div className={styles.errorContent}>
-          <h3>Error</h3>
-          <p>{error}</p>
-          <button onClick={() => window.close()}>Close</button>
-        </div>
-      </div>
-    );
+    return <div className={styles.error}>{error}</div>;
   }
 
-  const commonProps = { crossOrigin: 'anonymous' as const };
   return (
       <div className={styles.previewContainer}>
-        <div className={`${styles.previewHeader} ${isMobile ? styles.mobileHeader : ''}`}>
-          <h2>{fileName}</h2>
-          <button className={styles.modernButton} onClick={handleDownload}>
-            Download
-          </button>
-        </div>
-
-        <div className={`${styles.previewContent} ${isMobile ? styles.mobileContent : ''}`}>
-          {fileUrl && (
-              <>
-                {mimeType.startsWith('image/') && (
-                    <img src={fileUrl} alt={fileName} {...commonProps} className={styles.imagePreview} />
-                )}
-                {(mimeType.startsWith('video/') || mimeType === 'application/mp4') && (
-                    <video controls {...commonProps} className={styles.videoPreview}>
-                      <source src={fileUrl} type={mimeType} />
-                    </video>
-                )}
-              {mimeType.startsWith('audio/') && (
-                <audio controls className={styles.audioPreview}>
-                  <source src={fileUrl} type={mimeType} />
-                  Your browser does not support audio playback.
-                </audio>
-              )}
-
-              {mimeType === 'application/pdf' && (
-                <iframe
-                  src={fileUrl}
-                  className={styles.pdfPreview}
-                  title={fileName}
-                />
-              )}
-
-              {!mimeType.startsWith('image/') &&
-                  !(mimeType.startsWith('video/') || mimeType === 'application/mp4') &&
-                  !mimeType.startsWith('audio/') &&
-                  mimeType !== 'application/pdf' && (
-                      <div className={styles.genericPreview}>
-                        <p>Preview not available for this file type ({mimeType}).</p>
-                        <button className={styles.modernButton} onClick={handleDownload}>
-                          Download to view
-                        </button>
-                      </div>
-                  )}
-            </>
-          )}
-        </div>
-
-        {isMobile && (
-            <div className={styles.mobileActions}>
-              <button className={styles.backButton} onClick={() => window.history.back()}>
-                Back
-              </button>
-              <button className={styles.downloadButton} onClick={handleDownload}>
-                Download
-              </button>
+        {mimeType.startsWith('video/') || mimeType === 'application/mp4' ? (
+            <VideoPreview
+                src={fileUrl}
+                mimeType={mimeType}
+                fileName={fileName}
+            />
+        ) : (
+            <div className={styles.unsupportedFile}>
+              This file type is not supported for preview.
+              <a href={fileUrl + '&download=true'} download>Download instead</a>
             </div>
         )}
-    </div>
+      </div>
   );
-}
+};
+
+export default FilePreview;
