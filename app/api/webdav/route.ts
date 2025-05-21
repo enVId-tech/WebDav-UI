@@ -5,6 +5,18 @@ import { lookup } from "mime-types";
 import webdavService from '@/lib/webdav-server';
 import { createClient, FileStat, ResponseDataDetailed } from 'webdav';
 import zlib from 'zlib';
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import os from 'os';
+
+// Add cache directory for transcoded segments
+const TRANSCODE_CACHE_DIR = path.join(os.tmpdir(), 'video-transcode-cache');
+// Ensure cache directory exists
+if (!fs.existsSync(TRANSCODE_CACHE_DIR)) {
+  fs.mkdirSync(TRANSCODE_CACHE_DIR, { recursive: true });
+}
 
 // Enhanced headers optimized for video streaming
 const corsHeaders = {
@@ -23,6 +35,225 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'autoplay=self'
 };
+
+// Video compression quality presets
+const VIDEO_QUALITY_PRESETS = {
+  low: {
+    videoBitrate: '500k',
+    scale: '640:-2',
+    audioBitrate: '64k',
+    preset: 'veryfast'
+  },
+  medium: {
+    videoBitrate: '1000k',
+    scale: '854:-2',
+    audioBitrate: '96k',
+    preset: 'faster'
+  },
+  high: {
+    videoBitrate: '2500k',
+    scale: '1280:-2',
+    audioBitrate: '128k',
+    preset: 'fast'
+  },
+  original: null
+};
+
+// Check if ffmpeg is available (for video transcoding)
+let ffmpegAvailable = false;
+try {
+  const proc = spawn('ffmpeg', ['-version']);
+  proc.on('close', (code) => {
+    ffmpegAvailable = code === 0;
+    console.log(`FFmpeg availability: ${ffmpegAvailable ? 'YES' : 'NO'}`);
+  });
+} catch (e) {
+  console.warn('FFmpeg check failed, video transcoding will be disabled');
+}
+
+// Function to determine if video should be compressed
+function shouldCompressVideo(
+    format: string | null,
+    fileSize: number,
+    quality: string,
+    bandwidth: 'low' | 'medium' | 'high'
+): boolean {
+  // Don't compress if ffmpeg is unavailable
+  if (!ffmpegAvailable) return false;
+
+  // Don't compress HLS - it's already optimized
+  if (format === 'hls') return false;
+
+  // Don't compress if explicitly requested original quality
+  if (quality === 'original') return false;
+
+  // Only compress supported formats
+  const supportedFormats = ['mp4', 'webm', 'mkv', 'avi'];
+  if (!format || !supportedFormats.includes(format)) return false;
+
+  // Compress large videos when bandwidth is limited
+  if (fileSize > 20 * 1024 * 1024 && bandwidth !== 'high') return true;
+
+  // Compress when explicitly requested
+  if (quality === 'low' || quality === 'medium') return true;
+
+  return false;
+}
+
+// Generate cache key for transcoded videos
+function getTranscodeCacheKey(
+    filePath: string,
+    quality: string,
+    start: number,
+    end: number
+): string {
+  const hash = crypto.createHash('md5')
+      .update(`${filePath}-${quality}-${start}-${end}`)
+      .digest('hex');
+  return path.join(TRANSCODE_CACHE_DIR, hash);
+}
+
+// Transcode video segment with ffmpeg
+function transcodeVideoSegment(
+    inputStream: Readable,
+    quality: 'low' | 'medium' | 'high',
+    format: string,
+    startByte: number,
+    endByte: number,
+    fileSize: number
+): Promise<{ stream: Readable, fileSize: number }> {
+  return new Promise((resolve, reject) => {
+    const preset = VIDEO_QUALITY_PRESETS[quality];
+
+    // Create ffmpeg process
+    const ffmpeg = spawn('ffmpeg', [
+      '-i', 'pipe:0',              // Input from stdin
+      '-c:v', 'libx264',           // Video codec
+      '-b:v', preset.videoBitrate, // Video bitrate
+      '-c:a', 'aac',               // Audio codec
+      '-b:a', preset.audioBitrate, // Audio bitrate
+      '-vf', `scale=${preset.scale}`, // Scale video
+      '-preset', preset.preset,    // Encoding speed/compression ratio
+      '-movflags', 'frag_keyframe+empty_moov+faststart', // Optimize for streaming
+      '-f', format === 'webm' ? 'webm' : 'mp4', // Output format
+      '-y',                        // Overwrite output
+      'pipe:1'                     // Output to stdout
+    ]);
+
+    let outputSize = 0;
+    ffmpeg.stderr.on('data', (data) => {
+      if (process.env.DEBUG_FFMPEG === 'true') {
+        console.log(`[FFMPEG] ${data.toString()}`);
+      }
+    });
+
+    ffmpeg.stdout.on('data', chunk => {
+      outputSize += chunk.length;
+    });
+
+    ffmpeg.on('error', (err) => {
+      reject(err);
+    });
+
+    ffmpeg.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`FFmpeg exited with code ${code}`));
+      }
+    });
+
+    // Pipe input to ffmpeg
+    inputStream.pipe(ffmpeg.stdin);
+
+    // Return the output stream
+    resolve({
+      stream: ffmpeg.stdout,
+      fileSize: Math.round(fileSize * 0.6) // Estimate compressed size
+    });
+  });
+}
+
+// Function to check and prepare video compression
+async function prepareVideoCompression(
+    client: any,
+    path: string,
+    quality: string,
+    format: string | null,
+    bandwidth: 'low' | 'medium' | 'high',
+    fileSize: number,
+    range: { start: number, end: number },
+    debug: boolean,
+    requestId: string
+): Promise<{ stream: Readable, compressedSize: number, mimeType: string } | null> {
+  // Determine if we should compress this video
+  if (!shouldCompressVideo(format, fileSize, quality, bandwidth)) {
+    if (debug) console.log(`[${requestId}] Video compression skipped: format=${format}, size=${fileSize}, quality=${quality}`);
+    return null;
+  }
+
+  // Select quality preset based on request and bandwidth
+  let selectedQuality: 'low' | 'medium' | 'high';
+  if (quality === 'low') {
+    selectedQuality = 'low';
+  } else if (quality === 'medium') {
+    selectedQuality = 'medium';
+  } else if (quality === 'auto') {
+    // Auto-select based on bandwidth
+    selectedQuality = bandwidth === 'low' ? 'low' : (bandwidth === 'medium' ? 'medium' : 'high');
+  } else {
+    selectedQuality = 'high';
+  }
+
+  if (debug) console.log(`[${requestId}] Preparing video compression: quality=${selectedQuality}`);
+
+  // Check cache first
+  const cacheKey = getTranscodeCacheKey(path, selectedQuality, range.start, range.end);
+  if (fs.existsSync(cacheKey)) {
+    if (debug) console.log(`[${requestId}] Using cached transcoded segment: ${cacheKey}`);
+    const stats = fs.statSync(cacheKey);
+    const stream = fs.createReadStream(cacheKey);
+    return {
+      stream,
+      compressedSize: stats.size,
+      mimeType: format === 'webm' ? 'video/webm' : 'video/mp4'
+    };
+  }
+
+  try {
+    // Create input stream for full file (we need complete file for transcoding)
+    const inputStream = await createResilientStream(client, path, {});
+
+    // Start transcoding
+    if (debug) console.log(`[${requestId}] Starting video transcoding with quality=${selectedQuality}`);
+    const { stream, fileSize: compressedSize } = await transcodeVideoSegment(
+        inputStream,
+        selectedQuality,
+        format || 'mp4',
+        range.start,
+        range.end,
+        fileSize
+    );
+
+    // Cache the result (in background)
+    const outputStream = stream;
+    const cacheStream = fs.createWriteStream(cacheKey);
+
+    // Create a PassThrough stream to duplicate the data
+    const { PassThrough } = require('stream');
+    const passThrough = new PassThrough();
+
+    outputStream.pipe(passThrough);
+    passThrough.pipe(cacheStream);
+
+    return {
+      stream: passThrough,
+      compressedSize,
+      mimeType: format === 'webm' ? 'video/webm' : 'video/mp4'
+    };
+  } catch (err) {
+    console.error(`[${requestId}] Video transcoding failed:`, err);
+    return null;
+  }
+}
 
 // Bandwidth estimation based on client hints
 function estimateBandwidth(request: NextRequest): 'low' | 'medium' | 'high' {
@@ -181,7 +412,6 @@ function getQualityParams(
   let result = { priority: 'quality' as const, initialBuffer: 5000 };
 
   if (quality === 'low' || bandwidth === 'low') {
-    result.priority = 'speed';
     result.initialBuffer = 10000; // Longer initial buffer for low bandwidth
   } else if (quality === 'auto') {
     // Adaptive based on bandwidth and format
@@ -189,7 +419,6 @@ function getQualityParams(
       result.priority = 'quality';
       result.initialBuffer = 3000;
     } else {
-      result.priority = 'speed';
       result.initialBuffer = 5000;
     }
   }
@@ -236,7 +465,6 @@ function getStreamingHints(
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-  console.log('WebDAV request received:', request.url);
 
   // Enhanced request tracking with ID
   const requestId = Math.random().toString(36).substring(2, 10);
@@ -249,6 +477,8 @@ export async function GET(request: NextRequest) {
   const download = searchParams.get('download') === 'true';
   const debug = searchParams.get('debug') === 'true';
   const quality = searchParams.get('quality') || 'auto';
+  // Add compress parameter, default to true
+  const compress = searchParams.get('compress') !== 'false';
 
   if (!rawPath || !rawShare) {
     return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
@@ -281,14 +511,14 @@ export async function GET(request: NextRequest) {
     const agentOptions: https.AgentOptions = {
       rejectUnauthorized: false,
       keepAlive: true,
-      maxSockets: isVideo ? 4 : 10, // Fewer concurrent sockets for video to prevent overload
-      timeout: isVideo ? 120000 : 60000, // Longer timeout for video
+      maxSockets: isVideo ? 4 : 10,
+      timeout: isVideo ? 120000 : 60000,
     };
 
     // Further optimize keepalive settings based on content
     if (isVideo) {
-      agentOptions.keepAliveMsecs = 5000; // Longer keepalive for video
-      agentOptions.maxFreeSockets = 2;    // Keep fewer idle sockets
+      agentOptions.keepAliveMsecs = 5000;
+      agentOptions.maxFreeSockets = 2;
     } else {
       agentOptions.keepAliveMsecs = 1000;
       agentOptions.maxFreeSockets = 5;
@@ -314,7 +544,6 @@ export async function GET(request: NextRequest) {
     // File path resolution with enhanced path handling
     let stats = null;
     let workingPath = '';
-    // Add more path variants to try - handle Windows/Unix path differences
     const pathVariants = [
       fullPath,
       cleanedPath,
@@ -356,7 +585,8 @@ export async function GET(request: NextRequest) {
         mimeType,
         videoFormat,
         workingPath,
-        clientBandwidth
+        clientBandwidth,
+        compressRequested: compress
       });
     }
 
@@ -385,11 +615,11 @@ export async function GET(request: NextRequest) {
     if (isVideo) {
       // Format-specific caching
       if (isHls) {
-        headers['Cache-Control'] = 'public, max-age=86400, immutable'; // HLS segments are immutable
+        headers['Cache-Control'] = 'public, max-age=86400, immutable';
       } else if (videoFormat === 'mp4') {
-        headers['Cache-Control'] = 'public, max-age=3600'; // 1 hour for MP4
+        headers['Cache-Control'] = 'public, max-age=3600';
       } else {
-        headers['Cache-Control'] = 'public, max-age=1800'; // 30 min for other formats
+        headers['Cache-Control'] = 'public, max-age=1800';
       }
 
       // Add streaming hints
@@ -410,30 +640,24 @@ export async function GET(request: NextRequest) {
 
         // Handle end range with more intelligence
         if (matches[2]) {
-          end = parseInt(matches[2], 10);
+          const requestedEnd = parseInt(matches[2], 10);
+          end = Math.min(requestedEnd, fileSize - 1);
         } else {
-          // Smart chunk sizing - smaller for initial chunks, larger for later chunks
-          const isInitialChunk = start === 0;
-          let calculatedChunkSize = chunkSize;
-
-          if (isInitialChunk && isVideo) {
-            // Smaller initial chunk for faster startup
-            calculatedChunkSize = Math.min(chunkSize, 256 * 1024);
-          } else if (start > fileSize / 2) {
-            // Larger chunks for later parts of the file
-            calculatedChunkSize = chunkSize * 1.5;
-          }
-
-          end = Math.min(start + calculatedChunkSize - 1, fileSize - 1);
+          // If no end specified, limit chunk size based on content type
+          end = Math.min(start + chunkSize - 1, fileSize - 1);
         }
 
         // Validate range
         if (start >= fileSize || start > end || end >= fileSize) {
-          return new Response(null, {
-            status: 416, // Range Not Satisfiable
+          return new Response(JSON.stringify({
+            error: 'Range Not Satisfiable',
+            fileSize
+          }), {
+            status: 416,
             headers: {
               ...corsHeaders,
               ...securityHeaders,
+              'Content-Type': 'application/json',
               'Content-Range': `bytes */${fileSize}`
             }
           });
@@ -453,26 +677,70 @@ export async function GET(request: NextRequest) {
     headers['Content-Length'] = String(end - start + 1);
     headers['Content-Disposition'] = `${download ? 'attachment' : 'inline'}; filename="${encodeURIComponent(fileName)}"`;
 
-    // Compression handling with format awareness
-    const useCompression = supportsCompression(request) &&
-        !isVideo && // Skip for all video formats
-        (end - start + 1) > 1024; // Only compress responses larger than 1KB
-
-    if (useCompression) {
-      headers['Content-Encoding'] = 'gzip';
-      headers['Vary'] = 'Accept-Encoding';
-      delete headers['Content-Length']; // Will be set by compression
-    }
-
     try {
       if (debug) console.log(`[${requestId}] Creating stream for range: ${start}-${end} (${end-start+1} bytes)`);
 
-      // Use enhanced stream creation with backpressure awareness
+      // Check if video compression should be applied
+      if (isVideo && compress) {
+        const compressionResult = await prepareVideoCompression(
+            client,
+            workingPath,
+            quality,
+            videoFormat,
+            clientBandwidth,
+            fileSize,
+            { start, end },
+            debug,
+            requestId
+        );
+
+        if (compressionResult) {
+          const { stream, compressedSize, mimeType: newMimeType } = compressionResult;
+
+          // Update headers for compressed video
+          headers['Content-Type'] = newMimeType;
+          if (compressedSize) {
+            // For compressed videos, we often return the full file instead of a range
+            // because transcoding operates on the entire video
+            headers['Content-Length'] = String(compressedSize);
+
+            // If this was a range request but we're returning the full file, update headers
+            if (status === 206) {
+              // Either keep 206 status and update range, or switch to 200 if returning full file
+              if (start === 0 && compressedSize <= end - start + 1) {
+                // We're returning full file, switch to 200 OK
+                status = 200;
+                delete headers['Content-Range'];
+              } else {
+                // Update content range for compressed size
+                headers['Content-Range'] = `bytes 0-${compressedSize-1}/${compressedSize}`;
+              }
+            }
+          }
+
+          // Add compression info headers
+          headers['X-Video-Compressed'] = 'true';
+          headers['X-Video-Quality'] = quality;
+          headers['X-Original-Size'] = String(fileSize);
+
+          if (debug) console.log(`[${requestId}] Serving compressed video: quality=${quality}, size=${compressedSize}`);
+
+          // Return compressed video stream
+          return new Response(nodeStreamToWebReadable(stream), {
+            status,
+            headers
+          });
+        } else if (debug) {
+          console.log(`[${requestId}] Video compression not applied, falling back to standard streaming`);
+        }
+      }
+
+      // Standard (non-compressed) stream handling
       const stream = await createResilientStream(client, workingPath, {
         range: { start, end }
       }, 3);
 
-      // Add adaptive monitoring based on file size
+      // Add adaptive monitoring for larger files
       if (debug) {
         const logInterval = Math.max(500, Math.min(5000, fileSize / 10000));
         let bytesReceived = 0;
@@ -483,37 +751,41 @@ export async function GET(request: NextRequest) {
         stream.on('data', chunk => {
           bytesReceived += chunk.length;
           const now = Date.now();
+          const elapsed = now - lastLogTime;
 
-          if (now - lastLogTime > logInterval) {
-            const elapsed = (now - startTime) / 1000;
-            const chunkElapsed = (now - lastLogTime) / 1000;
-            const totalThroughput = bytesReceived / elapsed / 1024; // KB/s
-            const chunkThroughput = chunk.length / chunkElapsed / 1024; // KB/s
+          if (elapsed >= logInterval) {
+            const throughputKBps = (bytesReceived / elapsed) * 1000 / 1024;
+            peakThroughput = Math.max(peakThroughput, throughputKBps);
+            if (throughputKBps > 0) minThroughput = Math.min(minThroughput, throughputKBps);
 
-            peakThroughput = Math.max(peakThroughput, chunkThroughput);
-            if (chunkThroughput > 0) minThroughput = Math.min(minThroughput, chunkThroughput);
-
-            console.log(`[${requestId}] Stream progress: ${bytesReceived}/${end - start + 1} bytes (${Math.round(bytesReceived/(end-start+1)*100)}%)`);
-            console.log(`[${requestId}] Throughput: current=${chunkThroughput.toFixed(2)} KB/s, avg=${totalThroughput.toFixed(2)} KB/s, peak=${peakThroughput.toFixed(2)} KB/s`);
-
+            console.log(`[${requestId}] Streaming progress: ${bytesReceived} bytes, ${throughputKBps.toFixed(2)} KB/s`);
+            bytesReceived = 0;
             lastLogTime = now;
           }
         });
 
         stream.on('end', () => {
           const totalTime = (Date.now() - startTime) / 1000;
-          const avgThroughput = bytesReceived / totalTime / 1024;
-          console.log(`[${requestId}] Stream completed in ${totalTime.toFixed(2)}s`);
-          console.log(`[${requestId}] Statistics: size=${bytesReceived} bytes, avg=${avgThroughput.toFixed(2)} KB/s, peak=${peakThroughput.toFixed(2)} KB/s, min=${minThroughput === Number.MAX_VALUE ? 'N/A' : minThroughput.toFixed(2)} KB/s`);
+          console.log(`[${requestId}] Stream complete: ${totalTime.toFixed(2)}s, Peak: ${peakThroughput.toFixed(2)} KB/s, Min: ${
+              minThroughput === Number.MAX_VALUE ? 'N/A' : minThroughput.toFixed(2)
+          } KB/s`);
         });
       }
 
-      // Apply compression if needed, with optimized settings
+      // Apply compression for non-video content if supported
       let responseStream = stream;
+      const useCompression = supportsCompression(request) &&
+          !isVideo &&
+          (end - start + 1) > 1024;
+
       if (useCompression) {
-        const compressionLevel = (end - start + 1) > 1024 * 1024 ? 4 : 6; // Lower compression level for larger files
+        const compressionLevel = (end - start + 1) > 1024 * 1024 ? 4 : 6;
         const gzip = zlib.createGzip({ level: compressionLevel });
         responseStream = stream.pipe(gzip);
+
+        headers['Content-Encoding'] = 'gzip';
+        headers['Vary'] = 'Accept-Encoding';
+        delete headers['Content-Length'];
       }
 
       // Convert Node.js stream to Web stream and return response
@@ -543,7 +815,6 @@ export async function GET(request: NextRequest) {
     });
   }
 }
-
 // Helper functions remain the same
 function isDetailedStat(
     stat: FileStat | ResponseDataDetailed<FileStat>
