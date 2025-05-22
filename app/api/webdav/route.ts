@@ -10,12 +10,18 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import os from 'os';
+import sharp from 'sharp';
 
-// Add cache directory for transcoded segments
+// Add cache directory for transcoded segments and processed images
 const TRANSCODE_CACHE_DIR = path.join(os.tmpdir(), 'video-transcode-cache');
-// Ensure cache directory exists
+const IMAGE_CACHE_DIR = path.join(os.tmpdir(), 'image-process-cache');
+
+// Ensure cache directories exist
 if (!fs.existsSync(TRANSCODE_CACHE_DIR)) {
   fs.mkdirSync(TRANSCODE_CACHE_DIR, { recursive: true });
+}
+if (!fs.existsSync(IMAGE_CACHE_DIR)) {
+  fs.mkdirSync(IMAGE_CACHE_DIR, { recursive: true });
 }
 
 // Enhanced headers optimized for video streaming
@@ -57,6 +63,22 @@ const VIDEO_QUALITY_PRESETS = {
     preset: 'fast'
   },
   original: null
+};
+
+// Image optimization settings
+const IMAGE_PREVIEW_SETTINGS = {
+  maxWidth: 1920,
+  maxHeight: 1080,
+  jpegQuality: 85,
+  webpQuality: 80,
+  avifQuality: 75,
+  gifMaxSize: 5 * 1024 * 1024 // 5MB
+};
+
+// Audio streaming settings
+const AUDIO_SETTINGS = {
+  chunkSize: 256 * 1024, // 256KB chunks for audio
+  supportedFormats: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac']
 };
 
 // Check if ffmpeg is available (for video transcoding)
@@ -111,6 +133,91 @@ function getTranscodeCacheKey(
       .update(`${filePath}-${quality}-${start}-${end}`)
       .digest('hex');
   return path.join(TRANSCODE_CACHE_DIR, hash);
+}
+
+// Generate cache key for processed images
+function getImageCacheKey(
+    filePath: string,
+    width: number,
+    height: number,
+    format: string
+): string {
+  const hash = crypto.createHash('md5')
+      .update(`${filePath}-${width}-${height}-${format}`)
+      .digest('hex');
+  return path.join(IMAGE_CACHE_DIR, hash);
+}
+
+// Process image with optimization and resizing
+async function optimizeImage(
+    inputStream: Readable,
+    format: string,
+    maxWidth: number,
+    maxHeight: number,
+    quality: number
+): Promise<{ stream: Readable, format: string, contentType: string }> {
+  return new Promise((resolve, reject) => {
+    // Collect input stream into a buffer
+    const chunks: Buffer[] = [];
+    inputStream.on('data', chunk => chunks.push(Buffer.from(chunk)));
+    inputStream.on('error', reject);
+    inputStream.on('end', async () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        let outputFormat = format;
+        let outputContentType = '';
+
+        let sharpInstance = sharp(buffer);
+        const metadata = await sharpInstance.metadata();
+
+        // Resize only if the image is larger than limits
+        if ((metadata.width && metadata.width > maxWidth) ||
+            (metadata.height && metadata.height > maxHeight)) {
+          sharpInstance = sharpInstance.resize({
+            width: maxWidth,
+            height: maxHeight,
+            fit: 'inside',
+            withoutEnlargement: true
+          });
+        }
+
+        // Process based on format
+        if (format === 'jpeg' || format === 'jpg') {
+          sharpInstance = sharpInstance.jpeg({ quality });
+          outputContentType = 'image/jpeg';
+        } else if (format === 'webp') {
+          sharpInstance = sharpInstance.webp({ quality });
+          outputContentType = 'image/webp';
+        } else if (format === 'avif') {
+          sharpInstance = sharpInstance.avif({ quality });
+          outputContentType = 'image/avif';
+        } else if (format === 'png') {
+          sharpInstance = sharpInstance.png({ compressionLevel: 9 });
+          outputContentType = 'image/png';
+        } else if (format === 'gif') {
+          // Just pass through GIFs for now
+          outputContentType = 'image/gif';
+        } else {
+          // Default to JPEG for unsupported formats
+          sharpInstance = sharpInstance.jpeg({ quality });
+          outputFormat = 'jpeg';
+          outputContentType = 'image/jpeg';
+        }
+
+        // Convert to buffer and stream
+        const outputBuffer = await sharpInstance.toBuffer();
+        const outputStream = Readable.from(outputBuffer);
+
+        resolve({
+          stream: outputStream,
+          format: outputFormat,
+          contentType: outputContentType
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
 }
 
 // Transcode video segment with ffmpeg
@@ -255,6 +362,119 @@ async function prepareVideoCompression(
   }
 }
 
+// Function to process and optimize images
+async function prepareImageOptimization(
+    client: any,
+    path: string,
+    format: string,
+    fileSize: number,
+    bandwidth: 'low' | 'medium' | 'high',
+    debug: boolean,
+    requestId: string
+): Promise<{ stream: Readable, contentType: string } | null> {
+  // Don't optimize small images or SVGs
+  if (fileSize < 50 * 1024 || format === 'svg') {
+    if (debug) console.log(`[${requestId}] Image optimization skipped: format=${format}, size=${fileSize}`);
+    return null;
+  }
+
+  // Determine optimal dimensions based on bandwidth
+  let maxWidth = IMAGE_PREVIEW_SETTINGS.maxWidth;
+  let maxHeight = IMAGE_PREVIEW_SETTINGS.maxHeight;
+  let quality = IMAGE_PREVIEW_SETTINGS.jpegQuality;
+
+  if (bandwidth === 'low') {
+    maxWidth = 1280;
+    maxHeight = 720;
+    quality = 75;
+  } else if (bandwidth === 'medium') {
+    maxWidth = 1600;
+    maxHeight = 900;
+    quality = 80;
+  }
+
+  if (debug) console.log(`[${requestId}] Preparing image optimization: format=${format}, maxWidth=${maxWidth}, maxHeight=${maxHeight}`);
+
+  // Check cache first
+  const cacheKey = getImageCacheKey(path, maxWidth, maxHeight, format);
+  if (fs.existsSync(cacheKey)) {
+    if (debug) console.log(`[${requestId}] Using cached optimized image: ${cacheKey}`);
+    const stream = fs.createReadStream(cacheKey);
+    const contentType = format === 'jpg' ? 'image/jpeg' : `image/${format}`;
+    return { stream, contentType };
+  }
+
+  try {
+    // Create input stream for the image file
+    const inputStream = await createResilientStream(client, path, {});
+
+    // Process image
+    if (debug) console.log(`[${requestId}] Starting image optimization`);
+    const { stream, contentType } = await optimizeImage(
+        inputStream,
+        format,
+        maxWidth,
+        maxHeight,
+        quality
+    );
+
+    // Cache the result (if possible)
+    try {
+      const chunks: Buffer[] = [];
+      const passThrough = new (require('stream').PassThrough)();
+
+      stream.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+        passThrough.write(chunk);
+      });
+
+      stream.on('end', () => {
+        passThrough.end();
+        fs.writeFile(cacheKey, Buffer.concat(chunks), (err) => {
+          if (err && debug) console.log(`[${requestId}] Failed to cache image: ${err.message}`);
+        });
+      });
+
+      return { stream: passThrough, contentType };
+    } catch (err: any) {
+      // If caching fails, still return the optimized stream
+      if (debug) console.log(`[${requestId}] Image cache setup failed: ${err.message}`);
+      return { stream, contentType };
+    }
+  } catch (err) {
+    console.error(`[${requestId}] Image optimization failed:`, err);
+    return null;
+  }
+}
+
+// Process audio file for optimized streaming
+async function prepareAudioStreaming(
+    client: any,
+    path: string,
+    format: string,
+    fileSize: number,
+    range: { start: number, end: number },
+    debug: boolean,
+    requestId: string
+): Promise<Readable> {
+  // For now, just create a stream with the appropriate range
+  // In the future, this could be enhanced with audio transcoding for optimal streaming
+  const options: any = {};
+
+  // For audio, we use specific chunk sizes based on format
+  const audioChunkSize = AUDIO_SETTINGS.chunkSize;
+  if (range.start !== 0 || range.end !== fileSize - 1) {
+    options.range = {
+      start: range.start,
+      end: Math.min(range.start + audioChunkSize - 1, range.end)
+    };
+  }
+
+  if (debug) console.log(`[${requestId}] Preparing audio stream: format=${format}, range=${range.start}-${range.end}`);
+
+  return createResilientStream(client, path, options);
+}
+
 // Bandwidth estimation based on client hints
 function estimateBandwidth(request: NextRequest): 'low' | 'medium' | 'high' {
   const downlink = request.headers.get('downlink');
@@ -277,14 +497,26 @@ function estimateBandwidth(request: NextRequest): 'low' | 'medium' | 'high' {
 // Improved chunk size calculation with bandwidth consideration
 function getOptimalChunkSize(
     fileSize: number,
-    isVideo: boolean,
+    fileType: 'video' | 'image' | 'audio' | 'other',
     isHls: boolean = false,
     bandwidth: 'low' | 'medium' | 'high' = 'medium',
     format?: string
 ): number {
-  if (!isVideo) return Math.min(fileSize, 2 * 1024 * 1024); // Cap at 2MB for non-video
+  // For audio files, use the audio-specific settings
+  if (fileType === 'audio') {
+    return AUDIO_SETTINGS.chunkSize;
+  }
 
-  // Format-specific optimizations
+  // For images, use smaller chunks
+  if (fileType === 'image') {
+    return Math.min(fileSize, 1024 * 1024); // Cap at 1MB for images
+  }
+
+  if (fileType !== 'video') {
+    return Math.min(fileSize, 2 * 1024 * 1024); // Cap at 2MB for non-video
+  }
+
+  // Format-specific optimizations for video
   if (isHls) return 128 * 1024; // HLS segments
   if (format === 'mp4' && bandwidth === 'high') return 2 * 1024 * 1024; // MP4 streaming
 
@@ -389,6 +621,21 @@ async function createResilientStream(
   throw lastError || new Error('Failed to create stream after multiple attempts');
 }
 
+// Enhanced file type detection
+function detectFileType(fileName: string, mimeType: string): 'video' | 'image' | 'audio' | 'other' {
+  if (mimeType.startsWith('video/') || mimeType === 'application/mp4') return 'video';
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.startsWith('audio/')) return 'audio';
+
+  // Check extensions for cases where mime type might be incorrect
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (['mp4', 'webm', 'mkv', 'avi', 'mov'].includes(ext || '')) return 'video';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(ext || '')) return 'image';
+  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext || '')) return 'audio';
+
+  return 'other';
+}
+
 // Format detection helper
 function detectVideoFormat(fileName: string, mimeType: string): string | null {
   const ext = fileName.split('.').pop()?.toLowerCase();
@@ -400,6 +647,36 @@ function detectVideoFormat(fileName: string, mimeType: string): string | null {
   if (ext === 'm3u8' || ext === 'ts') return 'hls';
 
   return null;
+}
+
+// Image format detection helper
+function detectImageFormat(fileName: string, mimeType: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+  if (ext === 'jpg' || ext === 'jpeg' || mimeType === 'image/jpeg') return 'jpeg';
+  if (ext === 'png' || mimeType === 'image/png') return 'png';
+  if (ext === 'webp' || mimeType === 'image/webp') return 'webp';
+  if (ext === 'gif' || mimeType === 'image/gif') return 'gif';
+  if (ext === 'svg' || mimeType === 'image/svg+xml') return 'svg';
+  if (ext === 'avif' || mimeType === 'image/avif') return 'avif';
+
+  // Default to jpeg for unknown formats
+  return 'jpeg';
+}
+
+// Audio format detection helper
+function detectAudioFormat(fileName: string, mimeType: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+  if (ext === 'mp3' || mimeType === 'audio/mpeg') return 'mp3';
+  if (ext === 'wav' || mimeType === 'audio/wav') return 'wav';
+  if (ext === 'ogg' || mimeType === 'audio/ogg') return 'ogg';
+  if (ext === 'flac' || mimeType === 'audio/flac') return 'flac';
+  if (ext === 'm4a' || mimeType === 'audio/mp4') return 'm4a';
+  if (ext === 'aac' || mimeType === 'audio/aac') return 'aac';
+
+  // Default to mp3 for unknown formats
+  return 'mp3';
 }
 
 // Adaptive quality selection based on client capabilities and bandwidth
@@ -479,6 +756,8 @@ export async function GET(request: NextRequest) {
   const quality = searchParams.get('quality') || 'auto';
   // Add compress parameter, default to true
   const compress = searchParams.get('compress') !== 'false';
+  // Option for image optimization
+  const optimizeImages = searchParams.get('optimizeImages') !== 'false';
 
   if (!rawPath || !rawShare) {
     return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
@@ -499,8 +778,13 @@ export async function GET(request: NextRequest) {
 
   const fileName = cleanedPath.split('/').pop() || 'file';
   const mimeType = lookup(fileName) || 'application/octet-stream';
-  const isVideo = mimeType.startsWith('video/') || mimeType === 'application/mp4';
+  const fileType = detectFileType(fileName, mimeType);
+  const isVideo = fileType === 'video';
+  const isImage = fileType === 'image';
+  const isAudio = fileType === 'audio';
   const videoFormat = isVideo ? detectVideoFormat(fileName, mimeType) : null;
+  const imageFormat = isImage ? detectImageFormat(fileName, mimeType) : null;
+  const audioFormat = isAudio ? detectAudioFormat(fileName, mimeType) : null;
   const isHls = videoFormat === 'hls';
 
   try {
@@ -519,6 +803,12 @@ export async function GET(request: NextRequest) {
     if (isVideo) {
       agentOptions.keepAliveMsecs = 5000;
       agentOptions.maxFreeSockets = 2;
+    } else if (isImage) {
+      agentOptions.keepAliveMsecs = 500;
+      agentOptions.maxFreeSockets = 8;
+    } else if (isAudio) {
+      agentOptions.keepAliveMsecs = 1000;
+      agentOptions.maxFreeSockets = 4;
     } else {
       agentOptions.keepAliveMsecs = 1000;
       agentOptions.maxFreeSockets = 5;
@@ -583,7 +873,10 @@ export async function GET(request: NextRequest) {
         fileName,
         fileSize,
         mimeType,
+        fileType,
         videoFormat,
+        imageFormat,
+        audioFormat,
         workingPath,
         clientBandwidth,
         compressRequested: compress
@@ -594,7 +887,7 @@ export async function GET(request: NextRequest) {
     const qualityConfig = getQualityParams(quality, clientBandwidth, videoFormat);
 
     // Determine optimal chunk size with improved parameters
-    const chunkSize = getOptimalChunkSize(fileSize, isVideo, isHls, clientBandwidth, videoFormat || undefined);
+    const chunkSize = getOptimalChunkSize(fileSize, fileType, isHls, clientBandwidth, videoFormat || undefined);
 
     // Parse range header with enhanced validation
     const rangeHeader = request.headers.get('range');
@@ -611,8 +904,16 @@ export async function GET(request: NextRequest) {
       'Connection': 'keep-alive'
     };
 
-    // Add optimized caching and video streaming headers
-    if (isVideo) {
+    // Add type-specific headers
+    if (isImage) {
+      headers['Cache-Control'] = 'public, max-age=86400'; // Cache images for a day
+      if (mimeType === 'image/svg+xml') {
+        // Add security header for SVG files
+        headers['Content-Security-Policy'] = "script-src 'none'";
+      }
+    } else if (isAudio) {
+      headers['Cache-Control'] = 'public, max-age=3600'; // Cache audio for an hour
+    } else if (isVideo) {
       // Format-specific caching
       if (isHls) {
         headers['Cache-Control'] = 'public, max-age=86400, immutable';
@@ -666,8 +967,8 @@ export async function GET(request: NextRequest) {
         status = 206; // Partial Content
         headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
       }
-    } else if (isVideo) {
-      // For video initial requests without range, optimize initial chunk
+    } else if (isVideo || isAudio) {
+      // For video/audio initial requests without range, optimize initial chunk
       const initialChunkSize = isHls ? chunkSize : Math.min(chunkSize / 2, 256 * 1024);
       end = Math.min(initialChunkSize - 1, fileSize - 1);
       status = 206;
@@ -680,8 +981,13 @@ export async function GET(request: NextRequest) {
     try {
       if (debug) console.log(`[${requestId}] Creating stream for range: ${start}-${end} (${end-start+1} bytes)`);
 
-      // Check if video compression should be applied
+      let responseStream: Readable | null = null;
+      let finalStatus = status;
+      let finalHeaders = { ...headers };
+
+      // Media type-specific handling
       if (isVideo && compress) {
+        // Video compression
         const compressionResult = await prepareVideoCompression(
             client,
             workingPath,
@@ -696,51 +1002,104 @@ export async function GET(request: NextRequest) {
 
         if (compressionResult) {
           const { stream, compressedSize, mimeType: newMimeType } = compressionResult;
+          responseStream = stream;
 
           // Update headers for compressed video
-          headers['Content-Type'] = newMimeType;
+          finalHeaders['Content-Type'] = newMimeType;
           if (compressedSize) {
-            // For compressed videos, we often return the full file instead of a range
-            // because transcoding operates on the entire video
-            headers['Content-Length'] = String(compressedSize);
+            finalHeaders['Content-Length'] = String(compressedSize);
 
             // If this was a range request but we're returning the full file, update headers
             if (status === 206) {
-              // Either keep 206 status and update range, or switch to 200 if returning full file
               if (start === 0 && compressedSize <= end - start + 1) {
-                // We're returning full file, switch to 200 OK
-                status = 200;
-                delete headers['Content-Range'];
+                finalStatus = 200;
+                delete finalHeaders['Content-Range'];
               } else {
-                // Update content range for compressed size
-                headers['Content-Range'] = `bytes 0-${compressedSize-1}/${compressedSize}`;
+                finalHeaders['Content-Range'] = `bytes 0-${compressedSize-1}/${compressedSize}`;
               }
             }
           }
 
           // Add compression info headers
-          headers['X-Video-Compressed'] = 'true';
-          headers['X-Video-Quality'] = quality;
-          headers['X-Original-Size'] = String(fileSize);
+          finalHeaders['X-Video-Compressed'] = 'true';
+          finalHeaders['X-Video-Quality'] = quality;
+          finalHeaders['X-Original-Size'] = String(fileSize);
 
           if (debug) console.log(`[${requestId}] Serving compressed video: quality=${quality}, size=${compressedSize}`);
+        }
+      } else if (isImage && optimizeImages) {
+        // Image optimization
+        if (imageFormat && imageFormat !== 'svg') { // Skip SVG optimization
+          const imageResult = await prepareImageOptimization(
+              client,
+              workingPath,
+              imageFormat,
+              fileSize,
+              clientBandwidth,
+              debug,
+              requestId
+          );
 
-          // Return compressed video stream
-          return new Response(nodeStreamToWebReadable(stream), {
-            status,
-            headers
-          });
-        } else if (debug) {
-          console.log(`[${requestId}] Video compression not applied, falling back to standard streaming`);
+          if (imageResult) {
+            responseStream = imageResult.stream;
+            finalHeaders['Content-Type'] = imageResult.contentType;
+
+            // Dynamic content length will be handled by the compression step
+            delete finalHeaders['Content-Length'];
+
+            if (status === 206) {
+              // Image optimization processes the whole image, so we change to 200 OK
+              finalStatus = 200;
+              delete finalHeaders['Content-Range'];
+            }
+
+            // Add optimization info
+            finalHeaders['X-Image-Optimized'] = 'true';
+
+            if (debug) console.log(`[${requestId}] Serving optimized image: format=${imageFormat}`);
+          }
+        }
+      } else if (isAudio) {
+        // Audio streaming optimization
+        if (audioFormat) {
+          responseStream = await prepareAudioStreaming(
+              client,
+              workingPath,
+              audioFormat,
+              fileSize,
+              { start, end },
+              debug,
+              requestId
+          );
+
+          // No need to update headers, as we're still serving the original audio
+          if (debug) console.log(`[${requestId}] Serving optimized audio stream: format=${audioFormat}`);
         }
       }
 
-      // Standard (non-compressed) stream handling
-      const stream = await createResilientStream(client, workingPath, {
-        range: { start, end }
-      }, 3);
+      // If no specialized processing was done, create a standard stream
+      if (!responseStream) {
+        responseStream = await createResilientStream(client, workingPath, {
+          range: { start, end }
+        }, 3);
+      }
 
-      // Add adaptive monitoring for larger files
+      // Apply compression for non-media content if supported
+      const useCompression = supportsCompression(request) &&
+          !isVideo && !isImage && !isAudio &&
+          (end - start + 1) > 1024;
+
+      if (useCompression) {
+        const compressionLevel = (end - start + 1) > 1024 * 1024 ? 4 : 6;
+        const gzip = zlib.createGzip({ level: compressionLevel });
+        responseStream = responseStream.pipe(gzip);
+
+        finalHeaders['Content-Encoding'] = 'gzip';
+        finalHeaders['Vary'] = 'Accept-Encoding';
+        delete finalHeaders['Content-Length'];
+      }
+
+      // Add detailed monitoring for debug mode
       if (debug) {
         const logInterval = Math.max(500, Math.min(5000, fileSize / 10000));
         let bytesReceived = 0;
@@ -748,7 +1107,7 @@ export async function GET(request: NextRequest) {
         let peakThroughput = 0;
         let minThroughput = Number.MAX_VALUE;
 
-        stream.on('data', chunk => {
+        responseStream.on('data', chunk => {
           bytesReceived += chunk.length;
           const now = Date.now();
           const elapsed = now - lastLogTime;
@@ -764,7 +1123,7 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        stream.on('end', () => {
+        responseStream.on('end', () => {
           const totalTime = (Date.now() - startTime) / 1000;
           console.log(`[${requestId}] Stream complete: ${totalTime.toFixed(2)}s, Peak: ${peakThroughput.toFixed(2)} KB/s, Min: ${
               minThroughput === Number.MAX_VALUE ? 'N/A' : minThroughput.toFixed(2)
@@ -772,26 +1131,10 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Apply compression for non-video content if supported
-      let responseStream = stream;
-      const useCompression = supportsCompression(request) &&
-          !isVideo &&
-          (end - start + 1) > 1024;
-
-      if (useCompression) {
-        const compressionLevel = (end - start + 1) > 1024 * 1024 ? 4 : 6;
-        const gzip = zlib.createGzip({ level: compressionLevel });
-        responseStream = stream.pipe(gzip);
-
-        headers['Content-Encoding'] = 'gzip';
-        headers['Vary'] = 'Accept-Encoding';
-        delete headers['Content-Length'];
-      }
-
       // Convert Node.js stream to Web stream and return response
       return new Response(nodeStreamToWebReadable(responseStream), {
-        status,
-        headers
+        status: finalStatus,
+        headers: finalHeaders
       });
 
     } catch (streamErr: any) {
@@ -815,7 +1158,8 @@ export async function GET(request: NextRequest) {
     });
   }
 }
-// Helper functions remain the same
+
+// Helper functions
 function isDetailedStat(
     stat: FileStat | ResponseDataDetailed<FileStat>
 ): stat is ResponseDataDetailed<FileStat> {

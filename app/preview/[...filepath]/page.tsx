@@ -1,8 +1,11 @@
+// app/preview/[...filepath]/page.tsx
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import styles from '@/app/fileserver.module.scss';
-import VideoPreview from '@/app/components/VideoPreview'; // Ensure this path is correct
+import VideoPreview from '@/app/components/VideoPreview';
+import ImagePreview from '@/app/components/ImagePreview';
+import AudioPreview from '@/app/components/AudioPreview';
 import { lookup } from 'mime-types';
 
 const FilePreview = () => {
@@ -12,6 +15,7 @@ const FilePreview = () => {
   const [mimeType, setMimeType] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
+  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'other'>('other');
 
   useEffect(() => {
     if (!params.filepath) return;
@@ -31,13 +35,24 @@ const FilePreview = () => {
       const detectedMimeType = lookup(fileNameOnly) || 'application/octet-stream';
       setMimeType(detectedMimeType);
 
+      // Determine file type
+      if (detectedMimeType.startsWith('video/') || detectedMimeType === 'application/mp4') {
+        setFileType('video');
+      } else if (detectedMimeType.startsWith('image/')) {
+        setFileType('image');
+      } else if (detectedMimeType.startsWith('audio/')) {
+        setFileType('audio');
+      } else {
+        setFileType('other');
+      }
+
       // Construct WebDAV API URL with proper encoding - use the cleaned path
       const apiUrl = `/api/webdav?path=${encodeURIComponent(cleanPath)}&sharePath=${encodeURIComponent('/etran')}&isFile=true&debug=true`;
 
       console.log('WebDAV API URL:', apiUrl);
       console.log('File type:', detectedMimeType);
 
-      // Set the file URL for the video player
+      // Set the file URL for the player
       setFileUrl(apiUrl);
       setIsLoading(false);
 
@@ -58,16 +73,36 @@ const FilePreview = () => {
 
   return (
       <div className={styles.previewContainer}>
-        {mimeType.startsWith('video/') || mimeType === 'application/mp4' ? (
+        {fileType === 'video' && (
             <VideoPreview
                 src={fileUrl}
                 mimeType={mimeType}
                 fileName={fileName}
             />
-        ) : (
+        )}
+
+        {fileType === 'image' && (
+            <ImagePreview
+                src={fileUrl}
+                mimeType={mimeType}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'audio' && (
+            <AudioPreview
+                src={fileUrl}
+                mimeType={mimeType}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'other' && (
             <div className={styles.unsupportedFile}>
-              This file type is not supported for preview.
-              <a href={fileUrl + '&download=true'} download>Download instead</a>
+              This file type ({mimeType}) is not supported for preview.
+              <a href={fileUrl + '&download=true'} download className={styles.downloadLink}>
+                Download instead
+              </a>
             </div>
         )}
       </div>
