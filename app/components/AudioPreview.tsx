@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from '@/app/fileserver.module.scss';
 
 interface AudioPreviewProps {
@@ -25,26 +25,25 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Handle play/pause
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(err => {
+          setError('Failed to play audio: ' + err.message);
+        });
       }
       setIsPlaying(!isPlaying);
     }
   };
 
-  // Handle time update
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
     }
   };
 
-  // Handle seeking
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekTime = parseFloat(e.target.value);
     if (audioRef.current) {
@@ -53,7 +52,6 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     }
   };
 
-  // Handle volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
@@ -62,7 +60,6 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     }
   };
 
-  // Handle audio loaded metadata
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
@@ -70,81 +67,104 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     }
   };
 
-  // Handle audio error
   const handleError = () => {
     setLoading(false);
     setError('Failed to load audio file');
   };
 
+  const handleEnded = () => {
+    setIsPlaying(false);
+    if (audioRef.current) {
+      setCurrentTime(0);
+      audioRef.current.currentTime = 0;
+    }
+  };
+
   return (
-    <div className={styles.audioPreview}>
-      {loading && <div className={styles.loading}>Loading audio...</div>}
-      {error && <div className={styles.error}>{error}</div>}
-
-      <audio
-        ref={audioRef}
-        src={src}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onError={handleError}
-        onEnded={() => setIsPlaying(false)}
-        style={{ display: 'none' }}
-      />
-
-      {!loading && !error && (
-        <>
-          <div className={styles.audioInfo}>
-            <h3>{fileName}</h3>
-            <p>{mimeType}</p>
-          </div>
-
-          <div className={styles.audioControls}>
-            <button
-              className={styles.playButton}
-              onClick={togglePlay}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? '⏸️' : '▶️'}
-            </button>
-
-            <div className={styles.timeDisplay}>
-              {formatTime(currentTime)} / {formatTime(duration)}
+      <div className={`${styles.themeVariables} ${styles.audioPreview}`}>
+        {loading && (
+            <div className={styles.loading}>
+              <div className={styles.spinner}></div>
+              <p>Loading audio...</p>
             </div>
-          </div>
+        )}
 
-          <div className={styles.seekContainer}>
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className={styles.seekBar}
-            />
-          </div>
+        {error && (
+            <div className={styles.error}>
+              <p>{error}</p>
+            </div>
+        )}
 
-          <div className={styles.volumeContainer}>
-            <span>🔈</span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={volume}
-              onChange={handleVolumeChange}
-              className={styles.volumeSlider}
-            />
-            <span>🔊</span>
-          </div>
+        <audio
+            ref={audioRef}
+            src={src}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onError={handleError}
+            onEnded={handleEnded}
+            style={{ display: 'none' }}
+        />
 
-          <div className={styles.downloadContainer}>
-            <a href={`${src}&download=true`} download={fileName} className={styles.downloadButton}>
-              Download Audio
-            </a>
-          </div>
-        </>
-      )}
-    </div>
+        {!loading && !error && (
+            <>
+              <div className={styles.audioInfo}>
+                <h3>{fileName}</h3>
+                <p>{mimeType}</p>
+              </div>
+
+              <div className={styles.seekContainer}>
+                <input
+                    type="range"
+                    min={0}
+                    max={duration || 0}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className={styles.seekBar}
+                    aria-label="Seek timeline"
+                />
+              </div>
+
+              <div className={styles.audioControls}>
+                <button
+                    className={styles.playButton}
+                    onClick={togglePlay}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? '⏸️' : '▶️'}
+                </button>
+
+                <div className={styles.timeDisplay}>
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </div>
+              </div>
+
+              <div className={styles.volumeContainer}>
+                <span>🔈</span>
+                <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={volume}
+                    onChange={handleVolumeChange}
+                    className={styles.volumeSlider}
+                    aria-label="Volume control"
+                />
+                <span>🔊</span>
+              </div>
+
+              <div className={styles.downloadContainer}>
+                <a
+                    href={`${src}&download=true`}
+                    download={fileName}
+                    className={styles.downloadButton}
+                >
+                  ⬇️ Download Audio
+                </a>
+              </div>
+            </>
+        )}
+      </div>
   );
 };
 
