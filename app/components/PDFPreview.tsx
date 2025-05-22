@@ -4,6 +4,7 @@ import styles from '@/app/fileserver.module.scss';
 
 // PDF.js types
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
+import {render} from "sass";
 
 interface PDFPreviewProps {
   src: string;
@@ -21,81 +22,102 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setError(null);
 
-    const loadPDF = async () => {
+    // Dynamically import PDF.js only on client-side
+    import('pdfjs-dist').then(async pdfjs => {
       try {
-        setLoading(true);
+        // Use .js extension instead of .mjs
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.mjs`;
 
-        // Dynamically import PDF.js to avoid server-side loading issues
-        const pdfjs = await import('pdfjs-dist');
+        // Load the PDF
+        const response = await fetch(src);
+        if (!response.ok) {
+          throw new Error(`Failed to access PDF (status: ${response.status})`);
+        }
 
-        // Set worker path - use local worker from node_modules
-        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        const pdfData = await response.arrayBuffer();
+        const loadingTask = pdfjs.getDocument({
+          data: pdfData,
+          cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+          cMapPacked: true,
+        });
 
-        // Fetch the PDF through our API
-        const loadingTask = pdfjs.getDocument(src);
-        const pdf = await loadingTask.promise;
+        const pdfDoc = await loadingTask.promise;
 
         if (!isMounted) return;
-
-        pdfDocRef.current = pdf;
-        setNumPages(pdf.numPages);
+        pdfDocRef.current = pdfDoc;
+        setNumPages(pdfDoc.numPages);
         setLoading(false);
 
-        // Render the first page
-        renderPage(1);
-      } catch (err: any) {
-        console.error('Error loading PDF:', err);
+        // Force a state update that will trigger a re-render to ensure canvasRef is available
+        setCurrentPage(1);
+      } catch (err) {
+        console.error('PDF loading error:', err);
         if (isMounted) {
+          setError(`Failed to load PDF: ${err.message || 'Invalid PDF structure'}`);
           setLoading(false);
-          setError(err.message || 'Failed to load PDF document');
         }
       }
-    };
-
-    loadPDF();
+    }).catch(err => {
+      console.error('PDF.js import error:', err);
+      if (isMounted) {
+        setError(`Failed to load PDF library: ${err.message}`);
+        setLoading(false);
+      }
+    });
 
     return () => {
       isMounted = false;
-      // Clean up resources
       if (pdfDocRef.current) {
-        pdfDocRef.current.destroy();
+        pdfDocRef.current.destroy().catch(console.error);
       }
     };
   }, [src]);
+
+// Add new useEffect to render page when currentPage changes or when loading completes
+  useEffect(() => {
+    if (!loading && pdfDocRef.current && canvasRef.current) {
+      renderPage(currentPage).catch(err => {
+        console.error('Error rendering page:', err);
+        setError('Failed to render page: ' + err.message);
+      });
+    }
+  }, [currentPage, loading]);
 
   const renderPage = async (pageNumber: number) => {
     if (!pdfDocRef.current || !canvasRef.current) return;
 
     try {
+      // Get page
       const page = await pdfDocRef.current.getPage(pageNumber);
 
-      // Get the current container width to adjust the scale
-      const container = containerRef.current;
-      const containerWidth = container?.clientWidth || 800;
-
-      // Calculate scale to fit container width
-      const viewport = page.getViewport({ scale: 1 });
-      const scale = containerWidth / viewport.width;
-      const scaledViewport = page.getViewport({ scale });
-
-      // Set canvas dimensions
+      // Get canvas context
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      canvas.height = scaledViewport.height;
-      canvas.width = scaledViewport.width;
+      if (!context) return;
+
+      // Calculate optimal scale
+      const viewport = page.getViewport({ scale: 1.5 });
+
+      // Set canvas dimensions to match the viewport
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
 
       // Render PDF page
       const renderContext = {
-        canvasContext: context!,
-        viewport: scaledViewport
+        canvasContext: context,
+        viewport: viewport,
       };
 
       await page.render(renderContext).promise;
+
+      // Update current page only after rendering is complete
       setCurrentPage(pageNumber);
-    } catch (err: any) {
-      console.error('Error rendering PDF page:', err);
-      setError(`Failed to render page ${pageNumber}: ${err.message}`);
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      setError('Failed to render page.');
     }
   };
 
