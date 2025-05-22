@@ -97,13 +97,13 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition-normal) ease,
   color var(--transition-normal) ease;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 /* Typography */
@@ -309,4 +309,16 @@ button, .button {
   &:hover {
     background-color: var(--primary-hover);
   }
+}
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  // Add other light theme variables
+}
+
+[data-theme='dark'] {
+  --bg-color: #121212;
+  --text-color: #ffffff;
+  // Add other dark theme variables
 }

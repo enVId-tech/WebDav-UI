@@ -6,6 +6,7 @@ import { getDirectoryContents } from '@/lib/webdav-client';
 import styles from '../../fileserver.module.scss';
 import {lookup} from "mime-types";
 import MobileNav from "@/app/components/MobileNav";
+import ThemeToggle from "@/app/components/ThemeToggle";
 
 type FileItem = {
   filename: string;
@@ -666,7 +667,9 @@ export default function ShareFileBrowser() {
   );
 
   return (
-      <div className={styles.modernExplorerContainer}>
+      <div className={`${styles.modernExplorerContainer} ${styles.themeVariables}`}>
+        <ThemeToggle />
+
         {/* Left sidebar with folder hierarchy */}
         <div className={styles.modernSidebar}>
           <div className={styles.sidebarHeader}>
