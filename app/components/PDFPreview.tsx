@@ -53,7 +53,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
         // Force a state update that will trigger a re-render to ensure canvasRef is available
         setCurrentPage(1);
-      } catch (err) {
+      } catch (err: any) {
         console.error('PDF loading error:', err);
         if (isMounted) {
           setError(`Failed to load PDF: ${err.message || 'Invalid PDF structure'}`);
