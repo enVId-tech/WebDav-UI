@@ -6,6 +6,9 @@ import styles from '@/app/fileserver.module.scss';
 import VideoPreview from '@/app/components/VideoPreview';
 import ImagePreview from '@/app/components/ImagePreview';
 import AudioPreview from '@/app/components/AudioPreview';
+import TextPreview from '@/app/components/TextPreview';
+import PDFPreview from '@/app/components/PDFPreview';
+import DocPreview from '@/app/components/DocPreview';
 import { lookup } from 'mime-types';
 
 const FilePreview = () => {
@@ -15,7 +18,7 @@ const FilePreview = () => {
   const [mimeType, setMimeType] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'other'>('other');
+  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'document' | 'other'>('other');
 
   useEffect(() => {
     if (!params.filepath) return;
@@ -35,13 +38,23 @@ const FilePreview = () => {
       const detectedMimeType = lookup(fileNameOnly) || 'application/octet-stream';
       setMimeType(detectedMimeType);
 
-      // Determine file type
+      // Get file extension
+      const fileExt = fileNameOnly.split('.').pop()?.toLowerCase() || '';
+
+      // Determine file type with expanded types
       if (detectedMimeType.startsWith('video/') || detectedMimeType === 'application/mp4') {
         setFileType('video');
       } else if (detectedMimeType.startsWith('image/')) {
         setFileType('image');
       } else if (detectedMimeType.startsWith('audio/')) {
         setFileType('audio');
+      } else if (detectedMimeType.startsWith('text/') ||
+          ['json', 'xml', 'md', 'js', 'jsx', 'ts', 'tsx', 'css', 'yaml', 'yml'].includes(fileExt)) {
+        setFileType('text');
+      } else if (detectedMimeType === 'application/pdf' || fileExt === 'pdf') {
+        setFileType('pdf');
+      } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'].includes(fileExt)) {
+        setFileType('document');
       } else {
         setFileType('other');
       }
@@ -51,6 +64,7 @@ const FilePreview = () => {
 
       console.log('WebDAV API URL:', apiUrl);
       console.log('File type:', detectedMimeType);
+      console.log('Detected file type category:', fileType);
 
       // Set the file URL for the player
       setFileUrl(apiUrl);
@@ -97,11 +111,35 @@ const FilePreview = () => {
             />
         )}
 
+        {fileType === 'text' && (
+            <TextPreview
+                src={fileUrl}
+                mimeType={mimeType}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'pdf' && (
+            <PDFPreview
+                src={fileUrl}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'document' && (
+            <DocPreview
+                src={fileUrl}
+                mimeType={mimeType}
+                fileName={fileName}
+            />
+        )}
+
         {fileType === 'other' && (
             <div className={styles.unsupportedFile}>
-              This file type ({mimeType}) is not supported for preview.
+              <h2>This file type ({mimeType}) is not supported for preview.</h2>
+              <p>The file cannot be previewed directly in the browser.</p>
               <a href={fileUrl + '&download=true'} download className={styles.downloadLink}>
-                Download instead
+                Download File
               </a>
             </div>
         )}

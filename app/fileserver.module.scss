@@ -582,6 +582,210 @@
   }
 }
 
+/* Text Preview Styles */
+.textPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bg-color, #fff);
+  color: var(--text-color, #000);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.textPreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--header-bg, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.textPreviewContent {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+  height: calc(100% - 50px);
+}
+
+.themeToggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.themeToggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* PDF Preview Styles */
+.pdfPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color, #f5f5f5);
+}
+
+.pdfControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: var(--header-bg, #ffffff);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.pdfInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pageInfo {
+  color: var(--secondary-text, #666);
+  font-size: 14px;
+}
+
+.pdfButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.pdfButton {
+  padding: 6px 12px;
+  background-color: var(--button-bg, #f0f0f0);
+  border: 1px solid var(--button-border, #ddd);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.pdfButton:hover {
+  background-color: var(--button-hover, #e0e0e0);
+}
+
+.pdfButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pdfDocument {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: auto;
+  padding: 20px;
+  background-color: var(--pdf-bg, #e0e0e0);
+}
+
+/* Document Preview Styles */
+.docPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: var(--bg-color, #fff);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.docPreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--header-bg, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.viewerControls {
+  display: flex;
+  gap: 8px;
+}
+
+.viewerButton {
+  padding: 6px 12px;
+  background-color: var(--button-bg, #f0f0f0);
+  border: 1px solid var(--button-border, #ddd);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.viewerButton.active {
+  background-color: var(--button-active, #e0e0e0);
+  border-color: var(--button-active-border, #ccc);
+}
+
+.downloadButton {
+  padding: 6px 12px;
+  background-color: var(--download-button-bg, #4285f4);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.downloadButton:hover {
+  background-color: var(--download-button-hover, #3367d6);
+}
+
+.docPreviewFrame {
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 50px);
+  border: none;
+}
+
+/* Common styles */
+.fileName {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--primary-text, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  font-size: 16px;
+  color: var(--secondary-text, #666);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 20px;
+  color: var(--error-color, #d32f2f);
+  text-align: center;
+}
+
 // Animations
 @keyframes spin {
   0% { transform: rotate(0deg); }
