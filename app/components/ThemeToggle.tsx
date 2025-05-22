@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import styles from '../fileserver.module.scss';
+import styles from '@/app/styles/common.module.scss';
 
 const ThemeToggle = () => {
     const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');

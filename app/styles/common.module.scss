@@ -1,0 +1,131 @@
+// Theme variables and common elements
+.themeVariables {
+  // Light theme (default)
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e9ecef;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --border-color: #e0e0e0;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --accent-color: #007bff;
+  --accent-hover: #0069d9;
+  --button-text: white;
+  --error-color: #dc3545;
+  --video-bg: #000;
+  --file-header-bg: #e9ecef;
+  --title-gradient: linear-gradient(45deg, #007bff, #17a2b8);
+  --breadcrumb-bg: #f5f5f5;
+  --transition-theme: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+
+  // Dark theme
+  &.darkTheme {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #808080;
+    --border-color: #444444;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --accent-color: #0d6efd;
+    --accent-hover: #0b5ed7;
+    --error-color: #f44336;
+    --file-header-bg: #2d2d2d;
+    --title-gradient: linear-gradient(45deg, #0d6efd, #0dcaf0);
+    --breadcrumb-bg: #1e1e1e;
+  }
+}
+
+// Common loading and error states
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  text-align: center;
+  padding: 0 20px;
+  color: var(--error-color);
+}
+
+// Common animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+// Theme toggle button
+.themeToggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px var(--shadow-color);
+  transition: var(--transition-theme);
+  color: var(--text-primary);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--shadow-color);
+  }
+}
+
+// Preview container
+.previewContainer {
+  padding: 2rem;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-theme);
+}
+
+.unsupportedFile {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 800px;
+  margin: 2rem auto;
+  transition: var(--transition-theme);
+
+  .downloadLink {
+    color: var(--accent-color);
+    display: block;
+    margin-top: 1rem;
+    text-decoration: underline;
+    transition: var(--transition-theme);
+
+    &:hover {
+      color: var(--accent-hover);
+    }
+  }
+}

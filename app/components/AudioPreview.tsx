@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
-import styles from '@/app/fileserver.module.scss';
+import commonStyles from '@/app/styles/common.module.scss';
+import styles from '@/app/styles/audioPreview.module.scss';
+
 
 interface AudioPreviewProps {
   src: string;
@@ -81,7 +83,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
   };
 
   return (
-      <div className={`${styles.themeVariables} ${styles.audioPreview}`}>
+      <div className={styles.audioPreview}>
         {loading && (
             <div className={styles.loading}>
               <div className={styles.spinner}></div>

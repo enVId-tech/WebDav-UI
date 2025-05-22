@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import styles from '@/app/fileserver.module.scss';
+import commonStyles from '@/app/styles/common.module.scss';
+import styles from '@/app/styles/textPreview.module.scss';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 

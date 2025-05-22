@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
-import styles from '@/app/fileserver.module.scss';
+import commonStyles from '@/app/styles/common.module.scss';
+import styles from '@/app/styles/pdfPreview.module.scss';
 
 // PDF.js types
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';

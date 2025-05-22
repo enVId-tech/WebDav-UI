@@ -1,0 +1,83 @@
+@import './common.module.scss';
+
+.docPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 95%;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  box-shadow: 0 4px 10px var(--shadow-color);
+  transition: var(--transition-theme);
+}
+
+.docPreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.viewerControls {
+  display: flex;
+  gap: 8px;
+}
+
+.viewerButton {
+  padding: 6px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  &.active {
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border-color: var(--accent-color);
+  }
+}
+
+.downloadButton {
+  padding: 6px 12px;
+  background-color: var(--accent-color);
+  color: var(--button-text);
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+}
+
+.docPreviewFrame {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 150px);
+  min-height: 400px;
+  border: none;
+}
+
+.fileName {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}

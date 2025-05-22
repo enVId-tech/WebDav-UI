@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import styles from '@/app/fileserver.module.scss';
+import commonStyles from '@/app/styles/common.module.scss';
+import styles from '@/app/styles/imagePreview.module.scss';
 
 interface ImagePreviewProps {
   src: string;
@@ -18,14 +19,14 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
   // Handle body overflow when in fullscreen
   useEffect(() => {
     if (fullScreen) {
-      document.body.classList.add(styles.fullscreenActive);
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.classList.remove(styles.fullscreenActive);
+      document.body.style.overflow = '';
       // Reset zoom when exiting fullscreen
       setZoom(1);
     }
     return () => {
-      document.body.classList.remove(styles.fullscreenActive);
+      document.body.style.overflow = '';
     };
   }, [fullScreen]);
 
@@ -59,27 +60,12 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
   return (
       <div className={`${styles.imagePreviewWrapper} ${fullScreen ? styles.fullscreen : ''}`}>
         {loading && (
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 1,
-              transition: 'opacity 0.3s ease',
-              opacity: loading ? 1 : 0
-            }}>
-              <div style={{
-                width: '50px',
-                height: '50px',
-                border: '3px solid rgba(59, 130, 246, 0.2)',
-                borderRadius: '50%',
-                borderTopColor: 'var(--primary)',
-                animation: 'spin 1s linear infinite',
-              }} />
+            <div className={commonStyles.loading}>
+              <div className={commonStyles.spinner}></div>
             </div>
         )}
 
-        {error && <div>{error}</div>}
+        {error && <div className={commonStyles.error}>{error}</div>}
 
         <img
             src={src}
@@ -101,6 +87,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
               <button
                   className={styles.fullscreenButton}
                   onClick={toggleFullScreen}
+                  aria-label="Exit fullscreen"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M5 5h5V3H3v7h2V5zm5 14H5v-5H3v7h7v-2zm9-14h-5V3h7v7h-2V5zm-5 14h5v-5h2v7h-7v-2z" />
@@ -108,20 +95,9 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
               </button>
 
               <div
-                  className={styles.zoomControls || "zoomControls"}
+                  className={styles.zoomControls}
                   onClick={e => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    bottom: '20px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(0,0,0,0.6)',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    display: 'flex',
-                    gap: '10px',
-                    color: 'white'
-                  }}>
+              >
                 <button onClick={() => setZoom(prev => Math.max(1, prev - 0.5))}>-</button>
                 <span>{Math.round(zoom * 100)}%</span>
                 <button onClick={() => setZoom(prev => Math.min(3, prev + 0.5))}>+</button>
@@ -131,16 +107,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
         )}
 
         {!fullScreen && !loading && !error && (
-            <div style={{
-              position: 'absolute',
-              bottom: '10px',
-              left: '0',
-              right: '0',
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '10px',
-              padding: '10px'
-            }}>
+            <div className={styles.controlsContainer}>
               <button onClick={toggleFullScreen}>Full Screen</button>
               <a href={`${src}&download=true`} download={fileName}>Download</a>
             </div>
