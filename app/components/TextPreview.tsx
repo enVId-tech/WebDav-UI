@@ -15,6 +15,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [lineCount, setLineCount] = useState<number>(0);
 
   // Determine language for syntax highlighting
   const getLanguage = () => {
@@ -70,6 +71,10 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         }
         const text = await response.text();
         setContent(text);
+
+        // Count lines for display purposes
+        const lines = text.split('\n').length;
+        setLineCount(lines);
       } catch (err: any) {
         setError(err.message || 'Failed to load text content');
         console.error('Error loading text:', err);
@@ -86,15 +91,34 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   }, [src]);
 
   if (isLoading) {
-    return <div className={styles.loading}>Loading text content...</div>;
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
+        <p>Loading text...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <div className={styles.error}>
+        <p>{error}</p>
+        <a href={`${src}&download=true`} download className={styles.downloadButton}>
+          Download Text File
+        </a>
+      </div>
+    );
   }
 
   return (
     <div className={styles.textPreviewContainer}>
+      <div className={styles.textHeader}>
+        <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+        <div className={styles.fileInfo}>
+          <span>{mimeType}</span>
+          <span>{lineCount} lines</span>
+        </div>
+      </div>
       <div className={styles.textPreviewHeader}>
         <span className={styles.fileName}>{fileName}</span>
         <button
@@ -120,8 +144,14 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
           {content}
         </SyntaxHighlighter>
       </div>
+      <div className={styles.textFooter}>
+        <a href={`${src}&download=true`} download className={styles.downloadButton}>
+          Download Text File
+        </a>
+      </div>
     </div>
   );
 };
 
 export default TextPreview;
+

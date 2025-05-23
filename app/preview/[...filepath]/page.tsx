@@ -1,4 +1,3 @@
-// app/preview/[...filepath]/page.tsx
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -9,6 +8,7 @@ import AudioPreview from '@/app/components/AudioPreview';
 import TextPreview from '@/app/components/TextPreview';
 import PDFPreview from '@/app/components/PDFPreview';
 import DocPreview from '@/app/components/DocPreview';
+import OfficePreview from '@/app/components/OfficePreview';
 import { lookup } from 'mime-types';
 
 const FilePreview = () => {
@@ -18,7 +18,7 @@ const FilePreview = () => {
   const [mimeType, setMimeType] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'document' | 'other'>('other');
+  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'other'>('other');
 
   useEffect(() => {
     if (!params.filepath) return;
@@ -41,7 +41,7 @@ const FilePreview = () => {
       // Get file extension
       const fileExt = fileNameOnly.split('.').pop()?.toLowerCase() || '';
 
-      // Determine file type with expanded types
+      // Determine file type with expanded types including Office files
       if (detectedMimeType.startsWith('video/') || detectedMimeType === 'application/mp4') {
         setFileType('video');
       } else if (detectedMimeType.startsWith('image/')) {
@@ -53,8 +53,30 @@ const FilePreview = () => {
         setFileType('text');
       } else if (detectedMimeType === 'application/pdf' || fileExt === 'pdf') {
         setFileType('pdf');
-      } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'].includes(fileExt)) {
-        setFileType('document');
+      } else if ([
+        // Microsoft Office formats
+        'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+        // Legacy Office formats
+        'rtf', 'dot', 'dotx', 'xlt', 'xltx', 'pot', 'potx',
+        // OpenDocument formats
+        'odt', 'ods', 'odp'
+      ].includes(fileExt)) {
+        // New specific type for Office documents to use with OfficePreview
+        if (['doc', 'docx', 'dot', 'dotx', 'rtf', 'odt'].includes(fileExt) ||
+            detectedMimeType.includes('wordprocessing')) {
+          console.log('Detected Word document:', fileExt);
+          setFileType('office');
+        } else if (['xls', 'xlsx', 'xlt', 'xltx', 'ods'].includes(fileExt) ||
+                  detectedMimeType.includes('spreadsheet')) {
+          console.log('Detected Excel document:', fileExt);
+          setFileType('office');
+        } else if (['ppt', 'pptx', 'pot', 'potx', 'odp'].includes(fileExt) ||
+                  detectedMimeType.includes('presentation')) {
+          console.log('Detected PowerPoint document:', fileExt);
+          setFileType('office');
+        } else {
+          setFileType('office');
+        }
       } else {
         setFileType('other');
       }
@@ -122,6 +144,14 @@ const FilePreview = () => {
         {fileType === 'pdf' && (
             <PDFPreview
                 src={fileUrl}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'office' && (
+            <OfficePreview
+                src={fileUrl}
+                mimeType={mimeType}
                 fileName={fileName}
             />
         )}

@@ -10,6 +10,8 @@ interface DocPreviewProps {
 
 const DocPreview: React.FC<DocPreviewProps> = ({ src, mimeType, fileName }) => {
   const [viewerType, setViewerType] = useState<'microsoft' | 'google'>('microsoft');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Get absolute URL for the document (needed for external viewers)
   const getAbsoluteUrl = () => {
@@ -32,8 +34,21 @@ const DocPreview: React.FC<DocPreviewProps> = ({ src, mimeType, fileName }) => {
   // Current viewer URL based on selection
   const viewerUrl = viewerType === 'microsoft' ? microsoftViewerUrl : googleViewerUrl;
 
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setError('Failed to load document. It may be too large or in an unsupported format.');
+    setIsLoading(false);
+  };
+
   return (
     <div className={styles.docPreviewContainer}>
+      <div className={styles.docHeader}>
+        <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+      </div>
+
       <div className={styles.docPreviewHeader}>
         <div className={styles.fileName}>{fileName}</div>
         <div className={styles.viewerControls}>
@@ -55,6 +70,22 @@ const DocPreview: React.FC<DocPreviewProps> = ({ src, mimeType, fileName }) => {
         </div>
       </div>
 
+      {isLoading && (
+        <div className={styles.loading}>
+          <div className={styles.spinner}></div>
+          <p>Loading document...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.error}>
+          <p>{error}</p>
+          <a href={`${src}&download=true`} download className={styles.downloadButton}>
+            Download Document
+          </a>
+        </div>
+      )}
+
       <div className={styles.docPreviewFrame}>
         <iframe
           src={viewerUrl}
@@ -63,10 +94,19 @@ const DocPreview: React.FC<DocPreviewProps> = ({ src, mimeType, fileName }) => {
           height="100%"
           frameBorder="0"
           loading="lazy"
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
         />
+      </div>
+
+      <div className={styles.docFooter}>
+        <a href={`${src}&download=true`} download className={styles.downloadButton}>
+          Download Document
+        </a>
       </div>
     </div>
   );
 };
 
 export default DocPreview;
+

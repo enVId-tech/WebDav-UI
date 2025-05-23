@@ -114,7 +114,7 @@
   border-radius: 10px;
   padding: 10px;
   box-shadow: inset 0 1px 3px var(--shadow-color);
-  z-index: 5;
+  z-index: 1;
 
   .qualityButton {
     display: flex;
@@ -161,6 +161,7 @@
     z-index: 10;
     min-width: 160px;
     margin-top: 10px;
+    margin-bottom: 10px;
     animation: slideDown 0.25s ease forwards;
     border: 1px solid var(--border-color);
     overflow: hidden;
@@ -415,4 +416,420 @@
     margin: 12px;
     padding: 16px;
   }
+}
+
+.videoPreviewContainer {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: var(--transition-theme);
+  overflow: hidden; /* Prevent overflow of the container */
+}
+
+.videoHeader {
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  width: 100%;
+  text-align: center;
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+
+  h2.fileName {
+    margin: 0;
+    font-size: 1.7rem;
+    max-width: fit-content;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    //white-space: nowrap;
+    color: var(--text-primary);
+    font-weight: 300;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 80%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.videoContentContainer {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  width: 100%;
+  height: calc(100vh - 60px); /* Account for header height */
+  box-sizing: border-box;
+}
+
+.videoPlayer {
+  width: 100%;
+  max-height: 70vh;
+  background-color: black;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+// Quality controls
+.qualityControls {
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 5; /* Ensure dropdown appears above other elements */
+}
+
+.qualityButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
+
+.qualityLabel {
+  font-weight: 500;
+}
+
+.qualityIcon {
+  font-size: 1rem;
+}
+
+.compressedIndicator {
+  margin-left: 1rem;
+  font-size: 0.8rem;
+  background-color: var(--accent-color);
+  color: var(--button-text);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  cursor: help;
+}
+
+.qualityMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  min-width: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.qualityMenuTitle {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.qualityOption {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  &.active {
+    font-weight: 500;
+    color: var(--accent-color);
+  }
+
+  .checkmark {
+    color: var(--accent-color);
+  }
+}
+
+// Skip controls
+.skipControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  justify-content: center;
+}
+
+.skipButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.skipIcon {
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.skipAmount {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.skipSettingsContainer {
+  position: relative;
+  z-index: 50; /* Higher z-index to ensure it's above other elements */
+}
+
+.skipSettingsButton {
+  padding: 0.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
+
+.skipSettingsMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 999; /* Very high z-index to appear above all other elements */
+  min-width: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.skipSettingsTitle {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.skipOption {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  &.active {
+    font-weight: 500;
+    color: var(--accent-color);
+  }
+}
+
+// Video details
+.videoDetailsContainer {
+  width: 100%;
+  min-height: 100px;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.videoDetailItem {
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+  flex: 1;
+
+  @media (max-width: 500px) {
+    min-width: 45%;
+  }
+}
+
+.videoDetailLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.videoDetailValue {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+// Action buttons
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.actionButton {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Reset button styling
+.resetButton {
+  margin-left: 8px;
+  background-color: #444;
+}
+
+.resetIcon {
+  margin-right: 4px;
+}
+
+.resetLabel {
+  font-size: 0.8rem;
+}
+
+// Fallback player styling
+.videoWrapper {
+  width: 100%;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.videoError {
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.fallbackPlayer {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .videoPlayer {
+    max-height: 50vh;
+  }
+
+  .skipControls {
+    gap: 0.8rem;
+    padding: 0 0.5rem;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+    align-items: stretch;
+
+    .actionButton {
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  .videoDetailItem {
+    min-width: calc(50% - 1.5rem);
+  }
+
+  .videoHeader h2.fileName {
+    font-size: 1rem;
+    max-width: 85%;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideDown {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }

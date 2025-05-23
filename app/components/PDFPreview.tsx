@@ -151,7 +151,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
   return (
       <div className={styles.pdfViewer} ref={containerRef}>
         <div className={styles.pdfHeader}>
-          <h2>{fileName}</h2>
+          <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
           <div className={styles.pdfControls}>
             <button
                 onClick={goToPreviousPage}
@@ -187,3 +187,4 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 };
 
 export default PDFPreview;
+
