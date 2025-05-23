@@ -9,15 +9,33 @@ import { TRANSCODE_CACHE_DIR, IMAGE_CACHE_DIR, VIDEO_QUALITY_PRESETS } from '../
 
 // Check if ffmpeg is available (for video transcoding)
 let ffmpegAvailable = false;
-try {
-  const proc = spawn('ffmpeg', ['-version']);
-  proc.on('close', (code) => {
-    ffmpegAvailable = code === 0;
-    console.log(`FFmpeg availability: ${ffmpegAvailable ? 'YES' : 'NO'}`);
-  });
-} catch (e) {
-  console.warn('FFmpeg check failed, video transcoding will be disabled');
+let ffmpegChecking = true;
+
+// More robust check for ffmpeg availability
+function checkFfmpegAvailability() {
+  try {
+    const proc = spawn('ffmpeg', ['-version']);
+
+    proc.on('error', (err) => {
+      console.warn(`FFmpeg availability check failed: ${err.message}`);
+      ffmpegAvailable = false;
+      ffmpegChecking = false;
+    });
+
+    proc.on('close', (code) => {
+      ffmpegAvailable = code === 0;
+      ffmpegChecking = false;
+      console.log(`FFmpeg availability check complete: ${ffmpegAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'}`);
+    });
+  } catch (e) {
+    console.warn('FFmpeg check failed, video transcoding will be disabled');
+    ffmpegAvailable = false;
+    ffmpegChecking = false;
+  }
 }
+
+// Start the check
+checkFfmpegAvailability();
 
 /**
  * Create a stream from WebDAV with retry and error handling

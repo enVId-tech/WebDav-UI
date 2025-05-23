@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import styles from '@/app/fileserver.module.scss';
+import styles from '@/app/styles/videoPreview.module.scss';
 
 interface VideoPreviewProps {
     src: string;

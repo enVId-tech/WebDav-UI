@@ -8,59 +8,89 @@
   max-width: 95%;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: var(--bg-secondary);
-  box-shadow: 0 4px 10px var(--shadow-color);
+  box-shadow: 0 4px 15px var(--shadow-color);
   transition: var(--transition-theme);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .docPreviewHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background-color: var(--bg-tertiary);
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-theme);
+
+  &:hover {
+    background: linear-gradient(to right, var(--bg-tertiary), var(--bg-secondary));
+  }
 }
 
 .viewerControls {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .viewerButton {
-  padding: 6px 12px;
+  padding: 8px 14px;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   color: var(--text-primary);
+  box-shadow: 0 1px 3px var(--shadow-color);
 
   &:hover {
     background-color: var(--bg-tertiary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px var(--shadow-color);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   &.active {
-    background-color: var(--accent-color);
+    background: var(--accent-color);
     color: var(--button-text);
     border-color: var(--accent-color);
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
   }
 }
 
 .downloadButton {
-  padding: 6px 12px;
-  background-color: var(--accent-color);
+  padding: 8px 16px;
+  background: var(--accent-color);
   color: var(--button-text);
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   text-decoration: none;
   font-size: 14px;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 
   &:hover {
     background-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
@@ -70,6 +100,8 @@
   height: calc(100vh - 150px);
   min-height: 400px;
   border: none;
+  transition: opacity 0.3s ease;
+  background-color: var(--bg-primary);
 }
 
 .fileName {
@@ -80,4 +112,63 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
+  transition: var(--transition-theme);
+  position: relative;
+  padding: 4px 0;
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--accent-color);
+    transition: width 0.3s ease;
+  }
+
+  &:hover:after {
+    width: 100%;
+  }
 }
+
+@media (max-width: 768px) {
+  .docPreviewContainer {
+    max-width: 100%;
+    border-radius: 0;
+    height: 100vh;
+  }
+
+  .docPreviewHeader {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .fileName {
+    max-width: 100%;
+    margin-bottom: 4px;
+    font-size: 15px;
+  }
+
+  .viewerControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .viewerButton, .downloadButton {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .docPreviewFrame {
+    height: calc(100vh - 170px);
+  }
+}
+
+@keyframes pulseButton {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+

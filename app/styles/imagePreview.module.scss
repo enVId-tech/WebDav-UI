@@ -1,86 +1,157 @@
-@import './common.module.scss';
+.controlsOverlay {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  z-index: 10;
+}
 
 .imagePreviewWrapper {
-  position: relative;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-secondary);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 10px var(--shadow-color);
-  transition: var(--transition-theme);
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
 
-  &.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    max-width: none;
-    z-index: 1000;
-    background-color: rgba(0, 0, 0, 0.9);
-    padding: 0;
-    border-radius: 0;
-  }
+.imageTitle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+  text-align: center;
+  padding: 15px;
+  margin: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 
 .imagePreview {
-  max-width: 100%;
-  max-height: 80vh;
+  max-width: 95vw;
+  max-height: 95vh;
   object-fit: contain;
-  border-radius: 4px;
-  cursor: pointer;
   transition: transform 0.3s ease;
 }
 
-.fullscreenButton {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.7);
-  }
-}
-
 .zoomControls {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 8px;
-  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 30px;
+  padding: 10px 16px;
   display: flex;
-  gap: 10px;
+  gap: 15px;
+  align-items: center;
   color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+
+  .zoomValue {
+    min-width: 50px;
+    text-align: center;
+    font-weight: 500;
+  }
 
   button {
     background: transparent;
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 4px;
-    padding: 4px 8px;
+    border-radius: 10000px;
+    width: 40px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    transition: all 0.2s ease;
 
     &:hover {
       background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
     }
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+}
+
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--accent-color, #3a86ff);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background-color: var(--accent-hover, #2a76ef);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.loading, .error {
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .controlsOverlay {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .zoomControls {
+    padding: 8px 12px;
+    gap: 10px;
   }
 }

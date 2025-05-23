@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from 'react';
-import commonStyles from '@/app/styles/common.module.scss';
 import styles from '@/app/styles/docPreview.module.scss';
 
 interface DocPreviewProps {

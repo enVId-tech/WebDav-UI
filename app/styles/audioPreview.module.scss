@@ -1,195 +1,876 @@
 @import './common.module.scss';
 
 .audioPreview {
+  --audio-primary-color: #3498db;
+  --audio-secondary-color: #2980b9;
+  --audio-control-size: 50px;
+  --audio-transition-timing: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: var(--bg-secondary);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px var(--shadow-color);
+  max-width: 750px;
   margin: 0 auto;
-  overflow: hidden;
-  padding: 24px;
-  max-width: 800px;
-  transition: var(--transition-theme);
+  padding: 2rem;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: fadeIn 0.5s var(--audio-transition-timing);
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
 
-  .audioInfo {
-    margin-bottom: 20px;
-    text-align: center;
-
-    h3 {
-      margin: 0 0 8px 0;
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    p {
-      margin: 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+      circle at 20% 20%,
+      rgba(var(--accent-color-rgb), 0.1) 0%,
+      transparent 70%
+    );
+    z-index: -1;
+    opacity: 0.8;
+    transition: opacity 0.5s ease;
   }
 
-  .audioControls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    margin: 20px 0;
+  &:hover::before {
+    opacity: 1;
+  }
 
-    .playButton {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: none;
-      background-color: var(--accent-color);
-      color: var(--button-text);
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
+  // Audio info section
+  .audioInfo {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    position: relative;
+
+    h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: var(--text-primary);
+      transition: transform 0.3s ease;
+      word-break: break-word;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40%;
+        height: 2px;
+        background: linear-gradient(90deg,
+          transparent,
+          var(--audio-primary-color),
+          transparent
+        );
+        border-radius: 2px;
+      }
 
       &:hover {
-        background-color: var(--accent-hover);
-        transform: scale(1.05);
+        transform: translateY(-2px);
       }
     }
 
-    .timeDisplay {
-      font-size: 15px;
-      color: var(--text-primary);
-      min-width: 120px;
-      text-align: center;
+    p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0;
+      opacity: 0.8;
+      font-weight: 500;
+      letter-spacing: 0.02em;
     }
   }
 
+  // Visualizer and album art - updated for canvas-based visualization
+  .visualizerContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 180px;
+    margin-bottom: 2rem;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at center,
+        transparent 30%,
+        rgba(0, 0, 0, 0.05) 100%
+      );
+      z-index: 1;
+    }
+
+    .albumArtPlaceholder {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--audio-primary-color), var(--audio-secondary-color));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 5;
+      color: rgba(255, 255, 255, 0.9);
+
+      svg {
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+      }
+    }
+
+    // Canvas-based visualizer
+    .visualizerCanvas {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    // Keep the old visualizer bars for fallback/loading state
+    .visualizer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      z-index: 2;
+      opacity: 0.5;
+
+      .bar {
+        background: var(--audio-primary-color);
+        width: 4px;
+        border-radius: 2px;
+        height: 5px;
+        animation: audioBarAnimation 0.5s infinite alternate;
+        animation-play-state: paused;
+
+        &:nth-child(odd) {
+          animation-duration: 0.7s;
+        }
+
+        &:nth-child(3n) {
+          animation-duration: 0.4s;
+        }
+
+        &:nth-child(5n) {
+          animation-duration: 0.6s;
+        }
+      }
+    }
+  }
+
+  // Seek bar styling - completely redesigned
   .seekContainer {
-    margin: 12px 0 24px;
+    position: relative;
     width: 100%;
+    margin: 0 0 1.5rem;
+
+    .seekBarBackground {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background-color: rgba(0, 0, 0, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .seekBarProgress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(90deg,
+        var(--audio-primary-color),
+        var(--audio-secondary-color)
+      );
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(var(--accent-color-rgb), 0.4);
+      transition: width 0s linear; /* Removed delay for instant updates */
+    }
 
     .seekBar {
       -webkit-appearance: none;
+      appearance: none;
       width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background-color: var(--border-color);
-      outline: none;
-      transition: var(--transition-theme);
+      height: 24px; /* Increased touch target */
+      background-color: transparent;
+      position: relative;
+      z-index: 10;
+      cursor: pointer;
+      margin: -10px 0; /* Center the larger touch area */
+      padding: 0;
+
+      &:focus {
+        outline: none;
+      }
+
+      /* Webkit browsers (Chrome, Safari, newer Edge) */
+      &::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: transparent; /* We're showing our custom background */
+        border-radius: 2px;
+        border: none;
+      }
 
       &::-webkit-slider-thumb {
         -webkit-appearance: none;
         width: 16px;
         height: 16px;
         border-radius: 50%;
-        background-color: var(--accent-color);
+        background: #fff;
+        border: 2px solid var(--audio-primary-color);
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
         cursor: pointer;
+        margin-top: -6px; /* Centers the thumb on the track */
         transition: all 0.2s ease;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* Firefox */
+      &::-moz-range-track {
+        width: 100%;
+        height: 4px;
+        background: transparent;
+        border-radius: 2px;
+        border: none;
       }
 
       &::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid var(--audio-primary-color);
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* Hover effects */
+      &:hover::-webkit-slider-thumb {
+        transform: scale(1.2);
+        box-shadow: 0 0 12px rgba(var(--accent-color-rgb), 0.5);
+      }
+
+      &:hover::-moz-range-thumb {
+        transform: scale(1.2);
+        box-shadow: 0 0 12px rgba(var(--accent-color-rgb), 0.5);
+      }
+
+      /* Active effects (when clicking) */
+      &:active::-webkit-slider-thumb {
+        transform: scale(1.3);
+        box-shadow: 0 0 16px rgba(var(--accent-color-rgb), 0.6);
+      }
+
+      &:active::-moz-range-thumb {
+        transform: scale(1.3);
+        box-shadow: 0 0 16px rgba(var(--accent-color-rgb), 0.6);
+      }
+    }
+
+    .seekTimeMarkers {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding: 0 2px;
+      font-size: 0.8rem;
+      font-family: monospace;
+      color: var(--text-secondary);
+
+      span:first-child {
+        color: var(--audio-primary-color);
+        font-weight: 500;
+      }
+    }
+  }
+
+  // Audio controls section with redesigned skip buttons
+  .audioControls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 2rem;
+    overflow: visible; /* Ensure dropdowns can extend outside */
+
+    @media (max-width: 500px) {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .controlsGroup {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    // Styling for skip button wrapper (button + duration display)
+    .skipButtonWrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+
+      .skipDuration {
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        opacity: 0.8;
+        transition: all 0.2s ease;
+
+
+
+      }
+
+      &:hover .skipDuration {
+        color: var(--audio-primary-color);
+        opacity: 1;
+      }
+
+      // Dropdown toggle button
+      .skipOptionsButton {
+        position: absolute;
+        top: -4px;
+        right: -8px;
+        background-color: var(--bg-secondary);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
         width: 16px;
         height: 16px;
-        border-radius: 50%;
-        background-color: var(--accent-color);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        border: none;
+        opacity: 0.7;
+        transition: all 0.2s ease;
+
+        &:hover {
+          opacity: 1;
+          background-color: var(--bg-tertiary);
+          transform: scale(1.1);
+        }
+      }
+
+      // Skip duration dropdown styles
+      .skipOptionsDropdown {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-top: 10px;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 0.5rem;
+        width: 150px;
+        z-index: 1000;
+        animation: fadeIn 0.2s ease;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-bottom: 8px solid var(--bg-secondary);
+        }
+
+        .skipOptionsHeader {
+          text-align: center;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 0.5rem;
+          margin-bottom: 0.25rem;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          color: var(--text-primary);
+        }
+
+        .skipOption {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 0.6rem;
+          border: none;
+          background: transparent;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+          }
+
+          &.active {
+            background-color: var(--audio-primary-color);
+            color: white;
+          }
+        }
+      }
+    }
+
+    .controlButton {
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all 0.3s var(--audio-transition-timing);
+      color: var(--text-primary);
+      padding: 0;
+      position: relative;
+
+      svg {
+        fill: currentColor;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        color: var(--audio-primary-color);
+
+        svg {
+          transform: scale(1.1);
+        }
+      }
+
+      &:active {
+        transform: translateY(-1px);
+      }
+
+      &:focus {
+        outline: none;
+      }
+
+      &.playButton {
+        background: linear-gradient(135deg,
+          var(--audio-primary-color),
+          var(--audio-secondary-color)
+        );
+        width: var(--audio-control-size);
+        height: var(--audio-control-size);
+        box-shadow:
+          0 4px 10px rgba(0, 0, 0, 0.15),
+          0 2px 4px rgba(0, 0, 0, 0.1);
+        color: white;
+        z-index: 2;
+
+        &:hover {
+          transform: translateY(-3px) scale(1.05);
+          box-shadow:
+            0 6px 15px rgba(0, 0, 0, 0.2),
+            0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        &:active {
+          transform: translateY(-1px) scale(1.02);
+          box-shadow:
+            0 4px 8px rgba(0, 0, 0, 0.15),
+            0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+      }
+
+      &.skipButton {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg,
+          var(--bg-secondary, rgba(255, 255, 255, 0.05)),
+          var(--bg-tertiary, rgba(255, 255, 255, 0.1))
+        );
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg,
+            rgba(var(--accent-color-rgb), 0.1),
+            rgba(var(--accent-color-rgb), 0.05)
+          );
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+          &::before {
+            opacity: 1;
+          }
+        }
+
+        &:active {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        svg {
+          position: relative; // Keep above the pseudo-element
+          z-index: 2;
+          filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+        }
+      }
+    }
+  }
+
+  // Volume controls
+  .volumeContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 30px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    @media (max-width: 500px) {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 3px rgba(0, 0, 0, 0.05),
+        0 4px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .volumeIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: var(--audio-primary-color);
+      }
+
+      &.muted {
+        color: var(--error-color);
+      }
+
+      svg {
+        transition: transform 0.2s ease;
+      }
+
+      &:hover svg {
+        transform: scale(1.1);
+      }
+    }
+
+    .volumeSlider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100px;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      margin: 0;
+
+      @media (max-width: 500px) {
+        flex: 1;
+        max-width: none;
+      }
+
+      &::-webkit-slider-runnable-track {
+        background: linear-gradient(
+          to right,
+          var(--audio-primary-color) var(--volume-percentage, 50%),
+          rgba(0, 0, 0, 0.08) var(--volume-percentage, 50%)
+        );
+        height: 4px;
+        border-radius: 2px;
+      }
+
+      &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid var(--audio-primary-color);
+        margin-top: -4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+      }
+
+      &::-moz-range-track {
+        background: rgba(0, 0, 0, 0.08);
+        height: 4px;
+        border-radius: 2px;
+      }
+
+      &::-moz-range-progress {
+        background: var(--audio-primary-color);
+        height: 4px;
+        border-radius: 2px;
+      }
+
+      &::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid var(--audio-primary-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         transition: all 0.2s ease;
       }
 
       &:hover::-webkit-slider-thumb {
         transform: scale(1.2);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
       }
 
       &:hover::-moz-range-thumb {
         transform: scale(1.2);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
       }
     }
-  }
 
-  .volumeContainer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 20px;
-
-    span {
+    .volumeLevel {
+      min-width: 36px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 500;
       color: var(--text-secondary);
-      font-size: 16px;
-    }
-
-    .volumeSlider {
-      -webkit-appearance: none;
-      width: 100px;
-      height: 5px;
-      border-radius: 2.5px;
-      background-color: var(--border-color);
-      outline: none;
-      transition: var(--transition-theme);
-
-      &::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: var(--accent-color);
-        cursor: pointer;
-      }
-
-      &::-moz-range-thumb {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: var(--accent-color);
-        cursor: pointer;
-        border: none;
-      }
+      font-variant-numeric: tabular-nums;
     }
   }
 
+  // Download button
   .downloadContainer {
-    display: flex;
-    justify-content: center;
-    margin-top: 12px;
+    margin-top: 1rem;
+    text-align: center;
 
     .downloadButton {
-      background-color: var(--accent-color);
-      color: var(--button-text);
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      text-decoration: none;
-      font-weight: 500;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.2s ease;
+      padding: 0.75rem 1.5rem;
+      border-radius: 30px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.3s var(--audio-transition-timing);
+      background-color: transparent;
+      color: var(--audio-primary-color);
+      border: 1px solid var(--audio-primary-color);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--audio-primary-color);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: -1;
+      }
 
       &:hover {
-        background-color: var(--accent-hover);
+        color: white;
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px var(--shadow-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        &::before {
+          transform: translateX(0);
+        }
       }
 
       &:active {
-        transform: translateY(0);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .downloadIcon {
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &:hover .downloadIcon {
+        transform: translateY(2px);
+      }
+
+      @media (max-width: 500px) {
+        width: 100%;
+        justify-content: center;
       }
     }
   }
 
+  // Loading state
+  .loading {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(var(--accent-color-rgb), 0.1);
+      border-top-color: var(--audio-primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    p {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+  }
+
+  // Error state
+  .error {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1rem;
+
+    svg {
+      color: var(--error-color);
+      margin-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      margin: 0;
+      color: var(--error-color);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .downloadContainer {
+      margin-top: 1rem;
+    }
+  }
+
+  // Responsive styles
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 1.5rem;
+    max-width: 95%;
 
+    .visualizerContainer {
+      height: 150px;
+    }
+
+    .audioInfo h3 {
+      font-size: 1.2rem;
+    }
+  }
+
+  @media (max-width: 500px) {
     .audioControls {
-      flex-direction: column;
-      gap: 12px;
-
-      .timeDisplay {
-        min-width: auto;
+      .controlsGroup {
+        width: 100%;
+        justify-content: space-around;
       }
     }
+
+    .visualizerContainer {
+      height: 120px;
+
+      .albumArtPlaceholder {
+        width: 80px;
+        height: 80px;
+      }
+    }
+  }
+
+  // Animations
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes audioBarAnimation {
+    0% {
+      height: 5px;
+      opacity: 0.6;
+    }
+    100% {
+      height: 35px;
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 }

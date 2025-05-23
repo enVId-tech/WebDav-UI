@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
-import commonStyles from '@/app/styles/common.module.scss';
 import styles from '@/app/styles/pdfPreview.module.scss';
 
 // PDF.js types

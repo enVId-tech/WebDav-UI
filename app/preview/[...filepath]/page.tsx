@@ -2,7 +2,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import styles from '@/app/fileserver.module.scss';
+import styles from '@/app/styles/preview.module.scss';
 import VideoPreview from '@/app/components/VideoPreview';
 import ImagePreview from '@/app/components/ImagePreview';
 import AudioPreview from '@/app/components/AudioPreview';
@@ -148,3 +148,4 @@ const FilePreview = () => {
 };
 
 export default FilePreview;
+

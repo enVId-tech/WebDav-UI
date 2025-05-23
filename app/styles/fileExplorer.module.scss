@@ -1,0 +1,471 @@
+// fileExplorer.module.scss - Styles for file explorer pages
+
+// Import common theme variables
+@import './common.module.scss';
+
+.modernExplorerContainer {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  position: relative;
+  color: var(--text-primary);
+  transition: var(--transition-theme);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.modernSidebar {
+  width: 280px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  z-index: 10;
+  transition: var(--transition-theme);
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+
+    &.collapsed {
+      max-height: 60px;
+    }
+  }
+
+  .sidebarHeader {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--accent-color);
+    position: relative;
+    transition: var(--transition-theme);
+
+    h3 {
+      margin: 0;
+      color: var(--button-text);
+      font-weight: 500;
+    }
+  }
+
+  .modernFolderTree {
+    flex: 1;
+    padding: 1rem 0;
+
+    .folderTreeItem {
+      display: flex;
+      align-items: center;
+      padding: 0.7rem 1.2rem;
+      cursor: pointer;
+      color: var(--text-primary);
+      border-left: 3px solid transparent;
+      margin: 2px 0;
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+      }
+
+      &.activePath {
+        background-color: var(--bg-tertiary);
+        border-left: 3px solid var(--accent-color);
+        font-weight: 500;
+        color: var(--accent-color);
+      }
+
+      .folderIcon {
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+.mobileNav {
+  display: none;
+  position: relative;
+  z-index: 20;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+
+  .mobileMenuButton {
+    width: 100%;
+    padding: 0.85rem 1.2rem;
+    background-color: var(--bg-secondary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: left;
+    color: var(--text-primary);
+    transition: var(--transition-theme);
+
+    &:hover, &:focus {
+      background-color: var(--bg-tertiary);
+    }
+
+    &::after {
+      content: '▾';
+      transition: transform 0.2s ease;
+    }
+
+    &.active::after {
+      transform: rotate(180deg);
+    }
+  }
+
+  .mobileBreadcrumbMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-secondary);
+    box-shadow: 0 4px 6px var(--shadow-color);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    max-height: 60vh;
+    overflow-y: auto;
+    transform-origin: top;
+    animation: slideDown 0.2s ease forwards;
+    transition: var(--transition-theme);
+
+    .mobileBreadcrumbItem {
+      padding: 0.8rem 1.2rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+      }
+    }
+
+    .mobileCloseMenu {
+      text-align: center;
+      padding: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      background-color: var(--bg-tertiary);
+      transition: var(--transition-theme);
+    }
+  }
+}
+
+// Content area
+.modernContent {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  transition: var(--transition-theme);
+
+  @media (max-width: 768px) {
+    padding: 1.2rem;
+  }
+
+  .topBar {
+    margin-bottom: 1.5rem;
+  }
+
+  .modernHeader {
+    margin-bottom: 1.5rem;
+
+    .explorerTitle {
+      font-size: 1.75rem;
+      margin: 0 0 0.75rem;
+      background: var(--title-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  .modernBreadcrumb {
+    background-color: var(--breadcrumb-bg);
+    padding: 0.85rem 1.2rem;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    box-shadow: 0 1px 3px var(--shadow-color);
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    transition: var(--transition-theme);
+
+    &:hover {
+      box-shadow: 0 4px 6px var(--shadow-color);
+    }
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+
+    .breadcrumbItem {
+      color: var(--accent-color);
+      cursor: pointer;
+      padding: 0.2rem 0.3rem;
+      border-radius: 4px;
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+        transform: translateY(-1px);
+      }
+
+      &:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+    }
+
+    .separator {
+      margin: 0 0.5rem;
+      color: var(--text-muted);
+      transition: var(--transition-theme);
+    }
+  }
+
+  .modernActions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+
+    @media (max-width: 768px) {
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .modernButton {
+      padding: 0.6rem 1.25rem;
+      background-color: var(--accent-color);
+      color: var(--button-text);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px var(--shadow-color);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    .searchInput {
+      padding: 0.5rem 1rem;
+      border-radius: 4px 0 0 4px;
+      border: 1px solid var(--border-color);
+      border-right: none;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: var(--transition-theme);
+
+      &::placeholder {
+        color: var(--text-muted);
+      }
+    }
+
+    .searchButton {
+      padding: 0.5rem 1rem;
+      background: var(--accent-color);
+      color: var(--button-text);
+      border: none;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--accent-hover);
+      }
+    }
+  }
+}
+
+// File list
+.modernFileList {
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px var(--shadow-color);
+  transition: var(--transition-theme);
+
+  .modernFileHeader {
+    display: grid;
+    grid-template-columns: 3fr 1.5fr 0.5fr;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    background-color: var(--file-header-bg);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition-theme);
+
+    @media (max-width: 768px) {
+      grid-template-columns: 2fr 1fr;
+
+      .sizeColumn {
+        display: none;
+      }
+    }
+  }
+
+  .modernFileItems {
+    .fileItem {
+      transition: var(--transition-theme);
+    }
+
+    .modernFolderRow, .modernFileRow {
+      display: grid;
+      grid-template-columns: 3fr 1.5fr 0.5fr;
+      padding: 0.8rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+      }
+    }
+
+    .gridItem {
+      background-color: var(--bg-secondary) !important;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      transition: var(--transition-theme) !important;
+
+      div {
+        color: var(--text-primary) !important;
+      }
+    }
+  }
+
+  .searchResults {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition-theme);
+  }
+}
+
+// Column styles
+.nameColumn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dateColumn, .sizeColumn, .locationColumn {
+  display: flex;
+  align-items: center;
+}
+
+// Loading and error styles
+.loadingContainer, .errorContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: var(--transition-theme);
+}
+
+.spinner {
+  border: 4px solid var(--bg-tertiary);
+  border-radius: 50%;
+  border-top: 4px solid var(--accent-color);
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+.errorContent {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--error-color);
+  color: var(--text-primary);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  transition: var(--transition-theme);
+
+  button {
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: var(--transition-theme);
+
+    &:hover {
+      background-color: var(--accent-hover);
+    }
+  }
+}
+
+// File and folder items
+.modernEmptyFolder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  transition: var(--transition-theme);
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideDown {
+  0% { transform: scaleY(0); opacity: 0; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}

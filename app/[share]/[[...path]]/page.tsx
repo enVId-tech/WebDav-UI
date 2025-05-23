@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
-import styles from '../../fileserver.module.scss';
+import styles from '../../styles/fileExplorer.module.scss';
 import {lookup} from "mime-types";
 import MobileNav from "@/app/components/MobileNav";
 import ThemeToggle from "@/app/components/ThemeToggle";
@@ -896,3 +896,4 @@ export default function ShareFileBrowser() {
       </div>
   );
 }
+

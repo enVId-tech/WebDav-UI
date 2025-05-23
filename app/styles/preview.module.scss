@@ -1,0 +1,166 @@
+// preview.module.scss - Styles for file preview pages
+
+// Import common theme variables
+@import './common.module.scss';
+
+.previewContainer {
+  padding: 2rem;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-theme);
+  position: relative;
+}
+
+.previewHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-secondary);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-theme);
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .fileType {
+    color: var(--text-secondary);
+    font-weight: normal;
+    font-size: 1rem;
+  }
+
+  .backButton {
+    padding: 0.5rem 1rem;
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition-theme);
+
+    &:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  font-size: 18px;
+  color: var(--text-secondary);
+
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    border: 3px solid var(--accent-color);
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  text-align: center;
+  padding: 0 20px;
+  color: var(--error-color);
+
+  h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Styling for unsupported files
+.unsupportedFile {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 800px;
+  margin: 2rem auto;
+  transition: var(--transition-theme);
+  box-shadow: 0 4px 6px var(--shadow-color);
+
+  h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  .downloadLink {
+    color: var(--button-text);
+    background-color: var(--accent-color);
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: var(--transition-theme);
+
+    &:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px var(--shadow-color);
+    }
+  }
+}
+
+// Keyframes
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Media queries for responsive design
+@media (max-width: 768px) {
+  .previewContainer {
+    padding: 1rem;
+    padding-top: 4rem; // Account for header
+  }
+
+  .previewHeader {
+    padding: 0.75rem 1rem;
+
+    h1 {
+      font-size: 1.2rem;
+    }
+  }
+}
