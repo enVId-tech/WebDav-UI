@@ -3,33 +3,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
-import styles from '../../styles/fileExplorer.module.scss';
-import {lookup} from "mime-types";
-import MobileNav from "@/app/components/MobileNav";
-import ThemeToggle from "@/app/components/ThemeToggle";
-
-type FileItem = {
-  filename: string;
-  basename: string;
-  type: 'file' | 'directory';
-  size: number;
-  lastmod: string;
-  relativePath?: string;
-};
-
-type FolderNode = {
-  name: string;
-  path: string;
-  children: FolderNode[];
-  isExpanded: boolean;
-  isLoaded: boolean;
-};
+import { FileItem, FolderNode } from '@/app/components/FileExplorer/types';
+import FileExplorerUI from '@/app/components/FileExplorer/FileExplorerUI';
 
 export default function ShareFileBrowser() {
   const router = useRouter();
   const params = useParams();
   const [currentData, setCurrentData] = useState<FileItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingState, setLoadingState] = useState<'active' | 'fading' | 'hidden'>('active');
   const [error, setError] = useState<string | null>(null);
   const [folderStructure, setFolderStructure] = useState<FolderNode>({
@@ -45,16 +25,6 @@ export default function ShareFileBrowser() {
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchProgress, setSearchProgress] = useState<{
-    currentFolder: string;
-    foldersSearched: number;
-    totalFolders: number;
-  }>({
-    currentFolder: '',
-    foldersSearched: 0,
-    totalFolders: 0
-  });
-  const [searchComplete, setSearchComplete] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Extract share and path from URL params - memoized to prevent recalculation
@@ -174,10 +144,6 @@ export default function ShareFileBrowser() {
     }
   }, [share, loadDirectoryContents, updateFolderInTree]);
 
-  const navigateToPath = useCallback((path: string) => {
-    router.push(path);
-  }, [router]);
-
   // Toggle folder expansion with stable reference
   const toggleFolderExpansion = useCallback((path: string) => {
     setFolderStructure(prevStructure => {
@@ -216,14 +182,16 @@ export default function ShareFileBrowser() {
   const navigateToFolder = useCallback((folderPath: string) => {
     try {
       let newPath = folderPath;
+      // Adjusted to ensure correct path construction when navigating from root of share
       if (!folderPath.startsWith(`/${share}`)) {
-        newPath = `/${share}/${relativePath}/${folderPath === '/' ? '' : folderPath}`;
+        const currentBasePath = relativePath === '/' ? '' : relativePath;
+        newPath = `/${share}${currentBasePath}/${folderPath}`.replace(/\/\//g, '/');
       }
       router.push(newPath);
     } catch (error) {
       console.error('Navigation error:', error);
     }
-  }, [router, share]);
+  }, [router, share, relativePath]);
 
   const navigateUp = useCallback(() => {
     const segments = relativePath.split('/').filter(Boolean);
@@ -242,7 +210,6 @@ export default function ShareFileBrowser() {
     }
 
     setIsSearching(true);
-    setSearchComplete(false);
     setShowSearchResults(true);
     setSearchResults([]);
 
@@ -260,11 +227,6 @@ export default function ShareFileBrowser() {
 
         // Update search progress
         searchedCount++;
-        setSearchProgress(() => ({
-          currentFolder: path,
-          foldersSearched: searchedCount,
-          totalFolders
-        }));
 
         const contents = await loadDirectoryContents(path, `/${share}`);
 
@@ -285,10 +247,6 @@ export default function ShareFileBrowser() {
 
         // Update total folder count estimation
         totalFolders += subDirs.length;
-        setSearchProgress(prev => ({
-          ...prev,
-          totalFolders
-        }));
 
         for (const dir of subDirs) {
           const dirPath = path === '/' ? `/${dir.basename}` : `${path}/${dir.basename}`;
@@ -299,7 +257,6 @@ export default function ShareFileBrowser() {
       };
 
       await searchRecursive(relativePath);
-      setSearchComplete(true);
     } catch (err) {
       console.error('Search error:', err);
     } finally {
@@ -327,91 +284,12 @@ export default function ShareFileBrowser() {
           : `${relativePath}/${fileName}`;
 
       // Instead of downloading, navigate to a preview page
-      const previewUrl = `/preview/${share}${filePath}`;
+      const previewUrl = `/preview/${share}${filePath}`.replace(/\/\//g, '/');
       window.open(previewUrl, '_blank');
     } catch (error) {
       console.error('Error opening file preview:', error);
     }
   }, [relativePath, share]);
-
-  // Utility functions - memoized to maintain stable references
-  const formatFileSize = useCallback((bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(1))} ${sizes[i]}`;
-  }, []);
-
-  const formatDate = useCallback((dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
-  }, []);
-
-  const getFileIcon = useCallback((filename: string): string => {
-    const mimeType = lookup(filename) || 'application/octet-stream';
-
-    // Use the first part of the MIME type for category matching
-    const category = mimeType.split('/')[0];
-    const specific = mimeType.split('/')[1];
-
-    // Emoji icons based on MIME categories
-    if (mimeType === 'application/pdf') return '📄';
-    if (mimeType.includes('wordprocessing') || mimeType.includes('document')) return '📝';
-    if (mimeType.includes('spreadsheet') || specific === 'csv') return '📊';
-    if (category === 'image') return '🖼️';
-    if (category === 'video') return '🎬';
-    if (category === 'audio') return '🎵';
-    if (mimeType.includes('compressed') || mimeType.includes('zip') ||
-        mimeType.includes('archive')) return '📦';
-
-    // Default icon
-    return '📄';
-  }, []);
-
-  const getEnhancedFileIcon = useCallback((filename: string): string => {
-    const mimeType = lookup(filename) || 'application/octet-stream';
-
-    // Check for specific applications first, then general categories
-    if (mimeType === 'application/pdf') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#e74c3c" d="M12 16h1v-3h-1v3zm-2.5-3h1v3h-1v-3zm5 0h1v3h-1v-3zm4.5-12h-14c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2v-12c0-1.1-.9-2-2-2zm0 14h-10l-2 2v-2h-2v-12h14v12z"/></svg>';
-    }
-
-    // Text/document files
-    if (mimeType.includes('wordprocessing') || mimeType.includes('document') ||
-        mimeType === 'application/msword' || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#2a5699" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v-2h3v2zm0-4h-8v-2h8v2zm-6-4V4l6 6h-6z"/></svg>';
-    }
-
-    // Spreadsheets
-    if (mimeType.includes('spreadsheet') || mimeType.includes('csv') ||
-        mimeType === 'application/vnd.ms-excel' || mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#1d6f42" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 13h-4v-1h4v1zm3-3H8v-1h8v1zm0-3H8V8h8v1z"/></svg>';
-    }
-
-    // Media files by category
-    const category = mimeType.split('/')[0];
-
-    if (category === 'video') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#8e44ad" d="M4 6h16v12H4V6m15 11V7H5v10h14zM13 8l5 4-5 4V8z"/></svg>';
-    }
-
-    if (category === 'audio') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#3498db" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6zm-2 16c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>';
-    }
-
-    if (category === 'image') {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#27ae60" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
-    }
-
-    // Archives and compressed files
-    if (mimeType.includes('compressed') || mimeType.includes('zip') || mimeType.includes('archive')) {
-      return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#f39c12" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-2 16h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V8h2v2zm0-4h-2V4h2v2zm4 12h-2v-6h2v6z"/></svg>';
-    }
-
-    // Default file icon
-    return '<svg width="60" height="60" viewBox="0 0 24 24"><path fill="#95a5a6" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>';
-  }, []);
 
   // Initial data loading - minimized dependencies to prevent excess fetching
   useEffect(() => {
@@ -420,7 +298,6 @@ export default function ShareFileBrowser() {
 
     let isMounted = true;
     const fetchData = async () => {
-      setLoading(true);
       try {
         console.log(`Fetching data for share: /${share}${relativePath}`);
         const data = await getDirectoryContents(relativePath, `/${share}`);
@@ -480,7 +357,6 @@ export default function ShareFileBrowser() {
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
           setLoadingState('fading');
           setTimeout(() => setLoadingState('hidden'), 500); // Adjust the timeout as needed
         }
@@ -493,7 +369,7 @@ export default function ShareFileBrowser() {
     return () => {
       isMounted = false;
     };
-  }, [share, relativePath]); // Only depend on path changes, not function references
+  }, [share, relativePath, toggleFolderExpansion]); // Only depend on path changes, not function references
 
   useEffect(() => {
     // Only run in browser environment
@@ -505,398 +381,34 @@ export default function ShareFileBrowser() {
     }
   }, []);
 
-  const getFilePreview = useCallback((filename: string, path: string): React.JSX.Element => {
-    const mimeType = lookup(filename) || '';
-    const isImage = mimeType.startsWith('image/');
-
-    if (isImage) {
-      const imgPath = `/${share}${path}/${encodeURIComponent(filename)}`;
-      return (
-          <img
-              src={imgPath}
-              alt={filename}
-              style={gridStyles.thumbnail}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = getEnhancedFileIcon(filename);
-              }}
-          />
-      );
-    }
-
-    return <div dangerouslySetInnerHTML={{ __html: getEnhancedFileIcon(filename) }}></div>;
-  }, [share, getEnhancedFileIcon]);
-
-  // Folder tree rendering with stable reference
-  const renderFolderNode = useCallback((node: FolderNode, level = 0) => {
-    const isCurrentPath = node.path === relativePath || `/${share}${relativePath}` === node.path;
-
-    return (
-        <div key={node.path} className={styles.folderTreeNode}>
-          <div
-              className={`${styles.folderTreeItem} ${isCurrentPath ? styles.activePath : ''}`}
-              style={{ paddingLeft: `${level * 16}px` }}
-          >
-          <span
-              className={styles.folderExpandIcon}
-              onClick={() => toggleFolderExpansion(node.path)}
-          >
-            {node.children.length > 0 || !node.isLoaded ? (node.isExpanded ? '▾' : '▸') : '○'}
-          </span>
-            <span
-                className={styles.folderIcon}
-                onClick={() => navigateToFolder(node.path)}
-            >📁</span>
-            <span
-                className={styles.folderName}
-                onClick={() => navigateToFolder(node.path)}
-            >{node.name}</span>
-          </div>
-
-          {node.isExpanded && node.children.map(child => renderFolderNode(child, level + 1))}
-        </div>
-    );
-  }, [relativePath, share, toggleFolderExpansion, navigateToFolder]);
-
-  // Add search-related styles
-  const searchStyles = {
-    searchForm: {
-      display: 'flex',
-      flex: 1,
-      maxWidth: '500px',
-    },
-    searchInput: {
-      flex: 1,
-      padding: '0.5rem 1rem',
-      borderRadius: '4px 0 0 4px',
-      border: '1px solid #ced4da',
-      borderRight: 'none',
-    },
-    searchButton: {
-      padding: '0.5rem 1rem',
-      background: '#0d6efd',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0 4px 4px 0',
-      cursor: 'pointer',
-    },
-    searchResults: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1rem 1.5rem',
-      borderBottom: '1px solid #e3e6f0',
-    },
-    locationColumn: {
-      color: '#6c757d',
-      fontSize: '0.9rem',
-    },
-    searchText: {
-      fontSize: '1.2rem',
-      fontWeight: 'bold',
-      color: '#0d6efd',
-    }
-  };
-
-  const gridStyles = {
-    gridContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-      gap: '16px',
-      padding: '16px',
-    },
-    gridItem: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '16px',
-      borderRadius: '8px',
-      backgroundColor: 'white',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      transition: 'transform 0.15s, box-shadow 0.15s',
-      cursor: 'pointer',
-      overflow: 'hidden',
-      textAlign: 'center',
-      height: '100%',
-    },
-    gridItemHover: {
-      transform: 'translateY(-4px)',
-      boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-    },
-    gridIcon: {
-      fontSize: '3rem',
-      marginBottom: '12px',
-      width: '100px',
-      height: '100px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    gridName: {
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      wordBreak: 'break-word',
-      maxWidth: '100%',
-      color: '#333',
-    },
-    gridInfo: {
-      fontSize: '0.8rem',
-      color: '#6c757d',
-      marginTop: '8px',
-    },
-    thumbnail: {
-      width: '100px',
-      height: '100px',
-      objectFit: 'cover' as 'cover',
-      borderRadius: '4px',
-    }
-  };
-
-  if (loadingState !== 'hidden') return (
-      <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
-        <div className={styles.spinner}></div>
-        <p>Loading files...</p>
-      </div>
-  );
-
-  if (error) return (
-      <div className={styles.errorContainer}>
-        <div className={styles.errorContent}>
-          <h3>Error</h3>
-          <p>{error}</p>
-          <button onClick={() => router.push(`/${share}`)}>Go to root</button>
-        </div>
-      </div>
-  );
-
   return (
-      <div className={`${styles.modernExplorerContainer} ${styles.themeVariables}`}>
-        <ThemeToggle />
-
-        {/* Left sidebar with folder hierarchy */}
-        <div className={styles.modernSidebar}>
-          <div className={styles.sidebarHeader}>
-            <h3>Folders</h3>
-          </div>
-          <div className={styles.modernFolderTree}>
-            {renderFolderNode(folderStructure)}
-          </div>
-        </div>
-
-        {/* Main content area */}
-        <div className={styles.modernContent}>
-          <div className={styles.topBar}>
-            <div className={styles.modernHeader}>
-              <h1 className={styles.explorerTitle}>File Explorer</h1>
-
-              <MobileNav
-                  currentPath={relativePath}
-                  onNavigate={navigateToPath}
-                  breadcrumbs={breadcrumbs}
-              />
-
-              <div className={styles.modernBreadcrumb}>
-                {breadcrumbs.map((crumb, index) => (
-                    <span key={index}>
-                {index > 0 && <span className={styles.separator}>/</span>}
-                      <span
-                          className={styles.breadcrumbItem}
-                          onClick={() => router.push(crumb.path)}
-                      >
-                  {crumb.name}
-                </span>
-              </span>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.modernActions}>
-              {relativePath !== '/' && (
-                  <button className={styles.modernButton} onClick={navigateUp}>
-                    ↑ Up
-                  </button>
-              )}
-
-              {/* View toggle button */}
-              <button
-                  className={styles.modernButton}
-                  onClick={() => {
-                    const newViewMode = viewMode === 'list' ? 'grid' : 'list';
-                    setViewMode(newViewMode);
-                    localStorage.setItem('fileExplorer.viewMode', newViewMode);
-                  }}
-                  style={{ marginRight: '10px' }}
-              >
-                {viewMode === 'list' ? '📑 Grid View' : '📋 List View'}
-              </button>
-
-              <form onSubmit={handleSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    placeholder="Search files..."
-                    style={searchStyles.searchInput as React.CSSProperties}
-                    className={styles.searchInput}
-                />
-                <button
-                    type="submit"
-                    style={searchStyles.searchButton as React.CSSProperties}
-                    className={styles.searchButton}
-                    disabled={isSearching}
-                >
-                  {isSearching ? '🔍...' : '🔍'}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <div className={styles.modernFileList}>
-            {showSearchResults ? (
-                <>
-                  {/* Search Results Header */}
-                  <div style={searchStyles.searchResults as React.CSSProperties} className={styles.searchResults}>
-                    <h3 style={searchStyles.searchText as React.CSSProperties}>Search Results for "{searchQuery}"</h3>
-                    <button
-                        className={styles.modernButton}
-                        onClick={() => setShowSearchResults(false)}
-                    >
-                      Back to Files
-                    </button>
-                  </div>
-
-                  {/* Search Results Header Columns */}
-                  <div className={styles.modernFileHeader}>
-                    <div className={styles.nameColumn}>Name</div>
-                    <div style={searchStyles.locationColumn as React.CSSProperties} className={styles.locationColumn}>Location</div>
-                    <div className={styles.dateColumn}>Modified</div>
-                    <div className={styles.sizeColumn}>Size</div>
-                  </div>
-
-                  {/* Search Results Items */}
-                  <div className={styles.modernFileItems}>
-                    {searchResults.length > 0 ? (
-                        searchResults.map((item) => (
-                            <div key={item.filename} className={styles.fileItem}>
-                              {/* Search result item rendering logic here */}
-                              {/* ... */}
-                            </div>
-                        ))
-                    ) : (
-                        <div className={styles.modernEmptyFolder}>
-                          <div className={styles.emptyIcon}>🔍</div>
-                          <p>{isSearching ? 'Searching...' : 'No results found'}</p>
-                        </div>
-                    )}
-                  </div>
-                </>
-            ) : (
-                <>
-                  {/* Regular File List Header */}
-                  <div className={styles.modernFileHeader}>
-                    <div className={styles.nameColumn}>Name</div>
-                    <div className={styles.dateColumn}>Modified</div>
-                    <div className={styles.sizeColumn}>Size</div>
-                  </div>
-
-                  {/* File Items - Grid or List View */}
-                  <div className={styles.modernFileItems}>
-                    {viewMode === 'grid' ? (
-                        <div style={gridStyles.gridContainer as React.CSSProperties}>
-                          {currentData.length > 0 ? (
-                              currentData.map((item) => (
-                                  <div
-                                      key={item.filename}
-                                      style={gridStyles.gridItem as React.CSSProperties}
-                                      className={styles.gridItem}
-                                      onClick={() => {
-                                        if (item.type === 'directory') {
-                                          navigateToFolder(item.filename);
-                                        } else {
-                                          handleFileClick(item.basename);
-                                        }
-                                      }}
-                                      onMouseOver={(e) => {
-                                        Object.assign(e.currentTarget.style, gridStyles.gridItemHover as React.CSSProperties);
-                                      }}
-                                      onMouseOut={(e) => {
-                                        e.currentTarget.style.transform = '';
-                                        e.currentTarget.style.boxShadow = '';
-                                      }}
-                                  >
-                                    <div style={gridStyles.gridIcon as React.CSSProperties}>
-                                      {item.type === 'directory' ? (
-                                          <svg width="60" height="60" viewBox="0 0 24 24">
-                                            <path fill="#ffc107" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                                          </svg>
-                                      ) : (
-                                          getFilePreview(item.basename, relativePath)
-                                      )}
-                                    </div>
-                                    <div style={gridStyles.gridName as React.CSSProperties}>{item.basename}</div>
-                                    <div style={gridStyles.gridInfo as React.CSSProperties}>
-                                      {item.type === 'file' ? formatFileSize(item.size) : ''}
-                                    </div>
-                                  </div>
-                              ))
-                          ) : (
-                              <div className={styles.modernEmptyFolder}>
-                                <div className={styles.emptyIcon}>📂</div>
-                                <p>This folder is empty</p>
-                              </div>
-                          )}
-                        </div>
-                    ) : (
-                        // List view rendering
-                        currentData.length > 0 ? (
-                            currentData.map((item) => (
-                                <div key={item.filename} className={styles.fileItem}>
-                                  {item.type === 'directory' ? (
-                                      <div
-                                          className={styles.modernFolderRow}
-                                          onClick={() => navigateToFolder(item.filename)}
-                                      >
-                                        <div className={styles.nameColumn}>
-                                          <span className={styles.icon}>📁</span>
-                                          <span className={styles.name}>{item.basename}</span>
-                                        </div>
-                                        <div className={styles.dateColumn}>
-                                          {formatDate(item.lastmod)}
-                                        </div>
-                                        <div className={styles.sizeColumn}>-</div>
-                                      </div>
-                                  ) : (
-                                      <div
-                                          className={styles.modernFileRow}
-                                          onClick={() => handleFileClick(item.basename)}
-                                      >
-                                        <div className={styles.nameColumn}>
-                                          <span className={styles.icon}>{getFileIcon(item.basename)}</span>
-                                          <span className={styles.name}>{item.basename}</span>
-                                        </div>
-                                        <div className={styles.dateColumn}>
-                                          {formatDate(item.lastmod)}
-                                        </div>
-                                        <div className={styles.sizeColumn}>
-                                          {formatFileSize(item.size)}
-                                        </div>
-                                      </div>
-                                  )}
-                                </div>
-                            ))
-                        ) : (
-                            <div className={styles.modernEmptyFolder}>
-                              <div className={styles.emptyIcon}>📂</div>
-                              <p>This folder is empty</p>
-                            </div>
-                        )
-                    )}
-                  </div>
-                </>
-            )}
-          </div>
-        </div>
-      </div>
+    <FileExplorerUI
+      loadingState={loadingState}
+      error={error}
+      folderStructure={folderStructure}
+      share={share}
+      relativePath={relativePath}
+      breadcrumbs={breadcrumbs}
+      currentData={currentData}
+      viewMode={viewMode}
+      searchQuery={searchQuery}
+      searchResults={searchResults}
+      isSearching={isSearching}
+      showSearchResults={showSearchResults}
+      routerPush={(path) => router.push(path)}
+      onNavigateUp={navigateUp}
+      onToggleViewMode={() => {
+        const newViewMode = viewMode === 'list' ? 'grid' : 'list';
+        setViewMode(newViewMode);
+        localStorage.setItem('fileExplorer.viewMode', newViewMode);
+      }}
+      onSearchChange={handleSearchChange}
+      onSearchSubmit={handleSearchSubmit}
+      onSetShowSearchResults={setShowSearchResults}
+      onNavigateToFolder={navigateToFolder}
+      onFileClick={handleFileClick}
+      onToggleFolderExpansion={toggleFolderExpansion}
+    />
   );
 }
 
