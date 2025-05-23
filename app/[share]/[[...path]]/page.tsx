@@ -30,6 +30,7 @@ export default function ShareFileBrowser() {
   const params = useParams();
   const [currentData, setCurrentData] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingState, setLoadingState] = useState<'active' | 'fading' | 'hidden'>('active');
   const [error, setError] = useState<string | null>(null);
   const [folderStructure, setFolderStructure] = useState<FolderNode>({
     name: '',
@@ -480,6 +481,8 @@ export default function ShareFileBrowser() {
       } finally {
         if (isMounted) {
           setLoading(false);
+          setLoadingState('fading');
+          setTimeout(() => setLoadingState('hidden'), 500); // Adjust the timeout as needed
         }
       }
     };
@@ -649,8 +652,8 @@ export default function ShareFileBrowser() {
     }
   };
 
-  if (loading) return (
-      <div className={styles.loadingContainer}>
+  if (loadingState !== 'hidden') return (
+      <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
         <div className={styles.spinner}></div>
         <p>Loading files...</p>
       </div>
