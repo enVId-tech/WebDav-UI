@@ -1,86 +1,115 @@
-# WebDAV File Explorer
+# WebDavUI - Modern WebDAV File Explorer
 
-A modern, web-based file explorer for browsing and managing WebDAV shares with an intuitive interface.
-
-Accessible at [webdavui.etran.dev](https://webdevui.etran.dev)
+WebDavUI is a modern, responsive web application that provides an intuitive interface for accessing, browsing, and managing files through WebDAV protocol. Built with Next.js and React, it offers a seamless file exploration experience with rich file previewing capabilities.
 
 ## Features
 
-- **Simple Share Access**: Easily connect to WebDAV shares by entering the share name
-- **Dual-Pane Interface**: Folder hierarchy tree on the left, file list on the right
-- **Intuitive Navigation**: Breadcrumb navigation and folder tree for quick access
-- **File Preview**: Preview supported file types directly in the browser
+- **WebDAV Integration**: Connect to any WebDAV-compatible server
+- **File Explorer**: Browse directories and files with an intuitive UI
+- **File Preview**: Preview various file types directly in the browser:
+  - Images
+  - Videos
+  - Audio files
+  - PDFs
+  - Office documents
+  - Text files with syntax highlighting
 - **Responsive Design**: Works on desktop and mobile devices
-- **Modern UI**: Clean, modern interface with gradient accents and card-based design
+- **Share System**: Access shared folders through simple URLs
+- **Theme Toggle**: Switch between light and dark modes
+
+## Tech Stack
+
+- **Frontend**:
+  - Next.js 15.x
+  - React 19.x
+  - TypeScript
+  - SCSS Modules for styling
+
+- **Libraries**:
+  - `webdav`: For WebDAV protocol communication
+  - `react-pdf`: PDF viewing
+  - `react-syntax-highlighter`: Syntax highlighting for code files
+  - `mime-types`: File type detection
+  - `material-file-icons`: File icons
+  - `pdfjs-dist`: PDF rendering
+
+## Project Structure
+
+- `/app`: Next.js app directory
+  - `/page.tsx`: Homepage with share access
+  - `/[share]/[[...path]]/page.tsx`: File explorer for a specific share
+  - `/preview/[...filepath]/page.tsx`: File preview pages
+  - `/api/webdav/`: API routes for WebDAV communication
+  - `/components/`: React components for different file previews
+  - `/styles/`: SCSS modules for styling
+  - `/types/`: TypeScript type definitions
+
+- `/lib`: WebDAV client and server utilities
+- `/public`: Static assets 
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14.x or higher)
+- Node.js (v18.x or higher)
 - npm or yarn
-- A WebDAV server to connect to
 
 ### Installation
 
 1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/webdav-explorer.git
-   cd webdav-explorer
-   ```
+```bash
+git clone https://github.com/yourusername/webdavui.git
+cd webdavui
+```
 
 2. Install dependencies
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env.local` file with your WebDAV configuration:
-   ```
-   WEBDAV_URL=https://your-webdav-server.com/
-   ```
-
-4. Start the development server
-   ```bash
-   npm run dev
-   ```
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Usage
-
-1. On the homepage, enter the name of your WebDAV share in the input field
-2. Click "Access Files" to browse that share's contents
-3. Navigate through folders using either:
-    - The folder tree on the left sidebar
-    - The file list on the right pane
-    - The breadcrumb navigation at the top
-4. Click on files to view or download them
-
-## Technology Stack
-
-- [Next.js](https://nextjs.org/) - React framework with file-based routing
-- [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
-- [SCSS Modules](https://github.com/css-modules/css-modules) - Component-scoped CSS
-- [WebDAV Client](https://github.com/perry-mitchell/webdav-client) - WebDAV communication library
-
-## Project Structure
-
+```bash
+npm install
+# or
+yarn install
 ```
-├── app                  # Next.js app directory
-│   ├── page.tsx         # Homepage
-│   ├── [share]          # Dynamic routes for share browsing
-│   │   └── [[...path]]  # Nested dynamic routes for folder paths
-│   ├── homepage.module.scss  # Styles for homepage
-│   └── fileserver.module.scss # Styles for file explorer
-├── lib                  # Utility functions and services
-│   └── webdav-client.ts # WebDAV client implementation
-└── public               # Static assets
+
+3. Run the development server
+```bash
+npm run dev
+# or
+yarn dev
 ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Configuration
+
+Configure your WebDAV server details in the appropriate configuration files.
+
+## Building for Production
+
+```bash
+npm run build
+npm run start
+# or
+yarn build
+yarn start
+```
+
+## Docker Support
+
+A Dockerfile is included for containerized deployment:
+
+```bash
+docker build -t webdavui .
+docker run -p 3000:3000 webdavui
+```
+
+## License
+
+This project is licensed under the terms included in the [LICENSE](LICENSE) file.
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## Acknowledgements
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Built with [Next.js](https://nextjs.org/)
+- WebDAV protocol handling with [webdav](https://www.npmjs.com/package/webdav)
