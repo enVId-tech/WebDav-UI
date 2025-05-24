@@ -31,6 +31,8 @@ interface FileExplorerUIProps {
   onNavigateToFolder: (folderPath: string) => void;
   onFileClick: (fileName: string) => void;
   onToggleFolderExpansion: (path: string) => void;
+  onUploadFile: (file: File) => void;
+  onDeleteFile: (fileName: string) => void;
 }
 
 const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
@@ -55,9 +57,12 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   onNavigateToFolder,
   onFileClick,
   onToggleFolderExpansion,
+  onUploadFile,
+  onDeleteFile,
 }) => {
+  const [deleteModeActive, setDeleteModeActive] = React.useState(false);
 
-  const getEnhancedFileIcon = utilGetEnhancedFileIcon; // Use the imported utility
+  const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
   const searchStyles = {
     searchForm: {
@@ -176,7 +181,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
       );
     }
     return <div dangerouslySetInnerHTML={{ __html: getEnhancedFileIcon(filename) }} />;
-  }, [share, getEnhancedFileIcon, gridStyles.thumbnail]); // Added gridStyles.thumbnail
+  }, [share, getEnhancedFileIcon, gridStyles.thumbnail]);
 
   const renderFolderNode = useCallback((node: FolderNode, level = 0): React.JSX.Element => {
     const isCurrentPath = node.path === relativePath || `/${share}${relativePath}` === node.path;
@@ -204,7 +209,16 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
           {node.isExpanded && node.children.map(child => renderFolderNode(child, level + 1))}
         </div>
     );
-  }, [relativePath, share, onToggleFolderExpansion, onNavigateToFolder, styles]); // Added styles
+  }, [relativePath, share, onToggleFolderExpansion, onNavigateToFolder, styles]);
+
+  // Handler for file input change
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      onUploadFile(file);
+      event.target.value = ''; // Reset file input
+    }
+  };
 
   if (loadingState !== 'hidden') return (
       <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
@@ -273,6 +287,24 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
               >
                 {viewMode === 'list' ? '📑 Grid View' : '📋 List View'}
               </button>
+              {/* File Upload Button */}
+              <input
+                type="file"
+                id="fileUpload"
+                style={{ display: 'none' }}
+                onChange={handleFileSelected}
+              />
+              <label htmlFor="fileUpload" className={styles.modernButton} style={{ marginRight: '10px', cursor: 'pointer' }}>
+                Upload File
+              </label>
+              {/* Toggle Delete Mode Button */}
+              <button
+                className={`${styles.toggleDeleteButton} ${deleteModeActive ? styles.active : ''}`}
+                onClick={() => setDeleteModeActive(!deleteModeActive)}
+                style={{ marginRight: '10px' }}
+              >
+                {deleteModeActive ? 'Cancel Delete' : 'Enable Delete'}
+              </button>
               <form onSubmit={onSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
                 <input
                     type="text"
@@ -323,6 +355,15 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                 <div style={searchStyles.locationColumn as React.CSSProperties} className={styles.locationColumn}>{item.relativePath?.substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
                                 <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                 <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
+                                {item.type === 'file' && (
+                                  <button
+                                    onClick={() => onDeleteFile(item.basename)}
+                                    className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
+                                    title="Delete file"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
                             </div>
                         ))
                     ) : (
@@ -349,32 +390,39 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                       key={item.filename}
                                       style={gridStyles.gridItem as React.CSSProperties}
                                       className={styles.gridItem} // Added class
-                                      onClick={() => {
+                                      // onClick handled by individual elements now
+                                  >
+                                    <div style={{cursor: 'pointer'}} onClick={() => {
                                         if (item.type === 'directory') {
                                           onNavigateToFolder(item.filename);
                                         } else {
                                           onFileClick(item.basename);
                                         }
-                                      }}
-                                      onMouseOver={(e) => Object.assign(e.currentTarget.style, gridStyles.gridItemHover)}
-                                      onMouseOut={(e) => {
-                                        e.currentTarget.style.transform = '';
-                                        e.currentTarget.style.boxShadow = '';
-                                      }}
-                                  >
-                                    <div style={gridStyles.gridIcon as React.CSSProperties}>
-                                      {item.type === 'directory' ? (
-                                          <svg width="60" height="60" viewBox="0 0 24 24">
-                                            <path fill="#ffc107" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                                          </svg>
-                                      ) : (
-                                          getFilePreview(item.basename, relativePath)
-                                      )}
+                                      }}>
+                                      <div style={gridStyles.gridIcon as React.CSSProperties}>
+                                        {item.type === 'directory' ? (
+                                            <svg width="60" height="60" viewBox="0 0 24 24">
+                                              <path fill="#ffc107" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                                            </svg>
+                                        ) : (
+                                            getFilePreview(item.basename, relativePath)
+                                        )}
+                                      </div>
+                                      <div style={gridStyles.gridName as React.CSSProperties}>{item.basename}</div>
+                                      <div style={gridStyles.gridInfo as React.CSSProperties}>
+                                        {item.type === 'file' ? formatFileSize(item.size) : ''}
+                                      </div>
                                     </div>
-                                    <div style={gridStyles.gridName as React.CSSProperties}>{item.basename}</div>
-                                    <div style={gridStyles.gridInfo as React.CSSProperties}>
-                                      {item.type === 'file' ? formatFileSize(item.size) : ''}
-                                    </div>
+                                    {item.type === 'file' && (
+                                      <button
+                                        onClick={() => onDeleteFile(item.basename)}
+                                        className={`${styles.deleteButtonGrid} ${deleteModeActive ? styles.visible : ''}`}
+                                        title="Delete file"
+                                        style={{ marginTop: '8px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                      >
+                                        🗑️
+                                      </button>
+                                    )}
                                   </div>
                               ))
                           ) : (
@@ -411,6 +459,15 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                         </div>
                                         <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                         <div className={styles.sizeColumn}>{formatFileSize(item.size)}</div>
+                                        {item.type !== 'directory' && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); onDeleteFile(item.basename);}}
+                                            className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
+                                            title="Delete file"
+                                          >
+                                            🗑️
+                                          </button>
+                                        )}
                                       </div>
                                   )}
                                 </div>

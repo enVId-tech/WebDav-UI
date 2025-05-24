@@ -305,6 +305,35 @@
         background-color: var(--accent-hover);
       }
     }
+
+    .toggleDeleteButton {
+      padding: 0.6rem 1.25rem;
+      background-color: var(--error-color); // Red by default
+      color: var(--button-text);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition-theme);
+
+      &:hover {
+        background-color: var(--error-hover); // Darker red on hover
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px var(--shadow-color);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &.active {
+        background-color: var(--success-color); // Green when active
+
+        &:hover {
+          background-color: var(--success-hover); // Darker green on hover
+        }
+      }
+    }
   }
 }
 
@@ -318,7 +347,7 @@
 
   .modernFileHeader {
     display: grid;
-    grid-template-columns: 3fr 1.5fr 0.5fr;
+    grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for potential delete column in search
     font-weight: 600;
     padding: 1rem 1.5rem;
     background-color: var(--file-header-bg);
@@ -338,11 +367,12 @@
   .modernFileItems {
     .fileItem {
       transition: var(--transition-theme);
+      position: relative; // For absolute positioning of delete button if needed in list view
     }
 
     .modernFolderRow, .modernFileRow {
       display: grid;
-      grid-template-columns: 3fr 1.5fr 0.5fr;
+      grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for delete button
       padding: 0.8rem 1.5rem;
       cursor: pointer;
       border-bottom: 1px solid var(--border-color);
@@ -351,6 +381,26 @@
 
       &:hover {
         background-color: var(--bg-tertiary);
+      }
+
+      .deleteButton {
+        color: #007bff; // Blue color for trash icon
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem; // Adjust as needed
+        padding: 0.2rem; // Adjust as needed
+        display: none; // Hidden by default
+        margin-left: auto; // Push to the right in list view
+        align-self: center; // Center vertically
+
+        &.visible {
+          display: inline-block; // Show when delete mode is active
+        }
+
+         &:hover {
+          color: #0056b3; // Darker blue on hover
+        }
       }
     }
 
@@ -362,6 +412,29 @@
 
       div {
         color: var(--text-primary) !important;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        position: relative; // For delete button positioning
+      }
+
+      .deleteButtonGrid {
+        color: #007bff; // Blue color
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem; // Adjust as needed
+        padding: 0.2rem; // Adjust as needed
+        margin-top: 8px;
+        display: none; // Hidden by default
+
+        &.visible {
+          display: inline-block; // Show when delete mode is active
+        }
+
+        &:hover {
+          color: #0056b3; // Darker blue on hover
+        }
       }
     }
   }
@@ -372,6 +445,14 @@
     border-bottom: 1px solid var(--border-color);
     transition: var(--transition-theme);
   }
+
+  .searchResultsHeader { // Added from previous step, ensure it's here
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
 }
 
 // Column styles
@@ -379,6 +460,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-grow: 1; // Allow name column to take available space
 }
 
 .dateColumn, .sizeColumn, .locationColumn {

@@ -291,6 +291,82 @@ export default function ShareFileBrowser() {
     }
   }, [relativePath, share]);
 
+  const handleUploadFile = useCallback(async (file: File) => {
+    if (!share || !relativePath) return;
+    setLoadingState('active');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('path', relativePath); // The current directory path
+      formData.append('sharePath', `/${share}`);
+
+      const response = await fetch('/api/webdav/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload file');
+      }
+
+      // Refresh directory contents after upload
+      const data = await getDirectoryContents(relativePath, `/${share}`);
+      setCurrentData(data);
+      // Optionally, update folder structure if a new folder was created (though upload is usually files)
+      // Consider a more targeted update or a full refresh of folderStructure if necessary
+
+    } catch (err: any) {
+      console.error('Error uploading file:', err);
+      setError(`Failed to upload file: ${err.message || 'Unknown error'}`);
+    } finally {
+      setLoadingState('fading');
+      setTimeout(() => setLoadingState('hidden'), 500);
+    }
+  }, [share, relativePath, setLoadingState, setError, setCurrentData]);
+
+  const handleDeleteFile = useCallback(async (fileName: string) => {
+    if (!share || !relativePath) return;
+
+    // Confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+      return;
+    }
+    setLoadingState('active');
+    try {
+      const filePathToDelete = relativePath === '/' ? `/${fileName}` : `${relativePath}/${fileName}`;
+
+      const response = await fetch('/api/webdav/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path: filePathToDelete,
+          sharePath: `/${share}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete file');
+      }
+
+      // Refresh directory contents after deletion
+      const data = await getDirectoryContents(relativePath, `/${share}`);
+      setCurrentData(data);
+      // Optionally, update folder structure if a folder was deleted
+      // Consider a more targeted update or a full refresh of folderStructure if necessary
+
+    } catch (err: any) {
+      console.error('Error deleting file:', err);
+      setError(`Failed to delete file: ${err.message || 'Unknown error'}`);
+    } finally {
+      setLoadingState('fading');
+      setTimeout(() => setLoadingState('hidden'), 500);
+    }
+  }, [share, relativePath, setLoadingState, setError, setCurrentData]);
+
   // Initial data loading - minimized dependencies to prevent excess fetching
   useEffect(() => {
     // Skip if share is not yet available
@@ -408,6 +484,8 @@ export default function ShareFileBrowser() {
       onNavigateToFolder={navigateToFolder}
       onFileClick={handleFileClick}
       onToggleFolderExpansion={toggleFolderExpansion}
+      onUploadFile={handleUploadFile} // Pass the new handler
+      onDeleteFile={handleDeleteFile} // Pass the new handler
     />
   );
 }

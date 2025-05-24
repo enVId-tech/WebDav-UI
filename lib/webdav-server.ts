@@ -70,8 +70,29 @@ class WebDavService {
             throw error;
         }
     }
+
+    async uploadFile(filePath: string, data: Buffer | Uint8Array | string): Promise<void> {
+        try {
+            await this.client.putFileContents(filePath, data, { overwrite: true });
+            console.log(`File uploaded successfully to ${filePath}`);
+        } catch (error) {
+            console.error(`Error uploading file to ${filePath}:`, error);
+            throw error;
+        }
+    }
+
+    async deleteFile(filePath: string): Promise<void> {
+        try {
+            await this.client.deleteFile(filePath);
+            console.log(`File deleted successfully from ${filePath}`);
+        } catch (error) {
+            console.error(`Error deleting file from ${filePath}:`, error);
+            throw error;
+        }
+    }
 }
 
 // Singleton instance of WebDavService
 const webdavService = new WebDavService(process.env.WEBDAV_URL || "https://webdav.etran.dev/");
 export default webdavService;
+
