@@ -1,0 +1,120 @@
+// loginForm.module.scss
+
+.loginFormOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); // Darker overlay
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; // Ensure it's above other content
+    backdrop-filter: blur(5px); // Optional: blur background
+  }
+
+  .loginFormContainer {
+    background-color: var(--bg-secondary);
+    padding: 2.5rem 3rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 400px; // Limit form width
+    text-align: center;
+    border: 1px solid var(--border-color);
+  }
+
+  .loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; // Space between elements
+  }
+
+  .loginForm h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem; // Reduced margin
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+
+  .loginError {
+    color: var(--error-color);
+    background-color: rgba(var(--error-color-rgb), 0.1);
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(var(--error-color-rgb), 0.2);
+  }
+
+  .inputGroup {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+
+  .inputGroup label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .loginInput {
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.2);
+    }
+  }
+
+  .loginButton {
+    padding: 0.8rem 1.5rem;
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+
+    &:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    &:disabled {
+      background-color: var(--disabled-color);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  .closeLoginButton {
+    margin-top: 1.5rem;
+    padding: 0.6rem 1rem;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+  }
+

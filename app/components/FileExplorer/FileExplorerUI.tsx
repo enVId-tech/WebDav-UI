@@ -1,13 +1,14 @@
-// filepath: a:\JS-TS\Web Apps\WebDavUI\app\components\FileExplorer\FileExplorerUI.tsx
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react'; // Added useState
 import { FileItem, FolderNode } from './types';
 import { formatFileSize, formatDate, getFileIcon, getEnhancedFileIcon as utilGetEnhancedFileIcon } from './utils';
 import styles from '../../styles/fileExplorer.module.scss'; // Adjusted path
 import { lookup } from 'mime-types';
 import MobileNav from '../MobileNav'; // Adjusted path
 import ThemeToggle from '../ThemeToggle'; // Adjusted path
+import { useAuth } from '@/app/context/AuthContext'; // Corrected import path to use alias
+import LoginForm from '../LoginForm'; // Import LoginForm component
 
 interface FileExplorerUIProps {
   loadingState: 'active' | 'fading' | 'hidden';
@@ -60,7 +61,9 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   onUploadFile,
   onDeleteFile,
 }) => {
-  const [deleteModeActive, setDeleteModeActive] = React.useState(false);
+  const [deleteModeActive, setDeleteModeActive] = useState(false);
+  const { loggedIn, login, logout, isLoading: authIsLoading, username } = useAuth(); // Get auth state, added login
+  const [showLoginForm, setShowLoginForm] = useState(false); // New state for login form visibility
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
@@ -213,6 +216,11 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
 
   // Handler for file input change
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!loggedIn) {
+      alert("Please log in to upload files.");
+      setShowLoginForm(true); // Show login form if trying to upload without being logged in
+      return;
+    }
     const file = event.target.files?.[0];
     if (file) {
       onUploadFile(file);
@@ -220,14 +228,38 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     }
   };
 
-  if (loadingState !== 'hidden') return (
+  const handleToggleDeleteMode = () => {
+    if (!loggedIn) {
+      alert("Please log in to delete files.");
+      setShowLoginForm(true); // Show login form if trying to enable delete without being logged in
+      return;
+    }
+    setDeleteModeActive(!deleteModeActive);
+  }
+
+  if (authIsLoading) {
+    return (
+      <div className={`${styles.loadingContainer}`}>
+        <div className={styles.spinner}></div>
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  //LoginForm is now conditionally rendered based on showLoginForm state
+  //The main file explorer UI is rendered below, and LoginForm can be shown on top or inline
+
+  if (loadingState !== 'hidden' && !showLoginForm) { // Ensure file loading doesn't hide login form if active
+    return (
       <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
         <div className={styles.spinner}></div>
         <p>Loading files...</p>
       </div>
-  );
+    );
+  }
 
-  if (error) return (
+  if (error && !showLoginForm) { // Ensure error display doesn't hide login form if active
+    return (
       <div className={styles.errorContainer}>
         <div className={styles.errorContent}>
           <h3>Error</h3>
@@ -235,11 +267,20 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
           <button onClick={() => routerPush(`/${share}`)}>Go to root</button>
         </div>
       </div>
-  );
+    );
+  }
 
   return (
       <div className={`${styles.modernExplorerContainer} ${styles.themeVariables}`}>
         <ThemeToggle />
+
+        {/* Conditional rendering for Login Form - could be a modal or inline */}
+        {showLoginForm && !loggedIn && (
+          <div className={styles.loginFormOverlay}> {/* Optional: for modal-like appearance */}
+            <LoginForm />
+            <button onClick={() => setShowLoginForm(false)} className={styles.closeLoginButton}>Close</button>
+          </div>
+        )}
 
         <div className={styles.modernSidebar}>
           <div className={styles.sidebarHeader}>
@@ -275,36 +316,44 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
             </div>
 
             <div className={styles.modernActions}>
+              {!loggedIn && !showLoginForm && (
+                <button onClick={() => setShowLoginForm(true)} className={styles.modernButton} style={{ marginRight: '10px' }}>
+                  Login
+                </button>
+              )}
+              {loggedIn && (
+                <button onClick={async () => { await logout(); setShowLoginForm(false);}} className={styles.modernButton} style={{ marginRight: '10px' }}>
+                  Logout ({username})
+                </button>
+              )}
               {relativePath !== '/' && (
                   <button className={styles.modernButton} onClick={onNavigateUp}>
                     ↑ Up
                   </button>
               )}
-              <button
-                  className={styles.modernButton}
-                  onClick={onToggleViewMode}
-                  style={{ marginRight: '10px' }}
-              >
-                {viewMode === 'list' ? '📑 Grid View' : '📋 List View'}
-              </button>
-              {/* File Upload Button */}
-              <input
-                type="file"
-                id="fileUpload"
-                style={{ display: 'none' }}
-                onChange={handleFileSelected}
-              />
-              <label htmlFor="fileUpload" className={styles.modernButton} style={{ marginRight: '10px', cursor: 'pointer' }}>
-                Upload File
-              </label>
-              {/* Toggle Delete Mode Button */}
-              <button
-                className={`${styles.toggleDeleteButton} ${deleteModeActive ? styles.active : ''}`}
-                onClick={() => setDeleteModeActive(!deleteModeActive)}
-                style={{ marginRight: '10px' }}
-              >
-                {deleteModeActive ? 'Cancel Delete' : 'Enable Delete'}
-              </button>
+              {loggedIn && (
+                <>
+                  <input
+                    type="file"
+                    id="fileUpload"
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelected}
+                    disabled={!loggedIn} // Disable if not logged in
+                  />
+                  <label htmlFor="fileUpload" className={`${styles.modernButton} ${!loggedIn ? styles.disabledButton : ''}`} style={{ marginRight: '10px', cursor: loggedIn ? 'pointer' : 'not-allowed' }}>
+                    Upload File
+                  </label>
+                  {/* Toggle Delete Mode Button */}
+                  <button
+                    className={`${styles.toggleDeleteButton} ${deleteModeActive ? styles.active : ''} ${!loggedIn ? styles.disabledButton : ''}`}
+                    onClick={handleToggleDeleteMode} // Already checks for login
+                    style={{ marginRight: '10px' }}
+                    disabled={!loggedIn} // Disable if not logged in
+                  >
+                    {deleteModeActive ? 'Cancel Delete' : 'Enable Delete'}
+                  </button>
+                </>
+              )}
               <form onSubmit={onSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
                 <input
                     type="text"
@@ -459,15 +508,13 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                         </div>
                                         <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                         <div className={styles.sizeColumn}>{formatFileSize(item.size)}</div>
-                                        {item.type !== 'directory' && (
-                                          <button
-                                            onClick={(e) => { e.stopPropagation(); onDeleteFile(item.basename);}}
-                                            className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
-                                            title="Delete file"
-                                          >
-                                            🗑️
-                                          </button>
-                                        )}
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); onDeleteFile(item.basename);}}
+                                          className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
+                                          title="Delete file"
+                                        >
+                                          🗑️
+                                        </button>
                                       </div>
                                   )}
                                 </div>

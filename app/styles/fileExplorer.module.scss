@@ -334,6 +334,17 @@
         }
       }
     }
+
+    .disabledButton {
+      background-color: var(--disabled-color) !important; // Grey out when disabled
+      color: var(--text-muted) !important;
+      cursor: not-allowed !important;
+
+      &:hover {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+    }
   }
 }
 
