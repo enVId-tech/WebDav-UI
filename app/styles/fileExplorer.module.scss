@@ -21,7 +21,7 @@
 .modernSidebar {
   width: 280px;
   background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border); // Changed from --border-color
   height: 100vh;
   position: sticky;
   top: 0;
@@ -38,7 +38,7 @@
     max-height: 40vh;
     position: relative;
     border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border); // Changed from --border-color
 
     &.collapsed {
       max-height: 60px;
@@ -46,15 +46,17 @@
   }
 
   .sidebarHeader {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--accent-color);
+    padding: 2rem;
+    border-bottom: 1px solid var(--border); // Changed from --border-color
+    background: var(--primary);
+    color: white;
     position: relative;
     transition: var(--transition-theme);
 
     h3 {
       margin: 0;
       color: var(--button-text);
+      font-size: 2rem;
       font-weight: 500;
     }
   }
@@ -71,10 +73,11 @@
       color: var(--text-primary);
       border-left: 3px solid transparent;
       margin: 2px 0;
-      transition: var(--transition-theme);
+      transition: background-color var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
       &:hover {
         background-color: var(--bg-tertiary);
+        transform: translateX(2px); // Added hover effect
       }
 
       &.activePath {
@@ -105,7 +108,7 @@
     padding: 0.85rem 1.2rem;
     background-color: var(--bg-secondary);
     border: none;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border); // Changed from --border-color
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -113,10 +116,11 @@
     font-weight: 500;
     text-align: left;
     color: var(--text-primary);
-    transition: var(--transition-theme);
+    transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
     &:hover, &:focus {
       background-color: var(--bg-tertiary);
+      transform: scale(1.02); // Added hover effect
     }
 
     &::after {
@@ -146,12 +150,13 @@
 
     .mobileBreadcrumbItem {
       padding: 0.8rem 1.2rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border); // Changed from --border-color
       color: var(--text-primary);
-      transition: var(--transition-theme);
+      transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
       &:hover {
         background-color: var(--bg-tertiary);
+        transform: translateX(3px); // Added hover effect
       }
     }
 
@@ -191,7 +196,6 @@
       background: var(--title-gradient);
       -webkit-background-clip: text;
       background-clip: text;
-      color: transparent;
       display: inline-block;
       transition: transform 0.3s ease;
 
@@ -259,16 +263,13 @@
 
     .modernButton {
       padding: 0.6rem 1.25rem;
-      background-color: var(--accent-color);
-      color: var(--button-text);
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 500;
-      transition: var(--transition-theme);
+      transition: all 0.2s ease;
 
       &:hover {
-        background-color: var(--accent-hover);
         transform: translateY(-2px);
         box-shadow: 0 4px 6px var(--shadow-color);
       }
@@ -281,7 +282,7 @@
     .searchInput {
       padding: 0.5rem 1rem;
       border-radius: 4px 0 0 4px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border); // Changed from --border-color
       border-right: none;
       background-color: var(--bg-primary);
       color: var(--text-primary);
@@ -299,16 +300,17 @@
       border: none;
       border-radius: 0 4px 4px 0;
       cursor: pointer;
-      transition: var(--transition-theme);
+      transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
       &:hover {
         background-color: var(--accent-hover);
+        transform: scale(1.05); // Added hover effect
       }
     }
 
     .toggleDeleteButton {
       padding: 0.6rem 1.25rem;
-      background-color: var(--error-color); // Red by default
+      background-color: var(--danger); // Changed from --error-color
       color: var(--button-text);
       border: none;
       border-radius: 8px;
@@ -317,7 +319,7 @@
       transition: var(--transition-theme);
 
       &:hover {
-        background-color: var(--error-hover); // Darker red on hover
+        background-color: var(--danger-hover); // Changed from --error-hover
         transform: translateY(-2px);
         box-shadow: 0 4px 6px var(--shadow-color);
       }
@@ -363,7 +365,7 @@
     padding: 1rem 1.5rem;
     background-color: var(--file-header-bg);
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border); // Changed from --border-color
     transition: var(--transition-theme);
 
     @media (max-width: 768px) {
@@ -386,16 +388,17 @@
       grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for delete button
       padding: 0.8rem 1.5rem;
       cursor: pointer;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border); // Changed from --border-color
       color: var(--text-primary);
-      transition: var(--transition-theme);
+      transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
       &:hover {
         background-color: var(--bg-tertiary);
+        transform: translateX(3px); // Added hover effect
       }
 
       .deleteButton {
-        color: #007bff; // Blue color for trash icon
+        color: var(--text-accent); // Changed from #007bff
         background: transparent;
         border: none;
         cursor: pointer;
@@ -404,13 +407,15 @@
         display: none; // Hidden by default
         margin-left: auto; // Push to the right in list view
         align-self: center; // Center vertically
+        transition: color var(--transition-fast), transform var(--transition-fast); // Added transition
 
         &.visible {
           display: inline-block; // Show when delete mode is active
         }
 
          &:hover {
-          color: #0056b3; // Darker blue on hover
+          color: var(--primary-hover); // Changed from #0056b3
+          transform: scale(1.1); // Added hover effect
         }
       }
     }
@@ -418,7 +423,7 @@
     .gridItem {
       background-color: var(--bg-secondary) !important;
       color: var(--text-secondary);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border); // Changed from --border-color
       transition: var(--transition-theme) !important;
 
       div {
@@ -430,7 +435,7 @@
       }
 
       .deleteButtonGrid {
-        color: #007bff; // Blue color
+        color: var(--text-accent); // Changed from #007bff
         background: transparent;
         border: none;
         cursor: pointer;
@@ -438,13 +443,15 @@
         padding: 0.2rem; // Adjust as needed
         margin-top: 8px;
         display: none; // Hidden by default
+        transition: color var(--transition-fast), transform var(--transition-fast); // Added transition
 
         &.visible {
           display: inline-block; // Show when delete mode is active
         }
 
         &:hover {
-          color: #0056b3; // Darker blue on hover
+          color: var(--primary-hover); // Changed from #0056b3
+          transform: scale(1.1); // Added hover effect
         }
       }
     }
@@ -462,7 +469,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border); // Changed from --border-color
   }
 }
 
@@ -570,10 +577,11 @@
     border-radius: 8px;
     cursor: pointer;
     margin-top: 1rem;
-    transition: var(--transition-theme);
+    transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
     &:hover {
       background-color: var(--accent-hover);
+      transform: translateY(-2px); // Added hover effect
     }
   }
 }

@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react'; // Added useState
 import { FileItem, FolderNode } from './types';
 import { formatFileSize, formatDate, getFileIcon, getEnhancedFileIcon as utilGetEnhancedFileIcon } from './utils';
 import styles from '../../styles/fileExplorer.module.scss'; // Adjusted path
+import commonStyles from '../../styles/common.module.scss'; // Import common styles for theme variables
 import { lookup } from 'mime-types';
 import MobileNav from '../MobileNav'; // Adjusted path
 import ThemeToggle from '../ThemeToggle'; // Adjusted path
@@ -269,9 +270,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
       </div>
     );
   }
-
   return (
-      <div className={`${styles.modernExplorerContainer} ${styles.themeVariables}`}>
+      <div className={`${styles.modernExplorerContainer} ${commonStyles.themeVariables}`}>
         <ThemeToggle />
 
         {/* Conditional rendering for Login Form - could be a modal or inline */}

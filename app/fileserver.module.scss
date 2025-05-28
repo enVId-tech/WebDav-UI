@@ -17,7 +17,7 @@
   --error-color: #dc3545;
   --file-header-bg: #e9ecef;
   --title-gradient: linear-gradient(45deg, #007bff, #17a2b8);
-  --breadcrumb-bg: #f5f5f5;
+  --breadcrumb-bg: #c9c9c9;
 
   // Transition for smooth theme switching
   --transition-theme: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -257,7 +257,6 @@
       background: var(--title-gradient);
       -webkit-background-clip: text;
       background-clip: text;
-      color: transparent;
       display: inline-block;
       transition: transform 0.3s ease;
 

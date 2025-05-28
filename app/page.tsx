@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '@/app/homepage.module.scss';
+import commonStyles from '@/app/styles/common.module.scss';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 export default function HomePage() {
     const router = useRouter();
@@ -24,7 +26,8 @@ export default function HomePage() {
     };
 
     return (
-        <div className={styles.homePage}>
+        <div className={`${styles.homePage} ${commonStyles.themeVariables}`}>
+            <ThemeToggle />
             <div className={styles.container}>
                 <header className={styles.header}>
                     <h1>WebDAV File Explorer</h1>
