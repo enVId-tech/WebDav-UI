@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from '@/lib/webdav-server';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Disable Next.js body parsing to handle FormData
 export const config = {
@@ -20,7 +24,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Construct the WebDAV client's target directory URL
-        let clientTargetDirectoryUrl = `https://192.168.1.89:30001${sharePath}`;
+        let clientTargetDirectoryUrl = `${process.env.WEBDAV_URL}/${sharePath}`;
         if (path && path !== '/') { // If path is like "/subfolder"
             clientTargetDirectoryUrl += path.startsWith('/') ? path : `/${path}`;
         }

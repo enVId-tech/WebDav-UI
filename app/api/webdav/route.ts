@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from "@/lib/webdav-server";
 import { lookup } from 'mime-types';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Helper function to determine content type
 function getContentType(path: string): string {
@@ -26,7 +30,7 @@ export async function GET(request: NextRequest) {
 
         const decodedPath = decodeURIComponent(requestPath);
 
-        let fullWebDavUrl = `https://192.168.1.89:30001${sharePath}`;
+        let fullWebDavUrl = `${process.env.WEBDAV_URL}/${sharePath}`;
         if (decodedPath && decodedPath !== '/') {
             fullWebDavUrl += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
         }
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
         }
         const decodedPath = decodeURIComponent(requestPath);
 
-        let fullPath = `https://192.168.1.89:30001${sharePath}`;
+        let fullPath = `${process.env.WEBDAV_URL}/${sharePath}`;
         if (decodedPath && decodedPath !== '/') {
             fullPath += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
         }

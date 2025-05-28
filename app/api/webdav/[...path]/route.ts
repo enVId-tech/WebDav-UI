@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from "@/lib/webdav-server";
 import { lookup } from 'mime-types';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 export async function POST(request: NextRequest) {
     try {
@@ -12,7 +16,7 @@ export async function POST(request: NextRequest) {
         const decodedPath = decodeURIComponent(requestPath);
 
         // Construct base URL with sharePath
-        let fullPath = `https://192.168.1.89:30001${sharePath}`;
+        let fullPath = `${process.env.WEBDAV_URL}/${sharePath}`;
 
         // Add the path if it exists and isn't just '/'
         if (decodedPath && decodedPath !== '/') {
