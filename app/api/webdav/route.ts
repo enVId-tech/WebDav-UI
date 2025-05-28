@@ -22,24 +22,31 @@ export async function GET(request: NextRequest) {
         const requestPath = searchParams.get('path');
         const sharePath = searchParams.get('sharePath');
         const isFile = searchParams.get('isFile') === 'true';
-        const download = searchParams.get('download') === 'true';
-
-        if (!requestPath || !sharePath) {
+        const download = searchParams.get('download') === 'true';        if (!requestPath || !sharePath) {
             return NextResponse.json({ error: 'Missing path or sharePath parameter' }, { status: 400 });
         }
 
-        const decodedPath = decodeURIComponent(requestPath);
-
-        let fullWebDavUrl = `${process.env.WEBDAV_URL}/${sharePath}`;
+        const decodedPath = decodeURIComponent(requestPath);        // Properly construct the WebDAV URL to avoid double slashes
+        let fullWebDavUrl = process.env.WEBDAV_URL?.replace(/\/$/, '') || ''; // Remove trailing slash from base URL
+        let filePath = '';
+        
+        // Construct the file path separately for file requests
+        filePath += '/' + sharePath.replace(/^\//, ''); // Add sharePath without leading slash
         if (decodedPath && decodedPath !== '/') {
-            fullWebDavUrl += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
+            const cleanPath = decodedPath.replace(/^\//, ''); // Remove leading slash from decoded path
+            filePath += '/' + cleanPath;
         }
-
-        console.log(`GET request for: ${fullWebDavUrl}, isFile: ${isFile}`);
-        webdavService.updateUrl(fullWebDavUrl);
-
+        
+        // Clean up any double slashes in the file path
+        filePath = filePath.replace(/\/+/g, '/');
+        
+        console.log(`GET request for file path: ${filePath}, isFile: ${isFile}`);
+        
+        // For files, keep the WebDAV client at the base URL and pass the file path
         if (isFile) {
-            const fileContent = await webdavService.getFileContents();
+            // Ensure WebDAV client is connected to base URL
+            webdavService.updateUrl(process.env.WEBDAV_URL || '');
+            const fileContent = await webdavService.getFileContents(filePath);
 
             const headers = new Headers();
             headers.set('Content-Type', getContentType(decodedPath));
@@ -49,18 +56,21 @@ export async function GET(request: NextRequest) {
                 headers.set('Content-Disposition', `inline; filename="${getFileName(decodedPath)}"`);
             }
 
+            // fileContent is now always a Buffer, which is compatible with NextResponse
             return new NextResponse(fileContent, {
                 headers: headers,
-            });
-        } else {
-            // Handle directory listing for GET if needed, ensure trailing slash
-            if (!fullWebDavUrl.endsWith('/')) {
-                fullWebDavUrl += '/';
-                webdavService.updateUrl(fullWebDavUrl);
+            });        } else {
+            // Handle directory listing - ensure WebDAV client is at base URL  
+            webdavService.updateUrl(process.env.WEBDAV_URL || '');
+            
+            // Ensure the directory path ends with /
+            if (!filePath.endsWith('/')) {
+                filePath += '/';
             }
-            const directoryContents = await webdavService.getDirectoryContents();
-            // Ensure directoryContents is an array before mapping
-            const contentsArray = Array.isArray(directoryContents) ? directoryContents : (directoryContents.data || []);
+            
+            const directoryContents = await webdavService.getDirectoryContents(filePath);
+            // Handle directory contents - it should already be an array from our service
+            const contentsArray = Array.isArray(directoryContents) ? directoryContents : [];
 
             const formattedContents = contentsArray.map((item: any) => ({
                 name: item.basename,
@@ -120,10 +130,9 @@ export async function POST(request: NextRequest) {
             if (!fullPath.endsWith('/')) {
                 fullPath += '/';
                 webdavService.updateUrl(fullPath);
-            }
-            const directoryContents = await webdavService.getDirectoryContents();
-            // Ensure directoryContents is an array before mapping
-            const contentsArray = Array.isArray(directoryContents) ? directoryContents : (directoryContents.data || []);
+            }            const directoryContents = await webdavService.getDirectoryContents();
+            // Handle directory contents - it should already be an array from our service
+            const contentsArray = Array.isArray(directoryContents) ? directoryContents : [];
 
             const formattedContents = contentsArray.map((item: any) => ({
                 name: item.basename, // Use basename for name

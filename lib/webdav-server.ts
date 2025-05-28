@@ -1,4 +1,5 @@
 import { createClient, WebDAVClient } from "webdav";
+import https from "https";
 
 /**
  * WebDAV Service
@@ -11,17 +12,13 @@ import { createClient, WebDAVClient } from "webdav";
  */
 class WebDavService {
     private client: WebDAVClient;
-    private currentUrl: string;
-
-    public constructor(webdavUrl: string) {
-        this.client = createClient(webdavUrl);
+    private currentUrl: string;    public constructor(webdavUrl: string) {
+        this.client = this.createClientWithOptions(webdavUrl);
         this.currentUrl = webdavUrl;
-    }
-
-    private createClientWithOptions(url: string): WebDAVClient {
+    }    private createClientWithOptions(url: string): WebDAVClient {
         return createClient(url, {
             // For development only - disable SSL certificate validation
-            httpsAgent: new (require('https').Agent)({
+            httpsAgent: new https.Agent({
                 rejectUnauthorized: false
             })
         });
@@ -49,29 +46,57 @@ class WebDavService {
     public async getDirectoryContents(path: string = '/'): Promise<any[]> {
         const contents = await this.client.getDirectoryContents(path);
         return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
-    }
-
-    async getFileContents() {
+    }    async getFileContents(filePath?: string): Promise<Buffer> {
         try {
-            const response = await fetch(this.currentUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Basic ${btoa(`${process.env.WEBDAV_USERNAME}:${process.env.WEBDAV_PASSWORD}`)}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+            // If a specific file path is provided, use it. Otherwise use currentUrl
+            let pathToFetch: string;
+            
+            if (filePath) {
+                pathToFetch = filePath;
+            } else {
+                // Extract the path from the current URL
+                const baseUrl = process.env.WEBDAV_URL || "https://webdav.etran.dev/";
+                let extractedPath = this.currentUrl;
+                
+                if (this.currentUrl.startsWith(baseUrl)) {
+                    extractedPath = this.currentUrl.substring(baseUrl.length);
+                } else {
+                    // If the URL doesn't start with base URL, try to extract path from URL object
+                    const url = new URL(this.currentUrl);
+                    extractedPath = url.pathname;
+                }
+                
+                pathToFetch = extractedPath;
             }
-
-            return await response.arrayBuffer();
+            
+            // Clean up the path: remove double slashes and ensure single leading slash
+            pathToFetch = pathToFetch.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+            
+            // Ensure the path starts with /
+            if (!pathToFetch.startsWith('/')) {
+                pathToFetch = '/' + pathToFetch;
+            }
+            
+            console.log(`Fetching file with path: ${pathToFetch}`);            // Use the webdav client's getFileContents method with the extracted path
+            const contents = await this.client.getFileContents(pathToFetch);
+            
+            // Always return a Buffer for consistency
+            if (contents instanceof ArrayBuffer) {
+                return Buffer.from(contents);
+            } else if (contents instanceof Buffer) {
+                return contents;
+            } else if (contents && typeof contents === 'object' && 'buffer' in contents) {
+                // Handle ArrayBufferLike types by converting to Buffer
+                return Buffer.from(contents.buffer instanceof ArrayBuffer ? contents.buffer : contents as any);
+            } else {
+                // If it's a string, convert to Buffer
+                return Buffer.from(contents as string, 'utf-8');
+            }
         } catch (error) {
             console.error('Error fetching file:', error);
             throw error;
         }
-    }
-
-    async uploadFile(filePath: string, data: Buffer | Uint8Array | string): Promise<void> {
+    }async uploadFile(filePath: string, data: Buffer | string): Promise<void> {
         try {
             await this.client.putFileContents(filePath, data, { overwrite: true });
             console.log(`File uploaded successfully to ${filePath}`);
@@ -93,6 +118,6 @@ class WebDavService {
 }
 
 // Singleton instance of WebDavService
-const webdavService = new WebDavService(process.env.WEBDAV_URL || "https://webdav.etran.dev/");
+const webdavService = new WebDavService(process.env.WEBDAV_URL || "https://example.dev/");
 export default webdavService;
 

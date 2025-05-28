@@ -1,7 +1,7 @@
 // preview.module.scss - Styles for file preview pages
 
 // Import common theme variables
-@import './common.module.scss';
+@use './common.module.scss';
 
 .previewContainer {
   padding: 2rem;
