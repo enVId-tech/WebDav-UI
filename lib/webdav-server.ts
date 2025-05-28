@@ -12,10 +12,14 @@ import https from "https";
  */
 class WebDavService {
     private client: WebDAVClient;
-    private currentUrl: string;    public constructor(webdavUrl: string) {
+    private currentUrl: string;    
+    
+    public constructor(webdavUrl: string) {
         this.client = this.createClientWithOptions(webdavUrl);
         this.currentUrl = webdavUrl;
-    }    private createClientWithOptions(url: string): WebDAVClient {
+    }    
+    
+    private createClientWithOptions(url: string): WebDAVClient {
         return createClient(url, {
             // For development only - disable SSL certificate validation
             httpsAgent: new https.Agent({
@@ -27,7 +31,7 @@ class WebDavService {
     /**
      * Get the current URL of the WebDAV server.
      * @param {string} newUrl - The new URL to set.
-     * @returns {string} The current URL.
+     * @returns {boolean} - Whether the URL has successfully updated
      */
     public updateUrl(newUrl: string): boolean {
         if (newUrl !== this.currentUrl) {
@@ -96,7 +100,9 @@ class WebDavService {
             console.error('Error fetching file:', error);
             throw error;
         }
-    }async uploadFile(filePath: string, data: Buffer | string): Promise<void> {
+    }
+    
+    public async uploadFile(filePath: string, data: Buffer | string): Promise<void> {
         try {
             await this.client.putFileContents(filePath, data, { overwrite: true });
             console.log(`File uploaded successfully to ${filePath}`);
@@ -106,7 +112,7 @@ class WebDavService {
         }
     }
 
-    async deleteFile(filePath: string): Promise<void> {
+    public async deleteFile(filePath: string): Promise<void> {
         try {
             await this.client.deleteFile(filePath);
             console.log(`File deleted successfully from ${filePath}`);
@@ -118,6 +124,6 @@ class WebDavService {
 }
 
 // Singleton instance of WebDavService
-const webdavService = new WebDavService(process.env.WEBDAV_URL || "https://example.dev/");
+const webdavService = new WebDavService(process.env.WEBDAV_URL || "https://example.com/");
 export default webdavService;
 

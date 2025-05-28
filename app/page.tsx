@@ -12,7 +12,7 @@ export default function HomePage() {
     const [error, setError] = useState('');
 
     // Handle accessing a share
-    const accessShare = (e: React.FormEvent) => {
+    const accessShare = (e: React.FormEvent): void => {
         e.preventDefault();
 
         if (!shareInput.trim()) {
