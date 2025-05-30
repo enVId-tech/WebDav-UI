@@ -27,16 +27,14 @@ export async function GET(request: NextRequest) {
         }
 
         const decodedPath = decodeURIComponent(requestPath);        // Properly construct the WebDAV URL to avoid double slashes
-        let fullWebDavUrl = process.env.WEBDAV_URL?.replace(/\/$/, '') || ''; // Remove trailing slash from base URL
         let filePath = '';
         
         // Construct the file path separately for file requests
-        filePath += '/' + sharePath.replace(/^\//, ''); // Add sharePath without leading slash
         if (decodedPath && decodedPath !== '/') {
             const cleanPath = decodedPath.replace(/^\//, ''); // Remove leading slash from decoded path
             filePath += '/' + cleanPath;
         }
-        
+
         // Clean up any double slashes in the file path
         filePath = filePath.replace(/\/+/g, '/');
         

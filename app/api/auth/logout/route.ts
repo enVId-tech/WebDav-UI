@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // TODO: Implement actual session/token clearing logic here
   // For example, clearing an HTTPOnly cookie
 

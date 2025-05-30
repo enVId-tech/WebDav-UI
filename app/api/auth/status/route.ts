@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // TODO: Implement actual session/token checking logic here
   // For now, let's assume the user is not logged in by default
   // You would typically check a cookie or a session store

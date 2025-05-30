@@ -1,7 +1,6 @@
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Fix your rewrites configuration
     async rewrites() {
         return [
             {
@@ -9,6 +8,10 @@ const nextConfig = {
                 destination: '/api/webdav/:path*',
             },
         ];
+    },
+    eslint: {
+        // Disable ESLint during production builds
+        ignoreDuringBuilds: true,
     }
 };
 

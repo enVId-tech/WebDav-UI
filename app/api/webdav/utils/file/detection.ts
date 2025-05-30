@@ -3,19 +3,19 @@ import { lookup } from "mime-types";
 /**
  * Detect file type from filename and MIME type
  */
-export function detectFileType(fileName: string, mimeType: string): 'video' | 'image' | 'audio' | 'other' {
-  if (mimeType.startsWith('video/') || mimeType === 'application/mp4') return 'video';
-  if (mimeType.startsWith('image/')) return 'image';
-  if (mimeType.startsWith('audio/')) return 'audio';
-
-  // Check extensions for cases where mime type might be incorrect
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  if (['mp4', 'webm', 'mkv', 'avi', 'mov'].includes(ext || '')) return 'video';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(ext || '')) return 'image';
-  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext || '')) return 'audio';
-
-  return 'other';
-}
+// export function detectFileType(fileName: string, mimeType: string): 'video' | 'image' | 'audio' | 'other' {
+//   if (mimeType.startsWith('video/') || mimeType === 'application/mp4') return 'video';
+//   if (mimeType.startsWith('image/')) return 'image';
+//   if (mimeType.startsWith('audio/')) return 'audio';
+//
+//   // Check extensions for cases where mime type might be incorrect
+//   const ext = fileName.split('.').pop()?.toLowerCase();
+//   if (['mp4', 'webm', 'mkv', 'avi', 'mov'].includes(ext || '')) return 'video';
+//   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(ext || '')) return 'image';
+//   if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext || '')) return 'audio';
+//
+//   return 'other';
+// }
 
 /**
  * Detect video format from filename and MIME type

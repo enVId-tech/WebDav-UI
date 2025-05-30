@@ -50,9 +50,11 @@ class WebDavService {
     public async getDirectoryContents(path: string = '/'): Promise<any[]> {
         const contents = await this.client.getDirectoryContents(path);
         return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
-    }    async getFileContents(filePath?: string): Promise<Buffer> {
+    }
+
+    async getFileContents(filePath?: string): Promise<Buffer> {
         try {
-            // If a specific file path is provided, use it. Otherwise use currentUrl
+            // If a specific file path is provided, use it. Otherwise, use currentUrl
             let pathToFetch: string;
             
             if (filePath) {

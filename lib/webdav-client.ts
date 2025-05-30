@@ -11,13 +11,16 @@ export async function getDirectoryContents(path = '/', sharePath = '/etran'): Pr
     console.log(`Path: ${path}`);
     console.log(`Share Path: ${sharePath}`);
 
-    const request = await fetch(`/api/webdav/${sharePath}`, {
+    // Remove leading slash from sharePath if present to avoid double slashes
+    const normalizedSharePath = sharePath.startsWith('/') ? sharePath.substring(1) : sharePath;
+
+    const request = await fetch(`/api/webdav/${normalizedSharePath}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         },
-        body: JSON.stringify({ path, sharePath }),
+        body: JSON.stringify({ path, sharePath: normalizedSharePath }),
     });
 
     if (!request.ok) {

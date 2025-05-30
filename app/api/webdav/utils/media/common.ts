@@ -1,15 +1,11 @@
 import { Readable } from 'stream';
-import https from 'https';
-import path from 'path';
-import fs from 'fs';
 import crypto from 'crypto';
-import sharp from 'sharp';
 import { spawn } from 'child_process';
 import { TRANSCODE_CACHE_DIR, IMAGE_CACHE_DIR, VIDEO_QUALITY_PRESETS } from '../config/constants';
+import path from "path";
 
 // Check if ffmpeg is available (for video transcoding)
 let ffmpegAvailable = false;
-let ffmpegChecking = true;
 
 // More robust check for ffmpeg availability
 function checkFfmpegAvailability() {
@@ -19,18 +15,15 @@ function checkFfmpegAvailability() {
     proc.on('error', (err) => {
       console.warn(`FFmpeg availability check failed: ${err.message}`);
       ffmpegAvailable = false;
-      ffmpegChecking = false;
     });
 
     proc.on('close', (code) => {
       ffmpegAvailable = code === 0;
-      ffmpegChecking = false;
       console.log(`FFmpeg availability check complete: ${ffmpegAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'}`);
     });
   } catch (e) {
     console.warn('FFmpeg check failed, video transcoding will be disabled');
     ffmpegAvailable = false;
-    ffmpegChecking = false;
   }
 }
 

@@ -15,11 +15,17 @@ export async function POST(request: NextRequest) {
         const { path: requestPath, sharePath, isFile = false } = body;
         const decodedPath = decodeURIComponent(requestPath);
 
-        // Construct base URL with sharePath
-        let fullPath = `${process.env.WEBDAV_URL}/${sharePath}`;
+        // Construct base URL with normalized sharePath
+        // Ensure we don't have double slashes between base URL and sharePath
+        const baseUrl = process.env.WEBDAV_URL || '';
+        const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
+        // Build the full path carefully to avoid path issues
+        let fullPath = `${normalizedBaseUrl}/${sharePath}`;
 
         // Add the path if it exists and isn't just '/'
         if (decodedPath && decodedPath !== '/') {
+            // Ensure we have exactly one slash between paths
             fullPath += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
         }
 
@@ -73,3 +79,4 @@ function getContentType(path: string): string {
 function getFileName(path: string): string {
     return path.split('/').pop() || 'download';
 }
+
