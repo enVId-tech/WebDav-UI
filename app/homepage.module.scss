@@ -138,7 +138,7 @@
 }
 
 .featureCard {
-  background-color: var(--bg-primary);
+  background-color: var(--bg-card);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 4px 6px var(--shadow-color);
@@ -164,6 +164,7 @@
 .featureIcon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  color: var(--accent-color);
 }
 
 .accessForm {
@@ -173,6 +174,7 @@
 .inputGroup {
   display: flex;
   max-width: 500px;
+  margin: 0 auto;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -183,12 +185,12 @@
   flex: 1;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 2px solid var(black);
+  border: 2px solid var(--input-border-color);
   border-radius: 4px 0 0 4px;
   outline: none;
   border-style: solid;
   transition: border-color 0.15s ease-in-out, var(--transition-theme);
-  background-color: var(--bg-primary);
+  background-color: var(--input-bg);
   color: var(--text-primary);
 
   &:focus {
@@ -202,11 +204,17 @@
 
 .accessButton {
   padding: 0.75rem 1.5rem;
+  background-color: var(--accent-color);
+  color: var(--button-text);
   font-weight: 500;
   border: none;
   border-radius: 0 4px 4px 0;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, var(--transition-theme);
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
 
   @media (max-width: 768px) {
     border-radius: 0 0 4px 4px;
@@ -275,3 +283,4 @@
   color: var(--text-secondary);
   transition: var(--transition-theme);
 }
+

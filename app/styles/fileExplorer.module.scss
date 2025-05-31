@@ -9,9 +9,11 @@
   min-height: 100vh;
   background-color: var(--bg-primary);
   font-family: system-ui, -apple-system, sans-serif;
-  position: relative;
   color: var(--text-primary);
   transition: var(--transition-theme);
+  position: absolute;
+  top: 0;
+  left: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -46,24 +48,22 @@
   }
 
   .sidebarHeader {
-    padding: 2rem;
-    border-bottom: 1px solid var(--border); // Changed from --border-color
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
     background: var(--primary);
-    color: white;
     position: relative;
     transition: var(--transition-theme);
 
     h3 {
       margin: 0;
       color: var(--button-text);
-      font-size: 2rem;
       font-weight: 500;
     }
   }
 
   .modernFolderTree {
     flex: 1;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 
     .folderTreeItem {
       display: flex;
@@ -196,6 +196,7 @@
       background: var(--title-gradient);
       -webkit-background-clip: text;
       background-clip: text;
+      color: transparent;
       display: inline-block;
       transition: transform 0.3s ease;
 
@@ -268,6 +269,8 @@
       cursor: pointer;
       font-weight: 500;
       transition: all 0.2s ease;
+      background: var(--accent-color);
+        color: var(--button-text);
 
       &:hover {
         transform: translateY(-2px);
@@ -282,7 +285,7 @@
     .searchInput {
       padding: 0.5rem 1rem;
       border-radius: 4px 0 0 4px;
-      border: 1px solid var(--border); // Changed from --border-color
+      border: 1px solid var(--border-color);
       border-right: none;
       background-color: var(--bg-primary);
       color: var(--text-primary);
@@ -300,11 +303,10 @@
       border: none;
       border-radius: 0 4px 4px 0;
       cursor: pointer;
-      transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
+      transition: var(--transition-theme);
 
       &:hover {
         background-color: var(--accent-hover);
-        transform: scale(1.05); // Added hover effect
       }
     }
 
@@ -329,7 +331,8 @@
       }
 
       &.active {
-        background-color: var(--success-color); // Green when active
+        background-color: var(--success); // Green when active
+        transition: all 0.2s ease-in-out;
 
         &:hover {
           background-color: var(--success-hover); // Darker green on hover
@@ -425,6 +428,8 @@
       color: var(--text-secondary);
       border: 1px solid var(--border); // Changed from --border-color
       transition: var(--transition-theme) !important;
+      margin: 1rem 0 1rem 0;
+      height: 80% !important;
 
       div {
         color: var(--text-primary) !important;

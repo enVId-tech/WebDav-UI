@@ -1,6 +1,12 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import styles from '@/app/styles/audioPreview.module.scss';
+// Import React Icons
+import { FaPlay, FaPause } from 'react-icons/fa';
+import { BiSkipPrevious, BiSkipNext, BiErrorCircle } from 'react-icons/bi';
+import { IoVolumeMedium, IoVolumeMute } from 'react-icons/io5'; // Removed IoMdDownload from here
+import { MdDownload } from 'react-icons/md'; // Added MdDownload
+import ThemeToggle from './ThemeToggle'; // Added ThemeToggle import
 
 interface AudioPreviewProps {
   src: string;
@@ -18,12 +24,12 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [albumArt, setAlbumArt] = useState<string | null>(null);
+  // const [albumArt, setAlbumArt] = useState<string | null>(null); // Album art not currently used
   const [audioFrequencyData, setAudioFrequencyData] = useState<Uint8Array | null>(null);
   const [skipDuration, setSkipDuration] = useState<number>(10);
-  const [showSkipOptions, setShowSkipOptions] = useState<boolean>(false);
+  // const [showSkipOptions, setShowSkipOptions] = useState<boolean>(false); // Skip options UI not fully implemented
 
-  const skipDurationOptions = [5, 10, 15, 30, 60]; // Skip options in seconds
+  // const skipDurationOptions = [5, 10, 15, 30, 60]; // Skip options in seconds
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const seekBarRef = useRef<HTMLDivElement>(null);
@@ -33,6 +39,20 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const visualizerCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // HSL to RGB conversion function
+  const hslToRgbString = (h: number, s: number, l: number): string => {
+    s /= 100;
+    l /= 100;
+    const k = (n: number) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) =>
+      l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const r = Math.round(255 * f(0));
+    const g = Math.round(255 * f(8));
+    const b = Math.round(255 * f(4));
+    return `${r}, ${g}, ${b}`;
+  };
 
   // Format time in mm:ss
   const formatTime = (time: number) => {
@@ -127,7 +147,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
 
     for (let i = 0; i < audioFrequencyData.length; i++) {
       // Calculate bar height based on frequency value (0-255)
-      const barHeight = (audioFrequencyData[i] / 255) * canvas.height * 0.8;
+      const barHeight = (audioFrequencyData[i] / 255) * canvas.height;
 
       // Skip very low values
       if (barHeight < 3) {
@@ -350,18 +370,45 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
       let hash = 0;
       for (let i = 0; i < fileName.length; i++) {
         hash = fileName.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // Ensure hash is a 32-bit integer
       }
-      const hue = hash % 360;
-      return `hsl(${hue}, 80%, 65%)`;
+
+      // Constrain hue to a range of blues (e.g., 190-250 degrees)
+      const baseBlueHue = 190; // Starting hue for blues
+      const hueRange = 60;     // Spread of blue hues (190 to 190+60-1 = 249)
+      const hue = baseBlueHue + (Math.abs(hash) % hueRange);
+
+      return {
+        primaryHsl: `hsl(${hue}, 80%, 65%)`,
+        primaryRgbString: hslToRgbString(hue, 80, 65), // Calculate RGB string
+        secondaryHsl: `hsl(${(hue - 30 + 360) % 360}, 70%, 55%)` // Ensure hue wraps correctly
+      };
     };
 
-    document.documentElement.style.setProperty('--audio-primary-color', generateColor());
+    const colors = generateColor();
+
+    document.documentElement.style.setProperty('--audio-primary-color', colors.primaryHsl);
+    document.documentElement.style.setProperty('--audio-primary-color-rgb', colors.primaryRgbString); // Set RGB string variable
+    document.documentElement.style.setProperty('--audio-secondary-color', colors.secondaryHsl);
   }, [fileName]);
+
+  // Fallback for styles.audioControlSizeDefault if styles object doesn't have it or it's not a number string
+  let controlSize = 50;
+  if (styles && typeof styles.audioControlSizeDefault === 'string' && !isNaN(parseFloat(styles.audioControlSizeDefault))) {
+    controlSize = parseFloat(styles.audioControlSizeDefault);
+  }
+  const playIconSize = Math.floor(controlSize * 0.45);
+  const skipIconSize = 20; // Adjusted for 40px skip buttons
+  const volumeIconSize = 18;
+  const utilityIconSize = 16;
+  const errorIconSize = 48;
+
 
   return (
       <div className={styles.audioPreview}>
-        <div className={styles.audioHeader}>
+        <div className={styles.previewHeader}>
           <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+          <ThemeToggle />
         </div>
 
         {loading && (
@@ -373,20 +420,14 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
 
         {error && (
             <div className={styles.error}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-              </svg>
+              <BiErrorCircle size={errorIconSize} />
               <h3>Error Playing Audio</h3>
               <p>{error}</p>
               <div className={styles.downloadContainer}>
                 <a href={`${src}&download=true`} download={fileName} className={styles.downloadButton}>
-              <span className={styles.downloadIcon}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                </svg>
-              </span>
+                  <span className={styles.downloadIcon}>
+                    <MdDownload size={utilityIconSize} /> {/* Changed to MdDownload */}
+                  </span>
                   Download Audio File
                 </a>
               </div>
@@ -408,8 +449,8 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
         {!loading && !error && (
             <>
               <div className={styles.audioInfo}>
-                <h3>{fileName}</h3>
-                <p>{mimeType.split('/')[1].toUpperCase()} audio file</p>
+                <h3>{decodeURIComponent(fileName)}</h3>
+                <p>{mimeType?.split('/')[1]?.toUpperCase()} AUDIO FILE</p>
               </div>
 
               <div className={styles.visualizerContainer}>
@@ -420,9 +461,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                         onClick={() => skipTime(-skipDuration)}
                         aria-label={`Rewind ${skipDuration}s`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 8.5H6.5a.5.5 0 0 0 .5-.5V3.5z"/>
-                      </svg>
+                      <BiSkipPrevious size={skipIconSize} />
                     </button>
                   </div>
 
@@ -432,13 +471,9 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                       aria-label={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
-                        </svg>
+                        <FaPause size={playIconSize} />
                     ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                        </svg>
+                        <FaPlay size={playIconSize} className={styles.playIcon} />
                     )}
                   </button>
 
@@ -448,9 +483,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                         onClick={() => skipTime(skipDuration)}
                         aria-label={`Forward ${skipDuration}s`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 3.5a.5.5 0 0 1 1 0V9a.5.5 0 0 0 .5.5h2.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L12.293 8.5H9.5a.5.5 0 0 1-.5-.5V3.5z"/>
-                      </svg>
+                      <BiSkipNext size={skipIconSize} />
                     </button>
                   </div>
                 </div>
@@ -494,16 +527,13 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                 <div
                     className={`${styles.volumeIcon} ${isMuted ? styles.muted : ''}`}
                     onClick={toggleMute}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                    {isMuted ? (
-                        <path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06zm7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0z"/>
-                    ) : (
-                        <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
-                    )}
-                    <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/>
-                    <path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/>
-                  </svg>
+                  {isMuted ? (
+                      <IoVolumeMute size={volumeIconSize} />
+                  ) : (
+                      <IoVolumeMedium size={volumeIconSize} />
+                  )}
                 </div>
 
                 <input
@@ -528,12 +558,9 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                     download={fileName}
                     className={styles.downloadButton}
                 >
-              <span className={styles.downloadIcon}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                </svg>
-              </span>
+                  <span className={styles.downloadIcon}>
+                    <MdDownload size={utilityIconSize} /> {/* Changed to MdDownload */}
+                  </span>
                   Download Audio File
                 </a>
               </div>

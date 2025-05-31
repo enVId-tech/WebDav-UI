@@ -5,6 +5,7 @@
   --bg-secondary: #ffffff;
   --bg-tertiary: #f3f4f6;
   --bg-accent: #f0f7ff;
+  --bg-card: #ffffff;
 
   // Text colors
   --text-primary: #111827;
@@ -23,6 +24,15 @@
   --danger-hover: #b91c1c; // Darker danger for hover (was --error-hover)
   --info: #0891b2;
   --disabled-color: #d1d5db; // Color for disabled elements
+  --error-color: #dc2626;
+
+  // Additional UI variables for the homepage
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+  --border-color: #e5e7eb;
+  --input-border-color: #d1d5db;
+  --input-bg: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
 
   // UI Elements
   --border: #e5e7eb; // Standard border (used instead of --border-color)
@@ -30,13 +40,15 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  // --shadow-color: rgba(0, 0, 0, 0.1); // If needed, but prefer specific shadow variables
 
   // Specific component theming
   --breadcrumb-bg: #f3f4f6; // Light tertiary background
   --file-header-bg: #e9ecef; // Slightly different light gray for file headers
   --title-gradient: linear-gradient(45deg, #2563eb, #3b82f6); // Gradient for titles
   --accent-color-rgb: 37, 99, 235; // RGB for --primary (2563eb)
+
+  // Transitions
+  --transition-theme: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Dark theme when .dark class is applied to html */
@@ -46,6 +58,7 @@ html.dark {
   --bg-secondary: #1f2937;
   --bg-tertiary: #374151;
   --bg-accent: #1e3a8a;
+  --bg-card: #1f2937;
 
   // Text colors
   --text-primary: #f9fafb;
@@ -61,6 +74,15 @@ html.dark {
   --danger: #ef4444;
   --danger-hover: #ef4444; // Was --error-hover
   --info: #06b6d4;
+  --error-color: #f87171;
+
+  // Additional UI variables for the homepage
+  --accent-color: #3b82f6;
+  --accent-hover: #60a5fa;
+  --border-color: #374151;
+  --input-border-color: #4b5563;
+  --input-bg: #1f2937;
+  --shadow-color: rgba(0, 0, 0, 0.5);
 
   // UI Elements
   --border: #374151;
@@ -80,56 +102,6 @@ html.dark {
   --accent-color-rgb: 59, 130, 246; // RGB for dark --primary (3b82f6)
 }
 
-/* System preference dark mode support (only when no manual theme is set) */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light):not(.dark) {
-    // Modern dark mode palette
-    --bg-primary: #111827;
-    --bg-secondary: #1f2937;
-    --bg-tertiary: #374151;
-    --bg-accent: #1e3a8a;
-
-    // Text colors
-    --text-primary: #f9fafb;
-    --text-secondary: #e5e7eb;
-    --text-tertiary: #9ca3af;
-    --text-accent: #60a5fa;
-
-    // UI Colors
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
-    --success: #10b981;
-    --warning: #fbbf24;
-    --danger: #ef4444;
-    --danger-hover: #ef4444; // Was --error-hover
-    --info: #06b6d4;
-
-    // UI Elements
-    --border: #374151;
-    --border-light: #1f2937;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-
-    // Specific component theming
-    --button-text: #ffffff;
-    --success-hover: #047857;
-    --danger-hover: #ef4444; // Was --error-hover
-    --disabled-color: #4b5563;
-    --breadcrumb-bg: #374151;
-    --file-header-bg: #374151;
-    --title-gradient: linear-gradient(45deg, #3b82f6, #60a5fa);
-    --accent-color-rgb: 59, 130, 246; // RGB for dark --primary (3b82f6)
-  }
-}
-
-/* Base Styles */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
   font-size: 16px;
   scroll-behavior: smooth;
@@ -146,207 +118,54 @@ body {
   color: var(--text-primary);
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: var(--spacing-4);
-  color: var(--text-primary);
-}
+/* System preference dark mode support (only when no manual theme is set) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    // Modern dark mode palette
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --bg-accent: #1e3a8a;
+    --bg-card: #1f2937;
 
-h1 {
-  font-size: 2.25rem;
-  letter-spacing: -0.025em;
-}
+    // Text colors
+    --text-primary: #f9fafb;
+    --text-secondary: #e5e7eb;
+    --text-tertiary: #9ca3af;
+    --text-accent: #60a5fa;
 
-h2 {
-  font-size: 1.875rem;
-  letter-spacing: -0.025em;
-}
+    // UI Colors
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --success: #10b981;
+    --warning: #fbbf24;
+    --danger: #ef4444;
+    --danger-hover: #ef4444;
+    --info: #06b6d4;
+    --error-color: #f87171;
 
-h3 {
-  font-size: 1.5rem;
-}
+    // Additional UI variables for the homepage
+    --accent-color: #3b82f6;
+    --accent-hover: #60a5fa;
+    --border-color: #374151;
+    --input-border-color: #4b5563;
+    --input-bg: #1f2937;
+    --shadow-color: rgba(0, 0, 0, 0.5);
 
-h4 {
-  font-size: 1.25rem;
-}
+    // UI Elements
+    --border: #374151;
+    --border-light: #1f2937;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 
-h5 {
-  font-size: 1.125rem;
-}
-
-h6 {
-  font-size: 1rem;
-}
-
-p {
-  margin-bottom: var(--spacing-4);
-}
-
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color var(--transition-fast) ease;
-
-  &:hover {
-    color: var(--primary-hover);
-  }
-}
-
-/* Layout */
-main {
-  padding: var(--spacing-6);
-  min-height: 100vh;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-section {
-  margin-bottom: var(--spacing-12);
-}
-
-/* UI Elements */
-button, .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--radius-md);
-  background-color: var(--primary);
-  color: white;
-  font-weight: 500;
-  font-size: 0.9rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color var(--transition-fast) ease,
-  transform var(--transition-fast) ease,
-  box-shadow var(--transition-fast) ease;
-
-  &:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-  }
-
-  &:focus {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
-  }
-
-  &.secondary {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-
-    &:hover {
-      background-color: var(--bg-secondary);
-    }
-  }
-
-  &.ghost {
-    background-color: transparent;
-    color: var(--text-primary);
-
-    &:hover {
-      background-color: var(--bg-tertiary);
-    }
-  }
-}
-
-/* Cards */
-.card {
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--spacing-6);
-  transition: transform var(--transition-normal) ease,
-  box-shadow var(--transition-normal) ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-/* File Browser Specific */
-.fileServer {
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: var(--spacing-6);
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  transition: box-shadow var(--transition-normal) ease;
-
-  &:hover {
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-.fileList {
-  background-color: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.fileHeader {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border);
-}
-
-.folderRow, .fileRow {
-  border-bottom: 1px solid var(--border-light);
-  transition: background-color var(--transition-fast) ease;
-}
-
-.folderRow:hover {
-  background-color: var(--bg-accent);
-}
-
-.fileRow:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.breadcrumbItem {
-  color: var(--primary);
-
-  &:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-  }
-}
-
-.navButton {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-
-  &:hover {
-    background-color: var(--bg-secondary);
-  }
-}
-
-.loading .spinner {
-  border: 3px solid rgba(var(--primary), 0.2);
-  border-top-color: var(--primary);
-}
-
-.error h3 {
-  color: var(--danger);
-}
-
-.error button {
-  background-color: var(--primary);
-
-  &:hover {
-    background-color: var(--primary-hover);
+    // Specific component theming
+    --button-text: #ffffff;
+    --success-hover: #047857;
+    --disabled-color: #4b5563;
+    --breadcrumb-bg: #374151;
+    --file-header-bg: #374151;
+    --title-gradient: linear-gradient(45deg, #3b82f6, #60a5fa);
+    --accent-color-rgb: 59, 130, 246;
   }
 }

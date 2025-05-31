@@ -79,9 +79,11 @@
   min-height: 100vh;
   background-color: var(--bg-primary);
   font-family: system-ui, -apple-system, sans-serif;
-  position: relative;
   color: var(--text-primary);
   transition: var(--transition-theme);
+  position: absolute;
+  top: 0;
+  left: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;

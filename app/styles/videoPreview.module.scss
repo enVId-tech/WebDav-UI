@@ -1,5 +1,13 @@
 @use './common.module.scss';
 
+.previewHeader { // Added styles for the preview header
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .videoContainer {
   display: flex;
   flex-direction: column;

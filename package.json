@@ -17,6 +17,7 @@
     "next": "15.3.2",
     "pdfjs-dist": "^5.2.133",
     "react": "^19.0.0",
+    "react-icons": "^5.5.0",
     "react-pdf": "^9.2.1",
     "react-syntax-highlighter": "^15.6.1",
     "sass": "^1.87.0",

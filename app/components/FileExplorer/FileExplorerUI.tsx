@@ -354,6 +354,15 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                   </button>
                 </>
               )}
+              {/* View Mode Toggle Button */}
+              <button
+                onClick={onToggleViewMode}
+                className={styles.modernButton}
+                style={{ marginRight: '10px' }}
+                title={viewMode === 'grid' ? "Switch to List View" : "Switch to Grid View"}
+              >
+                {viewMode === 'grid' ? 'List' : 'Grid'} View
+              </button>
               <form onSubmit={onSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
                 <input
                     type="text"
@@ -404,10 +413,10 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                 <div style={searchStyles.locationColumn as React.CSSProperties} className={styles.locationColumn}>{item.relativePath?.substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
                                 <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                 <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
-                                {item.type === 'file' && (
+                                {loggedIn && deleteModeActive && item.type === 'file' && (
                                   <button
                                     onClick={() => onDeleteFile(item.basename)}
-                                    className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
+                                    className={`${styles.deleteButton} ${styles.visible}`}
                                     title="Delete file"
                                   >
                                     🗑️
@@ -458,14 +467,16 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                         )}
                                       </div>
                                       <div style={gridStyles.gridName as React.CSSProperties}>{item.basename}</div>
-                                      <div style={gridStyles.gridInfo as React.CSSProperties}>
-                                        {item.type === 'file' ? formatFileSize(item.size) : ''}
+                                      {/* Updated gridInfo to include Modified Date */}
+                                      <div style={gridStyles.gridInfo as React.CSSProperties} className={styles.gridItemInfo}>
+                                        <div>{formatDate(item.lastmod)}</div>
+                                        {item.type === 'file' && (item.size >= 0) && <div>{formatFileSize(item.size)}</div>}
                                       </div>
                                     </div>
                                     {item.type === 'file' && (
                                       <button
                                         onClick={() => onDeleteFile(item.basename)}
-                                        className={`${styles.deleteButtonGrid} ${deleteModeActive ? styles.visible : ''}`}
+                                        className={`${styles.deleteButtonGrid} ${(loggedIn && deleteModeActive) ? styles.visible : ''}`}
                                         title="Delete file"
                                         style={{ marginTop: '8px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
                                       >

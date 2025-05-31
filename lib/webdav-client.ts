@@ -6,7 +6,7 @@ type DirectoryItem = {
     lastmod: string;
 }
 
-export async function getDirectoryContents(path = '/', sharePath = '/etran'): Promise<DirectoryItem[]> {
+export async function getDirectoryContents(path = '/', sharePath = '/'): Promise<DirectoryItem[]> {
   try {
     console.log(`Path: ${path}`);
     console.log(`Share Path: ${sharePath}`);

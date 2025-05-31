@@ -47,12 +47,12 @@ async function ensureFfmpegAvailable(): Promise<boolean> {
  * Transcode video segment with ffmpeg
  */
 export function transcodeVideoSegment(
-  inputStream: Readable,
-  quality: 'low' | 'medium' | 'high',
-  format: string,
-  startByte: number,
-  endByte: number,
-  fileSize: number
+    inputStream: Readable,
+    quality: 'low' | 'medium' | 'high',
+    format: string,
+    startByte: number,
+    endByte: number,
+    fileSize: number
 ): Promise<{ stream: Readable, fileSize: number }> {
   return new Promise(async (resolve, reject) => {
     // First check if ffmpeg is available
@@ -140,15 +140,15 @@ export function transcodeVideoSegment(
  * Prepare and handle video compression for streaming
  */
 export async function prepareVideoCompression(
-  client: any,
-  path: string,
-  quality: string,
-  format: string | null,
-  bandwidth: 'low' | 'medium' | 'high',
-  fileSize: number,
-  range: { start: number, end: number },
-  debug: boolean,
-  requestId: string
+    client: any,
+    path: string,
+    quality: string,
+    format: string | null,
+    bandwidth: 'low' | 'medium' | 'high',
+    fileSize: number,
+    range: { start: number, end: number },
+    debug: boolean,
+    requestId: string
 ): Promise<{ stream: Readable, compressedSize: number, mimeType: string } | null> {
   try {
     // Check if FFmpeg is available first
@@ -198,12 +198,12 @@ export async function prepareVideoCompression(
     // Start transcoding
     if (debug) console.log(`[${requestId}] Starting video transcoding with quality=${selectedQuality}`);
     const { stream, fileSize: compressedSize } = await transcodeVideoSegment(
-      inputStream,
-      selectedQuality,
-      format || 'mp4',
-      range.start,
-      range.end,
-      fileSize
+        inputStream,
+        selectedQuality,
+        format || 'mp4',
+        range.start,
+        range.end,
+        fileSize
     );
 
     // Cache the result (in background)
@@ -247,10 +247,10 @@ export async function prepareVideoCompression(
  * Function imported from original code to maintain functionality
  */
 function shouldCompressVideo(
-  format: string | null,
-  fileSize: number,
-  quality: string,
-  bandwidth: 'low' | 'medium' | 'high'
+    format: string | null,
+    fileSize: number,
+    quality: string,
+    bandwidth: 'low' | 'medium' | 'high'
 ): boolean {
   // Check ffmpeg availability (this would be defined globally in the original file)
   let ffmpegAvailable: boolean;
