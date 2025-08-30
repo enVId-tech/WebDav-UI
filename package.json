@@ -14,7 +14,7 @@
     "dotenv": "^16.5.0",
     "material-file-icons": "^2.4.0",
     "mime-types": "^3.0.1",
-    "next": "15.3.3",
+    "next": "15.4.7",
     "pdfjs-dist": "^5.2.133",
     "react": "^19.0.0",
     "react-icons": "^5.5.0",
