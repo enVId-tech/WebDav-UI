@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WebDavUI - Modern WebDAV File Explorer
+
+WebDavUI is a modern, responsive web application that provides an intuitive interface for accessing, browsing, and managing files through WebDAV protocol. Built with Next.js and React, it offers a seamless file exploration experience with rich file previewing capabilities.
+
+## Features
+
+- **WebDAV Integration**: Connect to any WebDAV-compatible server
+- **File Explorer**: Browse directories and files with an intuitive UI
+- **File Preview**: Preview various file types directly in the browser:
+  - Images
+  - Videos
+  - Audio files
+  - PDFs
+  - Office documents
+  - Text files with syntax highlighting
+- **Responsive Design**: Works on desktop and mobile devices
+- **Share System**: Access shared folders through simple URLs
+- **Theme Toggle**: Switch between light and dark modes
+
+## Tech Stack
+
+- **Frontend**:
+  - Next.js 15.x
+  - React 19.x
+  - TypeScript
+  - SCSS Modules for styling
+
+- **Libraries**:
+  - `webdav`: For WebDAV protocol communication
+  - `react-pdf`: PDF viewing
+  - `react-syntax-highlighter`: Syntax highlighting for code files
+  - `mime-types`: File type detection
+  - `material-file-icons`: File icons
+  - `pdfjs-dist`: PDF rendering
+
+## Project Structure
+
+- `/app`: Next.js app directory
+  - `/page.tsx`: Homepage with share access
+  - `/[share]/[[...path]]/page.tsx`: File explorer for a specific share
+  - `/preview/[...filepath]/page.tsx`: File preview pages
+  - `/api/webdav/`: API routes for WebDAV communication
+  - `/components/`: React components for different file previews
+  - `/styles/`: SCSS modules for styling
+  - `/types/`: TypeScript type definitions
+
+- `/lib`: WebDAV client and server utilities
+- `/public`: Static assets 
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js (v18.x or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/webdavui.git
+cd webdavui
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Run the development server
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Configure your WebDAV server details in the appropriate configuration files.
 
-## Learn More
+## Building for Production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm run start
+# or
+yarn build
+yarn start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Docker Support
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A Dockerfile is included for containerized deployment:
 
-## Deploy on Vercel
+```bash
+docker build -t webdavui .
+docker run -p 3000:3000 webdavui
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the terms included in the [LICENSE](LICENSE) file.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgements
+
+- Built with [Next.js](https://nextjs.org/)
+- WebDAV protocol handling with [webdav](https://www.npmjs.com/package/webdav)

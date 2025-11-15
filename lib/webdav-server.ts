@@ -103,6 +103,100 @@ class WebDavService {
             throw error;
         }
     }
+
+    /**
+     * Get the size of a file in bytes
+     * @param {string} filePath - The path to the file
+     * @returns {Promise<number>} - The file size in bytes
+     */
+    async getFileSize(filePath?: string): Promise<number> {
+        try {
+            let pathToFetch = this.normalizeFilePath(filePath);
+            console.log(`Getting file size for path: ${pathToFetch}`);
+            
+            // Use stat to get file information
+            const stat = await this.client.stat(pathToFetch);
+            const statData = 'data' in stat ? stat.data : stat;
+            return statData.size;
+        } catch (error) {
+            console.error('Error getting file size:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get partial file contents (for Range requests)
+     * @param {string} filePath - The path to the file
+     * @param {number} start - Start byte position
+     * @param {number} end - End byte position
+     * @returns {Promise<Buffer>} - The partial file contents
+     */
+    async getPartialFileContents(filePath: string | undefined, start: number, end: number): Promise<Buffer> {
+        try {
+            let pathToFetch = this.normalizeFilePath(filePath);
+            console.log(`Fetching partial content for ${pathToFetch}: bytes ${start}-${end}`);
+            
+            // Fetch the entire file and slice it
+            // Note: webdav library doesn't support Range requests directly,
+            // so we fetch the full file and slice. For better performance,
+            // consider using a different approach or library that supports ranges.
+            const contents = await this.client.getFileContents(pathToFetch);
+            
+            // Convert to Buffer
+            let buffer: Buffer;
+            if (contents instanceof ArrayBuffer) {
+                buffer = Buffer.from(contents);
+            } else if (contents instanceof Buffer) {
+                buffer = contents;
+            } else if (contents && typeof contents === 'object' && 'buffer' in contents) {
+                buffer = Buffer.from(contents.buffer instanceof ArrayBuffer ? contents.buffer : contents as any);
+            } else {
+                buffer = Buffer.from(contents as string, 'utf-8');
+            }
+            
+            // Slice to the requested range
+            return buffer.slice(start, end + 1);
+        } catch (error) {
+            console.error('Error fetching partial file contents:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Normalize and extract file path from currentUrl or provided path
+     * @param {string} filePath - Optional file path
+     * @returns {string} - Normalized file path
+     */
+    private normalizeFilePath(filePath?: string): string {
+        let pathToFetch: string;
+        
+        if (filePath) {
+            pathToFetch = filePath;
+        } else {
+            // Extract the path from the current URL
+            const baseUrl = process.env.WEBDAV_URL || "https://webdav.etran.dev/";
+            let extractedPath = this.currentUrl;
+            
+            if (this.currentUrl.startsWith(baseUrl)) {
+                extractedPath = this.currentUrl.substring(baseUrl.length);
+            } else {
+                const url = new URL(this.currentUrl);
+                extractedPath = url.pathname;
+            }
+            
+            pathToFetch = extractedPath;
+        }
+        
+        // Clean up the path: remove double slashes and ensure single leading slash
+        pathToFetch = pathToFetch.replace(/\/+/g, '/');
+        
+        // Ensure the path starts with /
+        if (!pathToFetch.startsWith('/')) {
+            pathToFetch = '/' + pathToFetch;
+        }
+        
+        return pathToFetch;
+    }
     
     public async uploadFile(filePath: string, data: Buffer | string): Promise<void> {
         try {

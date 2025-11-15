@@ -44,10 +44,53 @@ export async function GET(request: NextRequest) {
         if (isFile) {
             // Ensure WebDAV client is connected to base URL
             webdavService.updateUrl(process.env.WEBDAV_URL || '');
+            
+            // Check for Range header (for chunked video streaming)
+            const rangeHeader = request.headers.get('range');
+            
+            if (rangeHeader) {
+                // Parse the Range header (format: bytes=start-end)
+                const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+                if (match) {
+                    const start = parseInt(match[1], 10);
+                    
+                    // Get file size first
+                    const fileSize = await webdavService.getFileSize(filePath);
+                    
+                    // If end is not specified, use file size - 1
+                    const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+                    
+                    // Fetch partial content
+                    const partialContent = await webdavService.getPartialFileContents(filePath, start, end);
+                    
+                    const headers = new Headers();
+                    headers.set('Content-Type', getContentType(decodedPath));
+                    headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+                    headers.set('Accept-Ranges', 'bytes');
+                    headers.set('Content-Length', String(partialContent.length));
+                    
+                    if (download) {
+                        headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);
+                    } else {
+                        headers.set('Content-Disposition', `inline; filename="${getFileName(decodedPath)}"`);
+                    }
+                    
+                    // Return 206 Partial Content
+                    return new NextResponse(partialContent, {
+                        status: 206,
+                        headers: headers,
+                    });
+                }
+            }
+            
+            // No Range header or invalid format - return full file
             const fileContent = await webdavService.getFileContents(filePath);
 
             const headers = new Headers();
             headers.set('Content-Type', getContentType(decodedPath));
+            headers.set('Accept-Ranges', 'bytes'); // Indicate that range requests are supported
+            headers.set('Content-Length', String(fileContent.length));
+            
             if (download) {
                 headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);
             } else {

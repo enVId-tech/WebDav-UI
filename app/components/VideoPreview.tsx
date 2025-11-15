@@ -442,6 +442,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         className={styles.videoPlayer}
                         crossOrigin="anonymous"
                         playsInline
+                        preload="metadata"
                         onError={handleVideoError}
                         onPlay={handlePlayingStateChange}
                         onPause={handlePlayingStateChange}
@@ -477,12 +478,18 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             </div>
 
             <div className={styles.videoContentContainer}>
+                {/* Video element automatically uses HTTP Range requests for chunked streaming.
+                    The server responds with 206 Partial Content, allowing the browser to:
+                    - Start playback quickly without downloading the entire video
+                    - Seek to any position efficiently
+                    - Download chunks as needed based on playback and user interaction */}
                 <video
                     ref={videoRef}
                     controls
                     className={styles.videoPlayer}
                     onError={handleVideoError}
                     playsInline
+                    preload="metadata"
                     crossOrigin="anonymous"
                     onPlay={handlePlayingStateChange}
                     onPause={handlePlayingStateChange}
