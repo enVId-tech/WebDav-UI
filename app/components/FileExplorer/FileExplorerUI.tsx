@@ -10,6 +10,7 @@ import MobileNav from '../MobileNav'; // Adjusted path
 import ThemeToggle from '../ThemeToggle'; // Adjusted path
 import { useAuth } from '@/app/context/AuthContext'; // Corrected import path to use alias
 import LoginForm from '../LoginForm'; // Import LoginForm component
+import { geistMono } from '@/app/types/font';
 
 interface FileExplorerUIProps {
   loadingState: 'active' | 'fading' | 'hidden';
@@ -242,7 +243,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     return (
       <div className={`${styles.loadingContainer}`}>
         <div className={styles.spinner}></div>
-        <p>Checking authentication...</p>
+        <p className={`${geistMono.className}`}>Checking authentication...</p>
       </div>
     );
   }
@@ -254,7 +255,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     return (
       <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
         <div className={styles.spinner}></div>
-        <p>Loading files...</p>
+        <p className={`${geistMono.className}`}>Loading files...</p>
       </div>
     );
   }

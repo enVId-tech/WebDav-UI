@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { geistSans } from '@/app/types/font';
 import styles from '@/app/styles/videoPreview.module.scss';
 
 interface VideoPreviewProps {
@@ -373,21 +374,21 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         if (showAudioMenu) setShowAudioMenu(false);
                     }}
                 >
-                    <span className={styles.qualityLabel}>
+                    <span className={`${styles.qualityLabel}`}>
                         {qualityLabels[quality] || quality}
                     </span>
                     <span className={styles.qualityIcon}>⚙️</span>
                 </button>
 
                 {quality !== 'original' && (
-                    <span className={styles.compressedIndicator} title={`Lower quality for faster loading`}>
+                    <span className={`${styles.compressedIndicator}`} title={`Lower quality for faster loading`}>
                         Optimized
                     </span>
                 )}
 
                 {showQualityMenu && (
                     <div className={styles.qualityMenu}>
-                        <div className={styles.qualityMenuTitle}>Video Quality</div>
+                        <div className={`${styles.qualityMenuTitle}`}>Video Quality</div>
                         {['360p', '480p', '720p', '1080p', 'original'].map((option) => (
                             <div
                                 key={option}
@@ -395,10 +396,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                                 onClick={() => changeQuality(option)}
                             >
                                 <div>
-                                    <div>{qualityLabels[option]}</div>
+                                    <div className="">{qualityLabels[option]}</div>
                                     {option !== 'original' && (
-                                        <div className={styles.qualityHint}>
-                                            {option === '360p' && 'Fastest, lowest data'}\n                                            {option === '480p' && 'Good for mobile'}\n                                            {option === '720p' && 'HD quality'}\n                                            {option === '1080p' && 'Best quality'}\n                                        </div>
+                                        <div className={`${styles.qualityHint}`}>
+                                            {option === '360p' && 'Fastest, lowest data'}
+                                            {option === '480p' && 'Good for mobile'}
+                                            {option === '720p' && 'HD quality'}
+                                            {option === '1080p' && 'Best quality'}
+                                        </div>
                                     )}
                                 </div>
                                 {option === quality && <span className={styles.checkmark}>✓</span>}
@@ -430,14 +435,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     }}
                     disabled={!hasTrackInfo}
                 >
-                    <span className={styles.audioLabel}>
+                    <span className={`${styles.audioLabel}`}>
                         🔊 {hasTrackInfo ? `Track ${audioTrack}` : 'Audio'}
                     </span>
                 </button>
 
                 {showAudioMenu && (
                     <div className={styles.audioMenu}>
-                        <div className={styles.audioMenuTitle}>Audio Tracks</div>
+                        <div className={`${styles.audioMenuTitle}`}>Audio Tracks</div>
                         {hasMultipleTracks ? (
                             availableAudioTracks.map((track) => (
                                 <div
@@ -446,14 +451,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                                     onClick={() => changeAudioTrack(track.index)}
                                 >
                                     <div>
-                                        <div>Track {track.index}</div>
+                                        <div className="">Track {track.index}</div>
                                         {track.language && (
-                                            <div className={styles.audioHint}>
+                                            <div className={`${styles.audioHint}`}>
                                                 {track.language}
                                             </div>
                                         )}
                                         {track.title && (
-                                            <div className={styles.audioTitle}>
+                                            <div className={`${styles.audioTitle}`}>
                                                 {track.title}
                                             </div>
                                         )}
@@ -462,10 +467,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                                 </div>
                             ))
                         ) : (
-                            <div className={styles.audioOption} style={{ cursor: 'default', opacity: 0.7 }}>
+                            <div className={`${styles.audioOption}`} style={{ cursor: 'default', opacity: 0.7 }}>
                                 <div>
-                                    <div>Server Configuration Required</div>
-                                    <div className={styles.audioHint}>
+                                    <div className="">Server Configuration Required</div>
+                                    <div className={`${styles.audioHint}`}>
                                         Audio track info not available from server.
                                         Server needs to send X-Audio-Tracks header.
                                     </div>
@@ -489,9 +494,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         handleSkip(-skipAmount);
                     }}
                     title={`Back ${skipAmount} seconds`}
+                    aria-label="Skip backward"
                 >
                     <span className={styles.skipIcon}>⏪</span>
-                    <span className={styles.skipAmount}>-{skipAmount}s</span>
+                    <span className={`${styles.skipAmount}`}>-{skipAmount}s</span>
                 </button>
 
                 <div className={styles.skipSettingsContainer}>
@@ -510,11 +516,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
                     {showSkipSettings && (
                         <div className={styles.skipSettingsMenu}>
-                            <div className={styles.skipSettingsTitle}>Skip Amount</div>
-                            {[5, 10, 15, 30, 60].map((seconds) => (
+                            <div className={`${styles.skipSettingsTitle}`}>Skip Amount</div>
+                            {[5, 10, 15, 30].map((seconds) => (
                                 <div
                                     key={seconds}
-                                    className={`${styles.skipOption} ${skipAmount === seconds ? styles.active : ''}`}
+                                    className={`${styles.skipSettingsOption} ${skipAmount === seconds ? styles.active : ''}`}
                                     onClick={() => changeSkipAmount(seconds)}
                                 >
                                     {seconds} seconds
@@ -532,9 +538,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         handleSkip(skipAmount);
                     }}
                     title={`Forward ${skipAmount} seconds`}
+                    aria-label="Skip forward"
                 >
                     <span className={styles.skipIcon}>⏩</span>
-                    <span className={styles.skipAmount}>+{skipAmount}s</span>
+                    <span className={`${styles.skipAmount}`}>+{skipAmount}s</span>
                 </button>
 
                 <button
@@ -543,7 +550,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     title="Reset to beginning"
                 >
                     <span className={styles.resetIcon}>⏮</span>
-                    <span className={styles.resetLabel}>Reset</span>
+                    <span className={`${styles.resetLabel}`}>Reset</span>
                 </button>
             </div>
         );
@@ -556,23 +563,23 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         return (
             <div className={styles.videoDetailsContainer}>
                 <div className={styles.videoDetailItem}>
-                    <span className={styles.videoDetailLabel}>Resolution:</span>
-                    <span className={styles.videoDetailValue}>{videoDetails.width} × {videoDetails.height}</span>
+                    <span className={`${styles.videoDetailLabel}`}>Resolution:</span>
+                    <span className={`${styles.videoDetailValue}`}>{videoDetails.width} × {videoDetails.height}</span>
                 </div>
                 <div className={styles.videoDetailItem}>
-                    <span className={styles.videoDetailLabel}>Duration:</span>
-                    <span className={styles.videoDetailValue}>{videoDetails.duration}</span>
+                    <span className={`${styles.videoDetailLabel}`}>Duration:</span>
+                    <span className={`${styles.videoDetailValue}`}>{videoDetails.duration}</span>
                 </div>
                 {videoDetails.codec && (
                     <div className={styles.videoDetailItem}>
-                        <span className={styles.videoDetailLabel}>Codec:</span>
-                        <span className={styles.videoDetailValue}>{videoDetails.codec}</span>
+                        <span className={`${styles.videoDetailLabel}`}>Codec:</span>
+                        <span className={`${styles.videoDetailValue}`}>{videoDetails.codec}</span>
                     </div>
                 )}
-                {isCompressed && originalSize && (
+                {originalSize && (
                     <div className={styles.videoDetailItem}>
-                        <span className={styles.videoDetailLabel}>Original Size:</span>
-                        <span className={styles.videoDetailValue}>{originalSize} MB</span>
+                        <span className={`${styles.videoDetailLabel}`}>Original Size:</span>
+                        <span className={`${styles.videoDetailValue}`}>{originalSize} MB</span>
                     </div>
                 )}
             </div>
@@ -581,12 +588,12 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
     if (error || fallbackMode) {
         return (
-            <div className={styles.videoWrapper}>
-                {error && <div className={styles.videoError}>{error}</div>}
+            <div className={`${styles.videoWrapper} ${geistSans.className}`}>
+                {error && <div className={`${styles.videoError}`}>{error}</div>}
 
                 <div className={styles.fallbackPlayer}>
                     <div className={styles.videoHeader}>
-                        <h2 className={styles.fileName}>{displayFileName} - Using browser's built-in video controls</h2>
+                        <h2 className={`${styles.fileName}`}>{displayFileName} - Using browser's built-in video controls</h2>
                     </div>
 
                     <video
@@ -613,10 +620,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     {renderVideoDetails()}
 
                     <div className={styles.actionButtons}>
-                        <button onClick={openInNewTab} className={styles.actionButton}>
+                        <button onClick={openInNewTab} className={`${styles.actionButton}`}>
                             Open in new tab
                         </button>
-                        <button onClick={downloadVideo} className={styles.actionButton}>
+                        <button onClick={downloadVideo} className={`${styles.actionButton}`}>
                             Download video
                         </button>
                     </div>
@@ -626,9 +633,9 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     }
 
     return (
-        <div className={styles.videoPreviewContainer}>
+        <div className={`${styles.videoPreviewContainer} ${geistSans.className}`}>
             <div className={styles.videoHeader}>
-                <h2 className={styles.fileName}>{displayFileName}</h2>
+                <h2 className={`${styles.fileName}`}>{displayFileName}</h2>
             </div>
 
             <div className={styles.videoContentContainer}>
@@ -659,13 +666,13 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 {renderVideoDetails()}
 
                 <div className={styles.actionButtons}>
-                    <button onClick={() => setFallbackMode(true)} className={styles.actionButton}>
+                    <button onClick={() => setFallbackMode(true)} className={`${styles.actionButton}`}>
                         Try alternate player
                     </button>
-                    <button onClick={openInNewTab} className={styles.actionButton}>
+                    <button onClick={openInNewTab} className={`${styles.actionButton}`}>
                         Open in new tab
                     </button>
-                    <button onClick={downloadVideo} className={styles.actionButton}>
+                    <button onClick={downloadVideo} className={`${styles.actionButton}`}>
                         Download video
                     </button>
                 </div>
@@ -675,3 +682,5 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 };
 
 export default VideoPreview;
+
+
