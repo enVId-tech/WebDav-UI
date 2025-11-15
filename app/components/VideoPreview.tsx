@@ -341,7 +341,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     };
 
     const downloadVideo = () => {
-        window.open(`${videoSrc}&download=true`, '_blank');
+        // Create a temporary anchor element for download
+        const a = document.createElement('a');
+        a.href = `${videoSrc}&download=true`;
+        a.download = displayFileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     // Render quality indicator and selector
@@ -405,9 +412,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
     // Render audio track selector
     const renderAudioControls = () => {
-        if (availableAudioTracks.length <= 1) {
-            return null; // Don't show control if only one audio track
-        }
+        // Always show audio controls for video files
+        // If server doesn't provide track info, show configuration notice
+        const hasMultipleTracks = availableAudioTracks.length > 1;
+        const hasTrackInfo = availableAudioTracks.length > 0;
 
         return (
             <div className={styles.audioControls}>
@@ -420,37 +428,50 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         if (showSkipSettings) setShowSkipSettings(false);
                         if (showQualityMenu) setShowQualityMenu(false);
                     }}
+                    disabled={!hasTrackInfo}
                 >
                     <span className={styles.audioLabel}>
-                        🔊 Track {audioTrack}
+                        🔊 {hasTrackInfo ? `Track ${audioTrack}` : 'Audio'}
                     </span>
                 </button>
 
                 {showAudioMenu && (
                     <div className={styles.audioMenu}>
-                        <div className={styles.audioMenuTitle}>Audio Track</div>
-                        {availableAudioTracks.map((track) => (
-                            <div
-                                key={track.index}
-                                className={`${styles.audioOption} ${audioTrack === track.index ? styles.active : ''}`}
-                                onClick={() => changeAudioTrack(track.index)}
-                            >
-                                <div>
-                                    <div>Track {track.index}</div>
-                                    {track.language && (
-                                        <div className={styles.audioHint}>
-                                            {track.language}
-                                        </div>
-                                    )}
-                                    {track.title && (
-                                        <div className={styles.audioTitle}>
-                                            {track.title}
-                                        </div>
-                                    )}
+                        <div className={styles.audioMenuTitle}>Audio Tracks</div>
+                        {hasMultipleTracks ? (
+                            availableAudioTracks.map((track) => (
+                                <div
+                                    key={track.index}
+                                    className={`${styles.audioOption} ${audioTrack === track.index ? styles.active : ''}`}
+                                    onClick={() => changeAudioTrack(track.index)}
+                                >
+                                    <div>
+                                        <div>Track {track.index}</div>
+                                        {track.language && (
+                                            <div className={styles.audioHint}>
+                                                {track.language}
+                                            </div>
+                                        )}
+                                        {track.title && (
+                                            <div className={styles.audioTitle}>
+                                                {track.title}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {audioTrack === track.index && <span className={styles.checkmark}>✓</span>}
                                 </div>
-                                {audioTrack === track.index && <span className={styles.checkmark}>✓</span>}
+                            ))
+                        ) : (
+                            <div className={styles.audioOption} style={{ cursor: 'default', opacity: 0.7 }}>
+                                <div>
+                                    <div>Server Configuration Required</div>
+                                    <div className={styles.audioHint}>
+                                        Audio track info not available from server.
+                                        Server needs to send X-Audio-Tracks header.
+                                    </div>
+                                </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
             </div>

@@ -169,10 +169,10 @@
     z-index: 10;
     min-width: 160px;
     margin-top: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     animation: slideDown 0.25s ease forwards;
     border: 1px solid var(--border-color);
-    overflow: hidden;
+    overflow: auto;
 
     .qualityMenuTitle {
       padding: 12px 16px;
@@ -271,6 +271,17 @@
       background-color: var(--bg-tertiary);
       transform: translateY(-1px);
       box-shadow: 0 3px 6px var(--shadow-color);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      
+      &:hover {
+        transform: none;
+        background-color: var(--bg-primary);
+        box-shadow: 0 1px 3px var(--shadow-color);
+      }
     }
 
     .audioLabel {
@@ -533,9 +544,12 @@
 }
 
 .videoPreviewContainer {
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
   flex-direction: column;
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -545,7 +559,8 @@
 
 .videoHeader {
   background-color: var(--bg-secondary);
-  padding: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: center;
@@ -559,7 +574,7 @@
 
   h2.fileName {
     margin: 0;
-    font-size: 1.7rem;
+    font-size: 1.8rem;
     max-width: fit-content;
     white-space: nowrap;
     overflow: hidden;
@@ -899,11 +914,12 @@
 
 .fallbackPlayer {
   flex: 1;
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden;
   overflow-y: auto;
+  width: 80%;
 
   p {
     margin-bottom: 1rem;
