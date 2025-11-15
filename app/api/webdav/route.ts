@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
         const requestPath = searchParams.get('path');
         const sharePath = searchParams.get('sharePath');
         const isFile = searchParams.get('isFile') === 'true';
-        const download = searchParams.get('download') === 'true';        if (!requestPath || !sharePath) {
+        const download = searchParams.get('download') === 'true';
+        const quality = searchParams.get('quality') || 'original';
+        const audioTrackParam = searchParams.get('audioTrack');
+        const audioTrack = audioTrackParam ? parseInt(audioTrackParam, 10) : 0;
+        
+        if (!requestPath || !sharePath) {
             return NextResponse.json({ error: 'Missing path or sharePath parameter' }, { status: 400 });
         }
 
@@ -38,7 +43,11 @@ export async function GET(request: NextRequest) {
         // Clean up any double slashes in the file path
         filePath = filePath.replace(/\/+/g, '/');
         
-        console.log(`GET request for file path: ${filePath}, isFile: ${isFile}`);
+        // Check if this is a video file that needs transcoding
+        const isVideoFile = /\.(mp4|avi|mkv|mov|wmv|flv|webm|m4v)$/i.test(decodedPath);
+        const needsTranscoding = isVideoFile && quality !== 'original';
+        
+        console.log(`GET request for file path: ${filePath}, isFile: ${isFile}, quality: ${quality}, transcode: ${needsTranscoding}`);
         
         // For files, keep the WebDAV client at the base URL and pass the file path
         if (isFile) {
@@ -71,17 +80,38 @@ export async function GET(request: NextRequest) {
                     const end = Math.min(requestedEnd, start + MAX_CHUNK_SIZE - 1, fileSize - 1);
                     
                     // Fetch partial content
-                    const partialContent = await webdavService.getPartialFileContents(filePath, start, end);
+                    let partialContent = await webdavService.getPartialFileContents(filePath, start, end);
+                    
+                    // Transcode if needed (currently disabled - requires server-side ffmpeg setup)
+                    if (needsTranscoding) {
+                        console.log(`[Transcoding] Quality parameter detected: ${quality}`);
+                        console.log(`[Transcoding] Feature currently disabled - serving original quality`);
+                        console.log(`[Transcoding] To enable: Install ffmpeg on server and configure transcoding module`);
+                        // TODO: Implement server-side transcoding
+                        // const { transcodeVideoChunk } = await import('./utils/transcoding');
+                        // partialContent = await transcodeVideoChunk(partialContent, {
+                        //     quality,
+                        //     audioTrack,
+                        //     startByte: start,
+                        //     endByte: end
+                        // });
+                    }
                     
                     const headers = new Headers();
-                    headers.set('Content-Type', getContentType(decodedPath));
+                    headers.set('Content-Type', needsTranscoding ? 'video/mp4' : getContentType(decodedPath));
                     headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
                     headers.set('Accept-Ranges', 'bytes');
                     headers.set('Content-Length', String(partialContent.length));
                     
                     // Add caching headers for better performance
                     headers.set('Cache-Control', 'public, max-age=3600, immutable');
-                    headers.set('ETag', `"${fileSize}-${start}-${end}"`);
+                    headers.set('ETag', `"${fileSize}-${start}-${end}-${quality}"`);
+                    
+                    // Add transcoding indicator
+                    if (needsTranscoding) {
+                        headers.set('X-Transcoded', 'true');
+                        headers.set('X-Quality', quality);
+                    }
                     
                     if (download) {
                         headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);

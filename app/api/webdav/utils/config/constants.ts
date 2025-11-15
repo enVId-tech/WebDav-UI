@@ -37,26 +37,52 @@ export const securityHeaders = {
 
 // Media settings
 export const VIDEO_QUALITY_PRESETS = {
-  low: {
-    videoBitrate: '500k',
-    scale: '640:-2',
+  '360p': {
+    videoBitrate: '400k',
     audioBitrate: '64k',
-    preset: 'veryfast'
+    width: 640,
+    height: 360,
+    scale: '640:360',
+    preset: 'veryfast',
+    crf: 28,
+    label: '360p (Low)'
   },
-  medium: {
-    videoBitrate: '1000k',
-    scale: '854:-2',
+  '480p': {
+    videoBitrate: '800k',
     audioBitrate: '96k',
-    preset: 'faster'
+    width: 854,
+    height: 480,
+    scale: '854:480',
+    preset: 'fast',
+    crf: 25,
+    label: '480p (Medium)'
   },
-  high: {
-    videoBitrate: '2500k',
-    scale: '1280:-2',
+  '720p': {
+    videoBitrate: '1800k',
     audioBitrate: '128k',
-    preset: 'fast'
+    width: 1280,
+    height: 720,
+    scale: '1280:720',
+    preset: 'medium',
+    crf: 23,
+    label: '720p (HD)'
   },
-  original: null
-};
+  '1080p': {
+    videoBitrate: '3500k',
+    audioBitrate: '192k',
+    width: 1920,
+    height: 1080,
+    scale: '1920:1080',
+    preset: 'medium',
+    crf: 21,
+    label: '1080p (Full HD)'
+  },
+  original: {
+    label: 'Original Quality'
+  }
+} as const;
+
+export type VideoQuality = keyof typeof VIDEO_QUALITY_PRESETS;
 
 export const IMAGE_PREVIEW_SETTINGS = {
   maxWidth: 1920,

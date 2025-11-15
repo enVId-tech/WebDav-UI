@@ -11,7 +11,9 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "dotenv": "^17.2.3",
+    "fluent-ffmpeg": "^2.1.3",
     "material-file-icons": "^2.4.0",
     "mime-types": "^3.0.1",
     "next": "16.0.3",
@@ -26,6 +28,7 @@
     "webdav": "^5.8.0"
   },
   "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

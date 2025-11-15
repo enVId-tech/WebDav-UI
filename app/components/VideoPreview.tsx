@@ -11,8 +11,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const videoRef = useRef<HTMLVideoElement>(null);
     const [error, setError] = useState<string | null>(null);
     const [fallbackMode, setFallbackMode] = useState(false);
-    const [quality, setQuality] = useState<string>('auto');
+    const [quality, setQuality] = useState<string>('original');
     const [showQualityMenu, setShowQualityMenu] = useState(false);
+    const [audioTrack, setAudioTrack] = useState<number>(0);
+    const [availableAudioTracks, setAvailableAudioTracks] = useState<Array<{index: number, language: string, title: string}>>([]);
+    const [showAudioMenu, setShowAudioMenu] = useState(false);
     const [isCompressed, setIsCompressed] = useState<boolean | null>(null);
     const [originalSize, setOriginalSize] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(0);
@@ -20,6 +23,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [duration, setDuration] = useState(0);
     const [skipAmount, setSkipAmount] = useState(10); // Default 10 seconds skip
     const [showSkipSettings, setShowSkipSettings] = useState(false);
+    const [estimatedBitrate, setEstimatedBitrate] = useState<string | null>(null);
     const [videoDetails, setVideoDetails] = useState<{
         width: number;
         height: number;
@@ -39,18 +43,24 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const getBaseUrl = (url: string) => {
         const urlObj = new URL(url, window.location.origin);
         urlObj.searchParams.delete('quality');
+        urlObj.searchParams.delete('audioTrack');
         return urlObj.toString();
     };
 
-    // Generate video source URL with quality parameter
-    const getVideoUrl = (baseUrl: string, qualitySetting: string) => {
+    // Generate video source URL with quality and audio track parameters
+    const getVideoUrl = (baseUrl: string, qualitySetting: string, audioTrackIndex?: number) => {
         const urlObj = new URL(baseUrl, window.location.origin);
-        urlObj.searchParams.set('quality', qualitySetting);
+        if (qualitySetting !== 'original') {
+            urlObj.searchParams.set('quality', qualitySetting);
+        }
+        if (audioTrackIndex !== undefined && audioTrackIndex > 0) {
+            urlObj.searchParams.set('audioTrack', audioTrackIndex.toString());
+        }
         return urlObj.toString();
     };
 
     const [baseUrl] = useState(getBaseUrl(src));
-    const [videoSrc, setVideoSrc] = useState(getVideoUrl(baseUrl, quality));
+    const [videoSrc, setVideoSrc] = useState(getVideoUrl(baseUrl, quality, audioTrack));
 
     // Format time in mm:ss or hh:mm:ss format
     const formatTime = (timeInSeconds: number): string => {
@@ -137,8 +147,19 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             setIsPlaying(!videoRef.current.paused);
         }
         setQuality(newQuality);
-        setVideoSrc(getVideoUrl(baseUrl, newQuality));
+        setVideoSrc(getVideoUrl(baseUrl, newQuality, audioTrack));
         setShowQualityMenu(false);
+    };
+
+    // Change audio track, preserving playback position
+    const changeAudioTrack = (trackIndex: number) => {
+        if (videoRef.current) {
+            setCurrentTime(videoRef.current.currentTime);
+            setIsPlaying(!videoRef.current.paused);
+        }
+        setAudioTrack(trackIndex);
+        setVideoSrc(getVideoUrl(baseUrl, quality, trackIndex));
+        setShowAudioMenu(false);
     };
 
     // Update playing status when video state changes
@@ -175,6 +196,23 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             duration: durationFormatted,
             codec: null // Will be updated later if possible
         });
+        
+        // Detect available audio tracks using TextTrack API
+        // Note: Server will need to provide audio track info via headers or API
+        const checkAudioTracks = async () => {
+            try {
+                const response = await fetch(videoSrc, { method: 'HEAD' });
+                const audioTracksHeader = response.headers.get('X-Audio-Tracks');
+                if (audioTracksHeader) {
+                    const tracks = JSON.parse(audioTracksHeader);
+                    setAvailableAudioTracks(tracks);
+                }
+            } catch (err) {
+                console.log('Could not fetch audio track info');
+            }
+        };
+        
+        checkAudioTracks();
     };
 
     // Close dropdowns when clicking outside of them
@@ -185,6 +223,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 const qualityControls = document.querySelector(`.${styles.qualityControls}`);
                 if (qualityControls && !qualityControls.contains(event.target as Node)) {
                     setShowQualityMenu(false);
+                }
+            }
+
+            // Close audio menu if clicking outside
+            if (showAudioMenu) {
+                const audioControls = document.querySelector(`.${styles.audioControls}`);
+                if (audioControls && !audioControls.contains(event.target as Node)) {
+                    setShowAudioMenu(false);
                 }
             }
 
@@ -201,7 +247,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showQualityMenu, showSkipSettings]);
+    }, [showQualityMenu, showAudioMenu, showSkipSettings]);
 
     // Restore playback position after source change (quality change)
     useEffect(() => {
@@ -300,6 +346,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
     // Render quality indicator and selector
     const renderQualityControls = () => {
+        const qualityLabels: Record<string, string> = {
+            '360p': '360p',
+            '480p': '480p',
+            '720p': '720p HD',
+            '1080p': '1080p FHD',
+            'original': 'Original'
+        };
+        
         return (
             <div className={styles.qualityControls}>
                 <button
@@ -309,31 +363,92 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         setShowQualityMenu(!showQualityMenu);
                         // Close other menus
                         if (showSkipSettings) setShowSkipSettings(false);
+                        if (showAudioMenu) setShowAudioMenu(false);
                     }}
                 >
                     <span className={styles.qualityLabel}>
-                        {quality === 'auto' ? 'Auto' : quality.charAt(0).toUpperCase() + quality.slice(1)}
+                        {qualityLabels[quality] || quality}
                     </span>
                     <span className={styles.qualityIcon}>⚙️</span>
                 </button>
 
-                {isCompressed && (
-                    <span className={styles.compressedIndicator} title={originalSize ? `Original: ${originalSize}MB` : ''}>
-                        Compressed
+                {quality !== 'original' && (
+                    <span className={styles.compressedIndicator} title={`Lower quality for faster loading`}>
+                        Optimized
                     </span>
                 )}
 
                 {showQualityMenu && (
                     <div className={styles.qualityMenu}>
-                        <div className={styles.qualityMenuTitle}>Quality</div>
-                        {['auto', 'low', 'medium', 'high', 'original'].map((option) => (
+                        <div className={styles.qualityMenuTitle}>Video Quality</div>
+                        {['360p', '480p', '720p', '1080p', 'original'].map((option) => (
                             <div
                                 key={option}
                                 className={`${styles.qualityOption} ${quality === option ? styles.active : ''}`}
                                 onClick={() => changeQuality(option)}
                             >
-                                {option === 'auto' ? 'Auto' : option.charAt(0).toUpperCase() + option.slice(1)}
+                                <div>
+                                    <div>{qualityLabels[option]}</div>
+                                    {option !== 'original' && (
+                                        <div className={styles.qualityHint}>
+                                            {option === '360p' && 'Fastest, lowest data'}\n                                            {option === '480p' && 'Good for mobile'}\n                                            {option === '720p' && 'HD quality'}\n                                            {option === '1080p' && 'Best quality'}\n                                        </div>
+                                    )}
+                                </div>
                                 {option === quality && <span className={styles.checkmark}>✓</span>}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Render audio track selector
+    const renderAudioControls = () => {
+        if (availableAudioTracks.length <= 1) {
+            return null; // Don't show control if only one audio track
+        }
+
+        return (
+            <div className={styles.audioControls}>
+                <button
+                    className={styles.audioButton}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAudioMenu(!showAudioMenu);
+                        // Close other menus
+                        if (showSkipSettings) setShowSkipSettings(false);
+                        if (showQualityMenu) setShowQualityMenu(false);
+                    }}
+                >
+                    <span className={styles.audioLabel}>
+                        🔊 Track {audioTrack}
+                    </span>
+                </button>
+
+                {showAudioMenu && (
+                    <div className={styles.audioMenu}>
+                        <div className={styles.audioMenuTitle}>Audio Track</div>
+                        {availableAudioTracks.map((track) => (
+                            <div
+                                key={track.index}
+                                className={`${styles.audioOption} ${audioTrack === track.index ? styles.active : ''}`}
+                                onClick={() => changeAudioTrack(track.index)}
+                            >
+                                <div>
+                                    <div>Track {track.index}</div>
+                                    {track.language && (
+                                        <div className={styles.audioHint}>
+                                            {track.language}
+                                        </div>
+                                    )}
+                                    {track.title && (
+                                        <div className={styles.audioTitle}>
+                                            {track.title}
+                                        </div>
+                                    )}
+                                </div>
+                                {audioTrack === track.index && <span className={styles.checkmark}>✓</span>}
                             </div>
                         ))}
                     </div>
@@ -473,6 +588,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
                     {renderSkipControls()}
                     {renderQualityControls()}
+                    {renderAudioControls()}
                     {renderVideoDetails()}
 
                     <div className={styles.actionButtons}>
