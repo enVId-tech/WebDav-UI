@@ -57,14 +57,18 @@ export async function GET(request: NextRequest) {
                     // Get file size first
                     const fileSize = await webdavService.getFileSize(filePath);
                     
-                    // Limit chunk size to prevent downloading entire large files
-                    const MAX_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+                    // Optimize chunk size based on request pattern
+                    // Initial request (start=0): smaller chunk for fast startup
+                    // Subsequent requests: larger chunks for smooth playback
+                    const isInitialRequest = start === 0;
+                    const INITIAL_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB for fast start
+                    const STREAMING_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB for smooth playback
+                    const MAX_CHUNK_SIZE = isInitialRequest ? INITIAL_CHUNK_SIZE : STREAMING_CHUNK_SIZE;
+                    
                     const requestedEnd = match[2] ? parseInt(match[2], 10) : fileSize - 1;
                     
                     // Cap the end position to either the requested end or start + MAX_CHUNK_SIZE
                     const end = Math.min(requestedEnd, start + MAX_CHUNK_SIZE - 1, fileSize - 1);
-                    
-                    console.log(`Range request: ${start}-${requestedEnd}, capped to: ${start}-${end}`);
                     
                     // Fetch partial content
                     const partialContent = await webdavService.getPartialFileContents(filePath, start, end);
@@ -74,6 +78,10 @@ export async function GET(request: NextRequest) {
                     headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
                     headers.set('Accept-Ranges', 'bytes');
                     headers.set('Content-Length', String(partialContent.length));
+                    
+                    // Add caching headers for better performance
+                    headers.set('Cache-Control', 'public, max-age=3600, immutable');
+                    headers.set('ETag', `"${fileSize}-${start}-${end}"`);
                     
                     if (download) {
                         headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);

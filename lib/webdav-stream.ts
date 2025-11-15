@@ -2,9 +2,28 @@ import https from "https";
 import http from "http";
 import { URL } from "url";
 
+// Create connection pools for better performance
+const httpsAgent = new https.Agent({
+    keepAlive: true,
+    keepAliveMsecs: 30000,
+    maxSockets: 50,
+    maxFreeSockets: 10,
+    timeout: 30000,
+    rejectUnauthorized: false // For development with self-signed certs
+});
+
+const httpAgent = new http.Agent({
+    keepAlive: true,
+    keepAliveMsecs: 30000,
+    maxSockets: 50,
+    maxFreeSockets: 10,
+    timeout: 30000
+});
+
 /**
  * Stream a file from WebDAV server with Range support
  * This bypasses the webdav library to make direct HTTP requests with Range headers
+ * Uses connection pooling and keep-alive for better performance
  */
 export async function streamFileWithRange(
     webdavUrl: string,
@@ -15,17 +34,21 @@ export async function streamFileWithRange(
     password?: string
 ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        
         try {
             // Construct full URL
             const fullUrl = new URL(filePath, webdavUrl).toString();
-            console.log(`Direct Range request to: ${fullUrl} (bytes ${start}-${end})`);
             
             const urlObj = new URL(fullUrl);
             const isHttps = urlObj.protocol === 'https:';
             const httpModule = isHttps ? https : http;
+            const agent = isHttps ? httpsAgent : httpAgent;
             
             const headers: Record<string, string> = {
-                'Range': `bytes=${start}-${end}`
+                'Range': `bytes=${start}-${end}`,
+                'Connection': 'keep-alive',
+                'Accept-Encoding': 'identity', // Disable compression for video
             };
             
             // Add basic auth if credentials provided
@@ -37,8 +60,7 @@ export async function streamFileWithRange(
             const options = {
                 method: 'GET',
                 headers: headers,
-                // For development - accept self-signed certificates
-                rejectUnauthorized: false
+                agent: agent
             };
             
             const req = httpModule.get(fullUrl, options as any, (res) => {
@@ -47,7 +69,6 @@ export async function streamFileWithRange(
                     const redirectUrl = res.headers.location;
                     if (redirectUrl) {
                         console.log(`Following redirect to: ${redirectUrl}`);
-                        // Recursively follow redirect
                         streamFileWithRange(redirectUrl, '', start, end, username, password)
                             .then(resolve)
                             .catch(reject);
@@ -61,10 +82,18 @@ export async function streamFileWithRange(
                     return;
                 }
                 
+                // Check for other errors
+                if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
+                    reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+                    return;
+                }
+                
                 const chunks: Buffer[] = [];
+                let receivedBytes = 0;
                 
                 res.on('data', (chunk: Buffer) => {
                     chunks.push(chunk);
+                    receivedBytes += chunk.length;
                 });
                 
                 res.on('end', () => {
@@ -74,7 +103,10 @@ export async function streamFileWithRange(
                     }
                     
                     const buffer = Buffer.concat(chunks);
-                    console.log(`Received ${buffer.length} bytes (status: ${res.statusCode})`);
+                    const elapsed = Date.now() - startTime;
+                    const speedMBps = (buffer.length / 1024 / 1024) / (elapsed / 1000);
+                    
+                    console.log(`Streamed ${buffer.length} bytes in ${elapsed}ms (${speedMBps.toFixed(2)} MB/s, status: ${res.statusCode})`);
                     
                     // Check if we got a partial content response
                     if (res.statusCode === 206 || res.statusCode === 200) {
@@ -95,10 +127,10 @@ export async function streamFileWithRange(
                 reject(err);
             });
             
-            // Set timeout
-            req.setTimeout(30000, () => {
+            // Set timeout - increased for larger chunks
+            req.setTimeout(60000, () => {
                 req.destroy();
-                reject(new Error('Request timeout'));
+                reject(new Error('Request timeout (60s)'));
             });
             
             req.end();
@@ -107,4 +139,12 @@ export async function streamFileWithRange(
             reject(err);
         }
     });
+}
+
+/**
+ * Clean up connection pools on shutdown
+ */
+export function destroyAgents() {
+    httpsAgent.destroy();
+    httpAgent.destroy();
 }

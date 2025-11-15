@@ -13,7 +13,9 @@ import { streamFileWithRange } from "./webdav-stream";
  */
 class WebDavService {
     private client: WebDAVClient;
-    private currentUrl: string;    
+    private currentUrl: string;
+    private fileSizeCache: Map<string, { size: number; timestamp: number }> = new Map();
+    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     
     public constructor(webdavUrl: string) {
         this.client = this.createClientWithOptions(webdavUrl);
@@ -113,12 +115,35 @@ class WebDavService {
     async getFileSize(filePath?: string): Promise<number> {
         try {
             let pathToFetch = this.normalizeFilePath(filePath);
+            
+            // Check cache first
+            const cached = this.fileSizeCache.get(pathToFetch);
+            if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
+                console.log(`Using cached file size for ${pathToFetch}: ${cached.size} bytes`);
+                return cached.size;
+            }
+            
             console.log(`Getting file size for path: ${pathToFetch}`);
             
             // Use stat to get file information
             const stat = await this.client.stat(pathToFetch);
             const statData = 'data' in stat ? stat.data : stat;
-            return statData.size;
+            const size = statData.size;
+            
+            // Cache the result
+            this.fileSizeCache.set(pathToFetch, { size, timestamp: Date.now() });
+            
+            // Clean up old cache entries (keep cache size reasonable)
+            if (this.fileSizeCache.size > 100) {
+                const now = Date.now();
+                for (const [key, value] of this.fileSizeCache.entries()) {
+                    if (now - value.timestamp > this.CACHE_TTL) {
+                        this.fileSizeCache.delete(key);
+                    }
+                }
+            }
+            
+            return size;
         } catch (error) {
             console.error('Error getting file size:', error);
             throw error;
@@ -133,34 +158,34 @@ class WebDavService {
      * @returns {Promise<Buffer>} - The partial file contents
      */
     async getPartialFileContents(filePath: string | undefined, start: number, end: number): Promise<Buffer> {
+        const pathToFetch = this.normalizeFilePath(filePath);
+        const rangeSize = end - start + 1;
+        
         try {
-            let pathToFetch = this.normalizeFilePath(filePath);
-            console.log(`Fetching partial content for ${pathToFetch}: bytes ${start}-${end}`);
-            
             // Use direct HTTP request with Range header for true chunked streaming
+            const baseUrl = process.env.WEBDAV_URL || '';
+            
+            // Extract credentials from URL if present
+            const urlObj = new URL(baseUrl);
+            const username = urlObj.username || undefined;
+            const password = urlObj.password || undefined;
+            
+            const buffer = await streamFileWithRange(baseUrl, pathToFetch, start, end, username, password);
+            return buffer;
+        } catch (streamError: any) {
+            console.error(`Direct streaming failed for ${pathToFetch} (${rangeSize} bytes):`, streamError.message);
+            
+            // Fallback: fetch full file and slice
+            // Only do this for smaller ranges to avoid memory issues
+            const MAX_FALLBACK_SIZE = 20 * 1024 * 1024; // 20MB max for fallback
+            
+            if (rangeSize > MAX_FALLBACK_SIZE) {
+                throw new Error(`Range too large for fallback (${(rangeSize / 1024 / 1024).toFixed(2)} MB). Direct streaming failed: ${streamError.message}`);
+            }
+            
+            console.log(`Attempting fallback for ${(rangeSize / 1024 / 1024).toFixed(2)} MB range...`);
+            
             try {
-                const baseUrl = process.env.WEBDAV_URL || '';
-                // Extract credentials from URL if present
-                const urlObj = new URL(baseUrl);
-                const username = urlObj.username || undefined;
-                const password = urlObj.password || undefined;
-                
-                const buffer = await streamFileWithRange(baseUrl, pathToFetch, start, end, username, password);
-                console.log(`Direct stream returned ${buffer.length} bytes`);
-                return buffer;
-            } catch (streamError: any) {
-                console.error('Direct streaming failed, falling back to full download:', streamError.message);
-                
-                // Fallback: fetch full file and slice
-                // Only do this for smaller ranges to avoid memory issues
-                const rangeSize = end - start + 1;
-                const MAX_FALLBACK_SIZE = 50 * 1024 * 1024; // 50MB max for fallback
-                
-                if (rangeSize > MAX_FALLBACK_SIZE) {
-                    throw new Error(`Range too large for fallback (${rangeSize} bytes). Direct streaming failed: ${streamError.message}`);
-                }
-                
-                console.log('Falling back to full file download and slicing...');
                 const contents = await this.client.getFileContents(pathToFetch);
                 
                 // Convert to Buffer
@@ -177,13 +202,13 @@ class WebDavService {
                 
                 // Slice to the requested range
                 const slice = buffer.slice(start, end + 1);
-                console.log(`Returned ${slice.length} bytes from buffer (total: ${buffer.length})`);
+                console.log(`Fallback successful: returned ${slice.length} bytes from ${buffer.length} byte file`);
                 
                 return slice;
+            } catch (fallbackError: any) {
+                console.error('Fallback also failed:', fallbackError.message);
+                throw new Error(`Both direct streaming and fallback failed. Last error: ${fallbackError.message}`);
             }
-        } catch (error) {
-            console.error('Error fetching partial file contents:', error);
-            throw error;
         }
     }
 
