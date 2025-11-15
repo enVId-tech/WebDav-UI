@@ -57,8 +57,14 @@ export async function GET(request: NextRequest) {
                     // Get file size first
                     const fileSize = await webdavService.getFileSize(filePath);
                     
-                    // If end is not specified, use file size - 1
-                    const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+                    // Limit chunk size to prevent downloading entire large files
+                    const MAX_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+                    const requestedEnd = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+                    
+                    // Cap the end position to either the requested end or start + MAX_CHUNK_SIZE
+                    const end = Math.min(requestedEnd, start + MAX_CHUNK_SIZE - 1, fileSize - 1);
+                    
+                    console.log(`Range request: ${start}-${requestedEnd}, capped to: ${start}-${end}`);
                     
                     // Fetch partial content
                     const partialContent = await webdavService.getPartialFileContents(filePath, start, end);

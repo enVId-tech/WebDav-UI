@@ -1,5 +1,6 @@
 import { createClient, WebDAVClient } from "webdav";
 import https from "https";
+import { streamFileWithRange } from "./webdav-stream";
 
 /**
  * WebDAV Service
@@ -136,26 +137,50 @@ class WebDavService {
             let pathToFetch = this.normalizeFilePath(filePath);
             console.log(`Fetching partial content for ${pathToFetch}: bytes ${start}-${end}`);
             
-            // Fetch the entire file and slice it
-            // Note: webdav library doesn't support Range requests directly,
-            // so we fetch the full file and slice. For better performance,
-            // consider using a different approach or library that supports ranges.
-            const contents = await this.client.getFileContents(pathToFetch);
-            
-            // Convert to Buffer
-            let buffer: Buffer;
-            if (contents instanceof ArrayBuffer) {
-                buffer = Buffer.from(contents);
-            } else if (contents instanceof Buffer) {
-                buffer = contents;
-            } else if (contents && typeof contents === 'object' && 'buffer' in contents) {
-                buffer = Buffer.from(contents.buffer instanceof ArrayBuffer ? contents.buffer : contents as any);
-            } else {
-                buffer = Buffer.from(contents as string, 'utf-8');
+            // Use direct HTTP request with Range header for true chunked streaming
+            try {
+                const baseUrl = process.env.WEBDAV_URL || '';
+                // Extract credentials from URL if present
+                const urlObj = new URL(baseUrl);
+                const username = urlObj.username || undefined;
+                const password = urlObj.password || undefined;
+                
+                const buffer = await streamFileWithRange(baseUrl, pathToFetch, start, end, username, password);
+                console.log(`Direct stream returned ${buffer.length} bytes`);
+                return buffer;
+            } catch (streamError: any) {
+                console.error('Direct streaming failed, falling back to full download:', streamError.message);
+                
+                // Fallback: fetch full file and slice
+                // Only do this for smaller ranges to avoid memory issues
+                const rangeSize = end - start + 1;
+                const MAX_FALLBACK_SIZE = 50 * 1024 * 1024; // 50MB max for fallback
+                
+                if (rangeSize > MAX_FALLBACK_SIZE) {
+                    throw new Error(`Range too large for fallback (${rangeSize} bytes). Direct streaming failed: ${streamError.message}`);
+                }
+                
+                console.log('Falling back to full file download and slicing...');
+                const contents = await this.client.getFileContents(pathToFetch);
+                
+                // Convert to Buffer
+                let buffer: Buffer;
+                if (contents instanceof ArrayBuffer) {
+                    buffer = Buffer.from(contents);
+                } else if (contents instanceof Buffer) {
+                    buffer = contents;
+                } else if (contents && typeof contents === 'object' && 'buffer' in contents) {
+                    buffer = Buffer.from(contents.buffer instanceof ArrayBuffer ? contents.buffer : contents as any);
+                } else {
+                    buffer = Buffer.from(contents as string, 'utf-8');
+                }
+                
+                // Slice to the requested range
+                const slice = buffer.slice(start, end + 1);
+                console.log(`Returned ${slice.length} bytes from buffer (total: ${buffer.length})`);
+                
+                return slice;
             }
-            
-            // Slice to the requested range
-            return buffer.slice(start, end + 1);
         } catch (error) {
             console.error('Error fetching partial file contents:', error);
             throw error;

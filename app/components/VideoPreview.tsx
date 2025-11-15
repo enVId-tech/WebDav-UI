@@ -203,26 +203,43 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         };
     }, [showQualityMenu, showSkipSettings]);
 
-    // Restore playback position after source change
+    // Restore playback position after source change (quality change)
     useEffect(() => {
-        if (videoRef.current && currentTime > 0) {
-            const handleCanPlay = () => {
-                if (videoRef.current) {
+        if (!videoRef.current) return;
+        
+        // Only restore position when video source actually changes (quality change)
+        // Don't interfere with normal playback
+        const video = videoRef.current;
+        
+        const handleCanPlay = () => {
+            if (videoRef.current && currentTime > 0) {
+                // Only restore if we're changing quality, not during normal playback
+                const timeDifference = Math.abs(videoRef.current.currentTime - currentTime);
+                
+                // If the time difference is significant, it means we're restoring after quality change
+                if (timeDifference > 1) {
                     videoRef.current.currentTime = currentTime;
-
+                    
                     // Also restore play state if it was playing
                     if (isPlaying) {
                         videoRef.current.play().catch(err => {
                             console.error("Failed to resume playback:", err);
                         });
                     }
-
-                    videoRef.current.removeEventListener('canplay', handleCanPlay);
                 }
-            };
-            videoRef.current.addEventListener('canplay', handleCanPlay);
-        }
-    }, [videoSrc, currentTime, isPlaying]);
+            }
+            
+            if (videoRef.current) {
+                videoRef.current.removeEventListener('canplay', handleCanPlay);
+            }
+        };
+        
+        video.addEventListener('canplay', handleCanPlay);
+        
+        return () => {
+            video.removeEventListener('canplay', handleCanPlay);
+        };
+    }, [videoSrc]); // Only trigger on videoSrc change, not currentTime
 
     // Check compression status when video loads
     useEffect(() => {
