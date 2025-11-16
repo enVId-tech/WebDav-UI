@@ -112,7 +112,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     };
   }, [loading, error]);
 
-  // Draw the frequency visualization
+  // Draw the synthwave-style frequency visualization
   const drawFrequencyVisualization = () => {
     if (!analyserRef.current || !visualizerCanvasRef.current || !audioFrequencyData) return;
 
@@ -133,43 +133,87 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw frequency bars
-    const barWidth = canvas.width / audioFrequencyData.length * 2;
-    let x = 0;
-
-    // Get computed primary color for bars
+    // Get theme colors
     const computedStyle = getComputedStyle(document.documentElement);
-    const primaryColor = computedStyle.getPropertyValue('--audio-primary-color') || '#3498db';
-    const secondaryColor = computedStyle.getPropertyValue('--audio-secondary-color') || '#2980b9';
+    const primaryColor = computedStyle.getPropertyValue('--audio-primary-color')?.trim() || '#ff6ec7';
+    const secondaryColor = computedStyle.getPropertyValue('--audio-secondary-color')?.trim() || '#7367ff';
 
-    // Create gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, primaryColor);
-    gradient.addColorStop(1, secondaryColor);
+    // Draw subtle synthwave background gradient
+    const bgGradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+    bgGradient.addColorStop(0, 'rgba(3, 7, 18, 0.95)');
+    bgGradient.addColorStop(1, 'rgba(15, 23, 42, 0.9)');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (let i = 0; i < audioFrequencyData.length; i++) {
-      // Calculate bar height based on frequency value (0-255)
-      const barHeight = (audioFrequencyData[i] / 255) * canvas.height;
+    // Draw horizon glow
+    const horizonGradient = ctx.createLinearGradient(0, canvas.height - 10, 0, canvas.height - 80);
+    horizonGradient.addColorStop(0, 'rgba(0,0,0,0)');
+    ctx.fillStyle = horizonGradient;
+    ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
 
-      // Skip very low values
-      if (barHeight < 3) {
-        x += barWidth + 1;
-        continue;
+    // Define channel bands once: ignore extreme lows/highs, focus on useful range
+    const totalBins = body.length;
+    // Focus even more on the musical mids; cut more lows/highs
+    const lowCut = Math.floor(totalBins * 0.1);   // drop more sub-bass
+    const highCut = Math.floor(totalBins * 0.7);  // drop more very high hiss
+
+    const usableBins = Math.max(1, highCut - lowCut);
+
+    // Fixed number of visual channels spanning the full canvas width
+    const barCount = Math.min(64, usableBins); // never create more bars than bins
+    const barWidth = canvas.width / barCount;
+
+    // Precompute band boundaries so channels are evenly spaced across the useful range
+    const bandEdges: number[] = [];
+    for (let i = 0; i <= barCount; i++) {
+      const t = i / barCount;
+      // Slightly bias towards mids with a gentle curve
+      const curved = t ** 1.05;
+      bandEdges.push(Math.floor(lowCut + curved * usableBins));
+    }
+
+    // Vertical gradient for bars
+    const barGradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+    barGradient.addColorStop(0, secondaryColor);
+    barGradient.addColorStop(0.4, primaryColor);
+    barGradient.addColorStop(1, '#ffffff');
+
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 0;
+
+    for (let i = 0; i < barCount; i++) {
+      const start = bandEdges[i];
+      const end = Math.max(start + 1, bandEdges[i + 1]);
+
+      // Average magnitude over this band so no single spike dominates
+      let sum = 0;
+      for (let bin = start; bin < end && bin < totalBins; bin++) {
+        sum += body[bin];
       }
+      const bandSize = Math.max(1, end - start);
+      const avg = sum / bandSize;
 
-      // Draw bar
-      ctx.fillStyle = gradient;
-      ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+      // Normalize and ease height for smoother movement
+      const normalized = avg / 230;
+      const eased = Math.pow(normalized, 2.5); // ease out cubic
+      const maxBarHeight = canvas.height * 0.95;
+      const barHeight = eased * maxBarHeight;
 
-      // Add glow effect for louder frequencies
-      if (barHeight > canvas.height * 0.25) {
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = primaryColor;
-      } else {
-        ctx.shadowBlur = 0;
-      }
+      if (barHeight < 2) continue;
 
-      x += barWidth + 1;
+      const x = i * barWidth + barWidth / 2;
+      const y = canvas.height;
+
+      // Set bar style
+      ctx.strokeStyle = barGradient;
+      ctx.shadowColor = primaryColor;
+      ctx.shadowBlur = 10 * eased;
+
+      // Draw vertical line from bottom upwards
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - barHeight);
+      ctx.stroke();
     }
 
     // Request next frame if still playing
