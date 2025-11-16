@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
 import styles from '@/app/styles/pdfPreview.module.scss';
+import ThemeToggle from './ThemeToggle';
 
 // PDF.js types
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
@@ -152,7 +153,10 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
   return (
       <div className={styles.pdfViewer} ref={containerRef}>
         <div className={styles.pdfHeader}>
-          <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+          <div className={styles.pdfHeaderTop}>
+            <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+            <ThemeToggle />
+          </div>
           <div className={styles.pdfControls}>
             <button
                 onClick={goToPreviousPage}

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "docx-preview": "^0.3.7",
     "dotenv": "^17.2.3",
     "fluent-ffmpeg": "^2.1.3",
     "material-file-icons": "^2.4.0",
