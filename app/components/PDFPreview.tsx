@@ -86,7 +86,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
         setError('Failed to render page: ' + err.message);
       });
     }
-  }, [currentPage, loading]);
+  }, [currentPage, loading, zoom]);
 
   const renderPage = async (pageNumber: number) => {
     if (!pdfDocRef.current || !canvasRef.current) return;
@@ -116,8 +116,6 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
       await page.render(renderContext).promise;
 
-      // Update current page only after rendering is complete
-      setCurrentPage(pageNumber);
     } catch (error) {
       console.error('Error rendering page:', error);
       setError('Failed to render page.');
@@ -156,7 +154,6 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
         <div className={styles.pdfHeader}>
           <div className={styles.pdfHeaderTop}>
             <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
-            <ThemeToggle />
           </div>
           <div className={styles.pdfControls}>
             <div className={styles.pageControls}>

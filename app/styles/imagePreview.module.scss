@@ -3,9 +3,9 @@
 .imagePreviewContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  background-color: var(--bg-primary);
+  height: calc(100vh - 64px);
+  width: 100%;
+  background-color: transparent;
   transition: var(--transition-theme);
 }
 
@@ -25,11 +25,11 @@
 }
 
 .imageViewportContainer {
-  flex: 1;
   display: flex;
-  overflow: auto;
+  overflow: hidden;
   background-color: var(--bg-primary);
   position: relative;
+  flex: 1;
 }
 
 .imageViewport {
@@ -44,7 +44,7 @@
 
 .imageContent {
   max-width: 100%;
-  max-height: calc(100vh - 200px);
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;

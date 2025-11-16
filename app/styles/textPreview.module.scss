@@ -3,9 +3,9 @@
 .textPreviewContainer {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   width: 100%;
-  background-color: var(--bg-primary);
+  background-color: transparent;
   overflow: hidden;
 }
 
@@ -198,6 +198,7 @@
 
 .textPreviewContent {
   flex: 1;
+  max-height: calc(100vh - 64px - 64px); // viewport minus preview header and text header
   overflow-y: auto;
   overflow-x: hidden;
   background-color: var(--bg-primary);
