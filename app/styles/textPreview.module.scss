@@ -47,6 +47,48 @@
   }
 }
 
+.zoomControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+}
+
+.zoomButton {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.9rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    background-color: var(--bg-primary);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.zoomValue {
+  min-width: 3ch;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 .fileName {
   margin: 0;
   font-size: 1.25rem;
@@ -159,12 +201,18 @@
   overflow: auto;
   background-color: var(--bg-primary);
   transition: var(--transition-theme);
+}
+
+.zoomViewport {
+  transform-origin: top left;
+  display: inline-block;
+  min-width: 100%;
 
   pre {
     margin: 0 !important;
     padding: 1.5rem !important;
     min-height: 100%;
-    
+
     @media (max-width: 768px) {
       padding: 1rem !important;
     }
@@ -178,6 +226,23 @@
     @media (max-width: 768px) {
       font-size: 12px !important;
     }
+  }
+}
+
+.editableTextarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.6;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
   }
 }
 

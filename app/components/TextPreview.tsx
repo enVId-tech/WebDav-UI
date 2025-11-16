@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styles from '@/app/styles/textPreview.module.scss';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { geistSans } from '../types/font';
+import { useAuth } from '@/app/context/AuthContext';
 
 interface TextPreviewProps {
   src: string;
@@ -17,6 +18,13 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [lineCount, setLineCount] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(1); // 1 = 100%
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { loggedIn } = useAuth();
 
   // Determine language for syntax highlighting
   const getLanguage = () => {
@@ -71,11 +79,18 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
           throw new Error(`Failed to load text: ${response.status} ${response.statusText}`);
         }
         const text = await response.text();
-        setContent(text);
+
+        const whiteSpaceTrimmed = text.trim();
+        setContent(whiteSpaceTrimmed);
 
         // Count lines for display purposes
-        const lines = text.split('\n').length;
-        setLineCount(lines);
+        const lines = whiteSpaceTrimmed.split('\n').length;
+        if (lines > 5000) {
+          setError('File is too large to display (over 5,000 lines). Please download to view.');
+          setContent('');
+        } else {
+          setLineCount(lines);
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load text content');
         console.error('Error loading text:', err);
@@ -90,6 +105,40 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
       mediaQuery.removeEventListener('change', handleChange);
     };
   }, [src]);
+
+  const clampedZoom = Math.min(4, Math.max(0.25, zoom));
+
+  const scheduleAutosave = useCallback(() => {
+    if (!loggedIn) return;
+    setIsDirty(true);
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      handleSave();
+    }, 3000);
+  }, [loggedIn, content]);
+
+  const handleSave = useCallback(async () => {
+    if (!loggedIn || !content) return;
+    try {
+      setIsSaving(true);
+      // TODO: Implement API route to persist edits back to WebDAV/source
+      // await fetch('/api/text/save', { method: 'POST', body: JSON.stringify({ src, content }) });
+      setIsDirty(false);
+      setLastSavedAt(new Date().toLocaleTimeString());
+    } finally {
+      setIsSaving(false);
+    }
+  }, [loggedIn, content, src]);
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -125,6 +174,25 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
           </div>
         </div>
         <div className={styles.headerRight}>
+          <div className={styles.zoomControls}>
+            <button
+              type="button"
+              className={styles.zoomButton}
+              onClick={() => setZoom((z) => +(Math.max(0.25, z - 0.1)).toFixed(2))}
+              aria-label="Zoom out"
+            >
+              -
+            </button>
+            <span className={styles.zoomValue}>{Math.round(clampedZoom * 100)}%</span>
+            <button
+              type="button"
+              className={styles.zoomButton}
+              onClick={() => setZoom((z) => +(Math.min(4, z + 0.1)).toFixed(2))}
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={styles.themeToggle}
@@ -138,29 +206,40 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         </div>
       </div>
       <div className={styles.textPreviewContent}>
-        <SyntaxHighlighter
-          language={getLanguage()}
-          style={isDarkMode ? vscDarkPlus : vs}
-          showLineNumbers
-          wrapLines
-          customStyle={{
-            margin: 0,
-            borderRadius: 0,
-            maxHeight: '100%',
-            height: '100%',
-            overflow: 'auto',
-            fontSize: '14px',
-            lineHeight: '1.6',
-          }}
-          lineNumberStyle={{
-            minWidth: '3em',
-            paddingRight: '1em',
-            color: isDarkMode ? '#858585' : '#999',
-            userSelect: 'none',
-          }}
+        <div
+          className={styles.zoomViewport}
+          style={{ transform: `scale(${clampedZoom})` }}
         >
-          {content}
-        </SyntaxHighlighter>
+          {loggedIn ? (
+            <textarea
+              className={styles.editableTextarea}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                scheduleAutosave();
+              }}
+            />
+          ) : (
+            <SyntaxHighlighter
+              language={getLanguage()}
+              style={isDarkMode ? vscDarkPlus : vs}
+              showLineNumbers
+              wrapLines
+              customStyle={{
+                margin: 0,
+                borderRadius: 0,
+                overflow: 'hidden',
+              }}
+              lineNumberStyle={{
+                paddingRight: '1em',
+                color: isDarkMode ? '#858585' : '#999',
+                userSelect: 'none',
+              }}
+            >
+              {content}
+            </SyntaxHighlighter>
+          )}
+        </div>
       </div>
     </div>
   );
