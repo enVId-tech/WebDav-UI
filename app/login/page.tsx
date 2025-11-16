@@ -33,7 +33,7 @@ export default function LoginPage() {
       // Redirect to the original page after successful login
       router.push(redirectUrl);
     } else {
-      setError('Invalid username or password. Try admin/password.');
+      setError('Invalid username or password.');
     }
   };
 

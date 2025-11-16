@@ -16,7 +16,7 @@ const LoginForm = () => {
     setError('');
     const success = await login(username, password);
     if (!success) {
-      setError('Invalid username or password. Try admin/password.');
+      setError('Invalid username or password.');
     }
   };
 
