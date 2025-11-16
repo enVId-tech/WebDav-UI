@@ -355,6 +355,28 @@
   }
 }
 
+.sensitivityContainer {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+.sensitivityLabel {
+  white-space: nowrap;
+}
+
+.sensitivitySlider {
+  flex: 1;
+}
+
+.sensitivityValue {
+  min-width: 40px;
+  text-align: right;
+}
+
 .loading, .error {
   display: flex;
   flex-direction: column;

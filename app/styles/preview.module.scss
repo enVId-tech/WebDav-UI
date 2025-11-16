@@ -10,25 +10,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   transition: var(--transition-theme);
+  padding: 0;
+  padding-top: calc(60px + 2rem);
+  margin: 0;
   position: absolute;
   top: 0;
   left: 0;
-  padding: 0;
-  margin: 0;
 }
 
 .previewHeader {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   background-color: var(--bg-secondary);
+  height: 60px;
   padding: 1rem 1.5rem;
+  margin: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   border-bottom: 1px solid var(--border-color);
   transition: var(--transition-theme);
 
@@ -64,6 +67,16 @@
       transform: translateY(-2px);
     }
   }
+}
+
+.previewHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.previewTitle {
+  white-space: nowrap;
 }
 
 .loading {

@@ -11,6 +11,7 @@ import DocPreview from '@/app/components/DocPreview';
 import OfficePreview from '@/app/components/OfficePreview';
 import { lookup } from 'mime-types';
 import { geistSans } from '@/app/types/font';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 const FilePreview = () => {
   const params = useParams();
@@ -21,6 +22,7 @@ const FilePreview = () => {
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'other'>('other');
+  const [directoryPath, setDirectoryPath] = useState<string>('/etran');
 
   useEffect(() => {
     if (!params.filepath) return;
@@ -33,6 +35,15 @@ const FilePreview = () => {
 
       // IMPORTANT: Remove any leading "etran/" from the filepath to prevent duplication
       const cleanPath = filePath.replace(/^etran\//, '');
+
+      // Compute parent directory for the back button (within the /etran share)
+      const segments = cleanPath.split('/').filter(Boolean);
+      if (segments.length >= 1) {
+        const parentSegments = segments.slice(0, -1);
+        setDirectoryPath(`/${parentSegments.join('/')}`);
+      } else {
+        setDirectoryPath('/');
+      }
 
       // Get filename for mime type detection
       const fileNameOnly = cleanPath.split('/').pop() || '';
@@ -112,16 +123,17 @@ const FilePreview = () => {
   return (
       <div className={`${styles.previewContainer} ${geistSans.className}`}>
         <header className={styles.previewHeader}>
-          <button
-            type="button"
-            className={styles.backButton}
-            onClick={() => router.back()}
-          >
-            ← Back
-          </button>
-          <h1>
-            File Preview
-          </h1>
+          <div className={styles.previewHeaderLeft}>
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={() => router.push(directoryPath)}
+            >
+              ← Back
+            </button>
+            <h1 className={styles.previewTitle}>File Preview</h1>
+          </div>
+          <ThemeToggle />
         </header>
         {fileType === 'video' && (
             <VideoPreview

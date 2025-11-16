@@ -27,6 +27,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
   // const [albumArt, setAlbumArt] = useState<string | null>(null); // Album art not currently used
   const [audioFrequencyData, setAudioFrequencyData] = useState<Uint8Array<ArrayBufferLike> | Uint8Array | null>(null);
   const [skipDuration, setSkipDuration] = useState<number>(10);
+  const [sensitivity, setSensitivity] = useState<number>(1);
   // const [showSkipOptions, setShowSkipOptions] = useState<boolean>(false); // Skip options UI not fully implemented
 
   // const skipDurationOptions = [5, 10, 15, 30, 60]; // Skip options in seconds
@@ -196,8 +197,17 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
       // Normalize and ease height for smoother movement
       const normalized = avg / 230;
       const eased = Math.pow(normalized, 2.5); // ease out cubic
+
+      // Map to canvas height: low volume near bottom, high near top.
+      const volumeFactor = isMuted ? 0 : volume; // 0–1 multiplier from UI
+      const sensitivityFactor = Math.max(0.25, Math.min(2, sensitivity));
       const maxBarHeight = canvas.height * 0.95;
-      const barHeight = eased * maxBarHeight;
+      const minBarHeight = canvas.height * 0.05;
+      const heightRange = maxBarHeight - minBarHeight;
+      const barHeight = Math.max(
+        0,
+        (minBarHeight + eased * heightRange * sensitivityFactor) * volumeFactor
+      );
 
       if (barHeight < 2) continue;
 
@@ -596,6 +606,21 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
                 <div className={styles.volumeLevel}>
                   {Math.round(volume * 100)}%
                 </div>
+              </div>
+
+              <div className={styles.sensitivityContainer}>
+                <span className={styles.sensitivityLabel}>Visualizer Sensitivity</span>
+                <input
+                  type="range"
+                  min={0.25}
+                  max={2}
+                  step={0.05}
+                  value={sensitivity}
+                  onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                  className={styles.sensitivitySlider}
+                  aria-label="Visualizer sensitivity"
+                />
+                <span className={styles.sensitivityValue}>{sensitivity.toFixed(2)}x</span>
               </div>
 
               <div className={styles.downloadContainer}>

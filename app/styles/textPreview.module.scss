@@ -3,8 +3,8 @@
 .textPreviewContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  width: 100%;
   background-color: var(--bg-primary);
   overflow: hidden;
 }
@@ -198,7 +198,8 @@
 
 .textPreviewContent {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--bg-primary);
   transition: var(--transition-theme);
 }
@@ -207,6 +208,7 @@
   transform-origin: top left;
   display: inline-block;
   min-width: 100%;
+  min-height: 100%;
 
   pre {
     margin: 0 !important;
@@ -231,7 +233,7 @@
 
 .editableTextarea {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   border: none;
   outline: none;
   resize: none;

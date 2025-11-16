@@ -2,9 +2,11 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styles from '@/app/styles/textPreview.module.scss';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus, vs, twilight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { geistSans } from '../types/font';
 import { useAuth } from '@/app/context/AuthContext';
+import { vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { solarizedLight } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
 
 interface TextPreviewProps {
   src: string;
@@ -226,13 +228,6 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
               +
             </button>
           </div>
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={styles.themeToggle}
-            aria-label="Toggle theme"
-          >
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
           <a href={`${src}&download=true`} download className={styles.downloadButton}>
             ⬇ Download
           </a>
@@ -245,28 +240,32 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         >
           {loggedIn ? (
             <textarea
-              className={styles.editableTextarea}
+              className={`${styles.editableTextarea} ${
+          isDarkMode ? styles.darkEditor : styles.lightEditor
+              }`}
               value={content}
               onChange={(e) => {
-                setContent(e.target.value);
-                scheduleAutosave();
+          setContent(e.target.value);
+          scheduleAutosave();
               }}
             />
           ) : (
             <SyntaxHighlighter
               language={getLanguage()}
-              style={isDarkMode ? vscDarkPlus : vs}
+              style={isDarkMode ? vscDarkPlus : solarizedLight}
               showLineNumbers
               wrapLines
               customStyle={{
-                margin: 0,
-                borderRadius: 0,
-                overflow: 'hidden',
+              margin: 0,
+              borderRadius: 0,
+              overflow: 'hidden',
+              color: isDarkMode ? '#858585' : '#333',
+              background: isDarkMode ? '#1e1e1e' : '#fafafa',
               }}
               lineNumberStyle={{
-                paddingRight: '1em',
-                color: isDarkMode ? '#858585' : '#999',
-                userSelect: 'none',
+              paddingRight: '1em',
+              color: isDarkMode ? '#858585' : '#999',
+              userSelect: 'none',
               }}
             >
               {content}
