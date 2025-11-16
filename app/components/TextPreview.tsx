@@ -33,7 +33,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
 
     // Map file extensions to syntax highlighting languages
-    const extensionMap: {[key: string]: string} = {
+    const extensionMap: { [key: string]: string } = {
       'js': 'javascript',
       'jsx': 'jsx',
       'ts': 'typescript',
@@ -240,13 +240,12 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         >
           {loggedIn ? (
             <textarea
-              className={`${styles.editableTextarea} ${
-          isDarkMode ? styles.darkEditor : styles.lightEditor
-              }`}
+              className={`${styles.editableTextarea} ${isDarkMode ? styles.darkEditor : styles.lightEditor
+                }`}
               value={content}
               onChange={(e) => {
-          setContent(e.target.value);
-          scheduleAutosave();
+                setContent(e.target.value);
+                scheduleAutosave();
               }}
             />
           ) : (
@@ -256,16 +255,16 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
               showLineNumbers
               wrapLines
               customStyle={{
-              margin: 0,
-              borderRadius: 0,
-              overflow: 'hidden',
-              color: isDarkMode ? '#858585' : '#333',
-              background: isDarkMode ? '#1e1e1e' : '#fafafa',
+                margin: 0,
+                borderRadius: 0,
+                overflowX: 'visible',
+                color: isDarkMode ? '#858585' : '#333',
+                background: isDarkMode ? '#1e1e1e' : '#fafafa',
               }}
               lineNumberStyle={{
-              paddingRight: '1em',
-              color: isDarkMode ? '#858585' : '#999',
-              userSelect: 'none',
+                paddingRight: '1em',
+                color: isDarkMode ? '#858585' : '#999',
+                userSelect: 'none',
               }}
             >
               {content}

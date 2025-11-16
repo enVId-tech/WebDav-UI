@@ -15,9 +15,12 @@
   padding: 0;
   padding-top: 64px; // fixed header height
   margin: 0;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
 }
 
 .previewHeader {
@@ -169,15 +172,50 @@
 // Media queries for responsive design
 @media (max-width: 768px) {
   .previewContainer {
-    padding: 1rem;
-    padding-top: 4rem; // Account for header
+    padding: 0;
+    padding-top: 56px;
+    height: 100vh;
+    position: fixed;
+    overflow: hidden;
   }
 
   .previewHeader {
-    padding: 0.75rem 1rem;
+    height: 56px;
+    padding: 0 1rem;
 
     h1 {
+      font-size: 1rem;
+    }
+
+    .backButton {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  .previewHeaderLeft {
+    gap: 0.5rem;
+  }
+
+  .previewTitle {
+    font-size: 0.9rem;
+  }
+
+  .unsupportedFile {
+    padding: 1.5rem;
+    margin: 1rem;
+
+    h2 {
       font-size: 1.2rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
+
+    .downloadLink {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
     }
   }
 }

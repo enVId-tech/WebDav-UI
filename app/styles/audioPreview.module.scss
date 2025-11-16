@@ -348,6 +348,93 @@
   &:hover {
     background-color: var(--audio-primary-color);
     color: var(--icon-color-light);
+  }
+}
+
+@media (max-width: 768px) {
+  .audioPreview {
+    max-width: 100%;
+    margin: 1rem auto;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .audioHeader .fileName {
+    font-size: 1.2rem;
+  }
+
+  .audioInfo {
+    margin-bottom: 1rem;
+
+    h3 {
+      font-size: 1rem;
+    }
+
+    p {
+      font-size: 0.75rem;
+    }
+  }
+
+  .visualizerContainer {
+    height: 120px;
+    margin-bottom: 1rem;
+  }
+
+  .visualizerControls {
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .controlButton {
+    &.playButton {
+      width: 45px;
+      height: 45px;
+    }
+
+    &.skipButton {
+      width: 35px;
+      height: 35px;
+    }
+  }
+
+  .seekContainer {
+    margin-bottom: 1rem;
+  }
+
+  .seekTimeMarkers {
+    font-size: 0.7rem;
+  }
+
+  .fullWidthVolumeContainer {
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .volumeLevel {
+    font-size: 0.7rem;
+    min-width: 30px;
+  }
+
+  .sensitivityContainer {
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+  }
+
+  .sensitivityLabel,
+  .sensitivityValue {
+    font-size: 0.7rem;
+  }
+
+  .downloadContainer {
+    margin-top: 0.75rem;
+  }
+
+  .downloadButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    width: 100%;
+    justify-content: center;
     box-shadow: 0 2px 8px rgba(var(--audio-primary-color-rgb), 0.3);
     .downloadIcon svg {
         transform: scale(1.1);
