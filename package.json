@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

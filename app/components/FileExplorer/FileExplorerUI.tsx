@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useCallback, useState } from 'react'; // Added useState
+import React, { useCallback, useState } from 'react';
 import { FileItem, FolderNode } from './types';
 import { formatFileSize, formatDate, getFileIcon, getEnhancedFileIcon as utilGetEnhancedFileIcon } from './utils';
-import styles from '../../styles/fileExplorer.module.scss'; // Adjusted path
-import commonStyles from '../../styles/common.module.scss'; // Import common styles for theme variables
+import styles from '../../styles/fileExplorer.module.scss';
+import commonStyles from '../../styles/common.module.scss';
 import { lookup } from 'mime-types';
-import MobileNav from '../MobileNav'; // Adjusted path
-import ThemeToggle from '../ThemeToggle'; // Adjusted path
-import { useAuth } from '@/app/context/AuthContext'; // Corrected import path to use alias
-import LoginForm from '../LoginForm'; // Import LoginForm component
+import MobileNav from '../MobileNav';
+import ThemeToggle from '../ThemeToggle';
+import { useAuth } from '@/app/context/AuthContext';
 import { geistMono } from '@/app/types/font';
+import { usePathname } from 'next/navigation';
 
 interface FileExplorerUIProps {
   loadingState: 'active' | 'fading' | 'hidden';
@@ -64,8 +64,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   onDeleteFile,
 }) => {
   const [deleteModeActive, setDeleteModeActive] = useState(false);
-  const { loggedIn, login, logout, isLoading: authIsLoading, username } = useAuth(); // Get auth state, added login
-  const [showLoginForm, setShowLoginForm] = useState(false); // New state for login form visibility
+  const { loggedIn, logout, isLoading: authIsLoading, username } = useAuth();
+  const pathname = usePathname();
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
@@ -219,8 +219,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   // Handler for file input change
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!loggedIn) {
-      alert("Please log in to upload files.");
-      setShowLoginForm(true); // Show login form if trying to upload without being logged in
+      const currentUrl = encodeURIComponent(pathname);
+      routerPush(`/login?redirect=${currentUrl}`);
       return;
     }
     const file = event.target.files?.[0];
@@ -232,8 +232,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
 
   const handleToggleDeleteMode = () => {
     if (!loggedIn) {
-      alert("Please log in to delete files.");
-      setShowLoginForm(true); // Show login form if trying to enable delete without being logged in
+      const currentUrl = encodeURIComponent(pathname);
+      routerPush(`/login?redirect=${currentUrl}`);
       return;
     }
     setDeleteModeActive(!deleteModeActive);
@@ -248,10 +248,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     );
   }
 
-  //LoginForm is now conditionally rendered based on showLoginForm state
-  //The main file explorer UI is rendered below, and LoginForm can be shown on top or inline
-
-  if (loadingState !== 'hidden' && !showLoginForm) { // Ensure file loading doesn't hide login form if active
+  if (loadingState !== 'hidden') {
     return (
       <div className={`${styles.loadingContainer} ${loadingState === 'fading' ? styles.fading : ''}`}>
         <div className={styles.spinner}></div>
@@ -260,7 +257,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     );
   }
 
-  if (error && !showLoginForm) { // Ensure error display doesn't hide login form if active
+  if (error) {
     return (
       <div className={styles.errorContainer}>
         <div className={styles.errorContent}>
@@ -274,14 +271,6 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   return (
       <div className={`${styles.modernExplorerContainer} ${commonStyles.themeVariables}`}>
         <ThemeToggle />
-
-        {/* Conditional rendering for Login Form - could be a modal or inline */}
-        {showLoginForm && !loggedIn && (
-          <div className={styles.loginFormOverlay}> {/* Optional: for modal-like appearance */}
-            <LoginForm />
-            <button onClick={() => setShowLoginForm(false)} className={styles.closeLoginButton}>Close</button>
-          </div>
-        )}
 
         <div className={styles.modernSidebar}>
           <div className={styles.sidebarHeader}>
@@ -317,13 +306,24 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
             </div>
 
             <div className={styles.modernActions}>
-              {!loggedIn && !showLoginForm && (
-                <button onClick={() => setShowLoginForm(true)} className={styles.modernButton} style={{ marginRight: '10px' }}>
+              {!loggedIn && (
+                <button 
+                  onClick={() => {
+                    const currentUrl = encodeURIComponent(pathname);
+                    routerPush(`/login?redirect=${currentUrl}`);
+                  }} 
+                  className={styles.modernButton} 
+                  style={{ marginRight: '10px' }}
+                >
                   Login
                 </button>
               )}
               {loggedIn && (
-                <button onClick={async () => { await logout(); setShowLoginForm(false);}} className={styles.modernButton} style={{ marginRight: '10px' }}>
+                <button 
+                  onClick={async () => { await logout(); }} 
+                  className={styles.modernButton} 
+                  style={{ marginRight: '10px' }}
+                >
                   Logout ({username})
                 </button>
               )}
@@ -388,8 +388,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
           <div className={styles.modernFileList}>
             {showSearchResults ? (
                 <>
-                  <div style={searchStyles.searchResults as React.CSSProperties} className={styles.searchResultsHeader}> {/* Added class */}
-                    <h3 style={searchStyles.searchText as React.CSSProperties}>Search Results for "{searchQuery}"</h3>
+                  <div className={styles.searchResultsHeader}>
+                    <h3>Search Results for "{searchQuery}"</h3>
                     <button
                         className={styles.modernButton}
                         onClick={() => onSetShowSearchResults(false)}
@@ -397,21 +397,21 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                       Back to Files
                     </button>
                   </div>
-                  <div className={styles.modernFileHeader}>
+                  <div className={`${styles.modernFileHeader} ${styles.searchHeader}`}>
                     <div className={styles.nameColumn}>Name</div>
-                    <div style={searchStyles.locationColumn as React.CSSProperties} className={styles.locationColumn}>Location</div> {/* Added class */}
+                    <div className={styles.locationColumn}>Location</div>
                     <div className={styles.dateColumn}>Modified</div>
                     <div className={styles.sizeColumn}>Size</div>
                   </div>
                   <div className={styles.modernFileItems}>
                     {searchResults.length > 0 ? (
                         searchResults.map((item) => (
-                            <div key={item.filename + (item.relativePath || '')} className={styles.fileItem}> {/* Ensure unique key */}
+                            <div key={item.filename + (item.relativePath || '')} className={styles.fileItem}>
                                 <div className={styles.nameColumn}>
                                   <span className={styles.icon}>{item.type === 'directory' ? '📁' : getFileIcon(item.basename)}</span>
                                   <span className={styles.name} onClick={() => item.type === 'directory' ? onNavigateToFolder(item.relativePath || item.filename) : onFileClick(item.basename)}>{item.basename}</span>
                                 </div>
-                                <div style={searchStyles.locationColumn as React.CSSProperties} className={styles.locationColumn}>{item.relativePath?.substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
+                                <div className={styles.locationColumn}>{item.relativePath?.replaceAll("%20", " ").substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
                                 <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                 <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
                                 {loggedIn && deleteModeActive && item.type === 'file' && (

@@ -53,6 +53,8 @@
   --info: #0891b2;
   --disabled-color: #d1d5db; // Color for disabled elements
   --error-color: #dc2626;
+  --error-color-rgb: 220, 38, 38; // RGB for error color
+  --text-muted: #9ca3af; // Muted text color
 
   // Additional UI variables for the homepage
   --accent-color: #2563eb;
@@ -171,6 +173,8 @@ body {
     --danger-hover: #ef4444;
     --info: #06b6d4;
     --error-color: #f87171;
+    --error-color-rgb: 248, 113, 113; // RGB for dark mode error color
+    --text-muted: #6b7280; // Muted text color for dark mode
 
     // Additional UI variables for the homepage
     --accent-color: #3b82f6;

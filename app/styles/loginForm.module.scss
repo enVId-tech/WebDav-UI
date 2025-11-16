@@ -1,5 +1,29 @@
 // loginForm.module.scss
 
+// Full page login wrapper
+.loginPageWrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+  padding: 2rem;
+  transition: var(--transition-theme);
+}
+
+.loginPageContainer {
+  width: 100%;
+  max-width: 480px;
+}
+
+.loginSubtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: -0.5rem 0 1.5rem 0;
+  text-align: center;
+}
+
+// Modal overlay for inline login (kept for backward compatibility)
 .loginFormOverlay {
     position: fixed;
     top: 0;
@@ -19,11 +43,18 @@
     background-color: var(--bg-secondary);
     padding: 2.5rem 3rem;
     border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     width: 100%;
-    max-width: 400px; // Limit form width
+    max-width: 420px;
     text-align: center;
     border: 1px solid var(--border-color);
+    transition: var(--transition-theme);
+    position: relative;
+    
+    @media (max-width: 768px) {
+      padding: 2rem 1.5rem;
+      max-width: 90%;
+    }
   }
 
   .loginForm {
@@ -32,20 +63,38 @@
     gap: 1.5rem; // Space between elements
   }
 
+  .loginForm h1 {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+  }
+
   .loginForm h2 {
     color: var(--text-primary);
-    margin-bottom: 0.5rem; // Reduced margin
+    margin: 0 0 0.5rem 0;
     font-size: 1.8rem;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   .loginError {
     color: var(--error-color);
     background-color: rgba(var(--error-color-rgb), 0.1);
-    padding: 0.75rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    border: 1px solid rgba(var(--error-color-rgb), 0.2);
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    border: 1px solid rgba(var(--error-color-rgb), 0.3);
+    text-align: left;
+    margin: 0;
+    line-height: 1.5;
+    
+    &::before {
+      content: '⚠️ ';
+      margin-right: 0.5rem;
+    }
   }
 
   .inputGroup {
@@ -56,48 +105,66 @@
 
   .inputGroup label {
     margin-bottom: 0.5rem;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    display: block;
   }
 
   .loginInput {
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    padding: 0.875rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-size: 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.2s ease;
+    width: 100%;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
 
     &:focus {
       outline: none;
       border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.2);
+      box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.15);
+      background-color: var(--bg-secondary);
+    }
+
+    &:hover:not(:focus) {
+      border-color: var(--text-tertiary);
     }
   }
 
   .loginButton {
-    padding: 0.8rem 1.5rem;
+    padding: 0.875rem 1.5rem;
     background-color: var(--accent-color);
     color: var(--button-text);
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-top: 0.5rem;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: var(--accent-hover);
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
 
     &:disabled {
       background-color: var(--disabled-color);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       cursor: not-allowed;
-      transform: none;
+      opacity: 0.6;
     }
   }
 
@@ -115,6 +182,30 @@
     &:hover {
       background-color: var(--bg-tertiary);
       color: var(--text-primary);
+    }
+  }
+
+  .backButton {
+    padding: 0.875rem 1.5rem;
+    background-color: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-top: 0.5rem;
+
+    &:hover {
+      background-color: var(--bg-tertiary);
+      border-color: var(--text-tertiary);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
   }
 

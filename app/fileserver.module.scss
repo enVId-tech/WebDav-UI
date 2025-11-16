@@ -415,6 +415,7 @@
       border-bottom: 1px solid var(--border-color);
       color: var(--text-primary);
       transition: var(--transition-theme);
+      width: 100%;
 
       &:hover {
         background-color: var(--bg-tertiary);
