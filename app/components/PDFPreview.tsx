@@ -17,6 +17,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(1);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,7 +101,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
       if (!context) return;
 
       // Calculate optimal scale
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewport = page.getViewport({ scale: 1.5 * zoom });
 
       // Set canvas dimensions to match the viewport
       canvas.height = viewport.height;
@@ -158,6 +159,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
             <ThemeToggle />
           </div>
           <div className={styles.pdfControls}>
+            <div className={styles.pageControls}>
             <button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
@@ -165,9 +167,9 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
             >
               Previous
             </button>
-            <span>
-            Page {currentPage} of {numPages}
-          </span>
+            <span className={styles.pageInfo}>
+              Page {currentPage} of {numPages}
+            </span>
             <button
                 onClick={goToNextPage}
                 disabled={currentPage === numPages}
@@ -175,6 +177,41 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
             >
               Next
             </button>
+            </div>
+            <div className={styles.scaleControls}>
+              <span className={styles.scaleValue}>{Math.round(zoom * 100)}%</span>
+              <input
+                type="range"
+                min="0.1"
+                max="3"
+                step="0.1"
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+              />
+              <button
+                type="button"
+                className={styles.pdfButton}
+                onClick={() => setZoom((z) => Math.max(0.1, +(z - 0.1).toFixed(2)))}
+                disabled={zoom <= 0.1}
+              >
+                -
+              </button>
+              <button
+                type="button"
+                className={styles.pdfButton}
+                onClick={() => setZoom(1)}
+              >
+                100%
+              </button>
+              <button
+                type="button"
+                className={styles.pdfButton}
+                onClick={() => setZoom((z) => Math.min(3, +(z + 0.1).toFixed(2)))}
+                disabled={zoom >= 3}
+              >
+                +
+              </button>
+            </div>
             <a
                 href={`${src}&download=true`}
                 download
