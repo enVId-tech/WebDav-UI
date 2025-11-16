@@ -10,6 +10,7 @@ import PDFPreview from '@/app/components/PDFPreview';
 import DocPreview from '@/app/components/DocPreview';
 import OfficePreview from '@/app/components/OfficePreview';
 import { lookup } from 'mime-types';
+import { geistSans } from '@/app/types/font';
 
 const FilePreview = () => {
   const params = useParams();
@@ -100,15 +101,15 @@ const FilePreview = () => {
   }, [params.filepath]);
 
   if (isLoading) {
-    return <div className={styles.loading}>Loading...</div>;
+    return <div className={`${styles.loading} ${geistSans.className}`}>Loading...</div>;
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return <div className={`${styles.error} ${geistSans.className}`}>{error}</div>;
   }
 
   return (
-      <div className={styles.previewContainer}>
+      <div className={`${styles.previewContainer} ${geistSans.className}`}>
         {fileType === 'video' && (
             <VideoPreview
                 src={fileUrl}
@@ -165,7 +166,7 @@ const FilePreview = () => {
         )}
 
         {fileType === 'other' && (
-            <div className={styles.unsupportedFile}>
+            <div className={`${styles.unsupportedFile} ${geistSans.className}`}>
               <h2>This file type ({mimeType}) is not supported for preview.</h2>
               <p>The file cannot be previewed directly in the browser.</p>
               <a href={fileUrl + '&download=true'} download className={styles.downloadLink}>

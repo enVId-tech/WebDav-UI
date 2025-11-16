@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import styles from '@/app/styles/textPreview.module.scss';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { geistSans } from '../types/font';
 
 interface TextPreviewProps {
   src: string;
@@ -92,7 +93,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
 
   if (isLoading) {
     return (
-      <div className={styles.loading}>
+      <div className={`${styles.loading} ${geistSans.className}`}>
         <div className={styles.spinner}></div>
         <p>Loading text...</p>
       </div>
@@ -101,7 +102,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
 
   if (error) {
     return (
-      <div className={styles.error}>
+      <div className={`${styles.error} ${geistSans.className}`}>
         <p>{error}</p>
         <a href={`${src}&download=true`} download className={styles.downloadButton}>
           Download Text File
@@ -111,7 +112,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   }
 
   return (
-    <div className={styles.textPreviewContainer}>
+    <div className={`${styles.textPreviewContainer} ${geistSans.className}`}>
       <div className={styles.textHeader}>
         <div className={styles.headerLeft}>
           <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
