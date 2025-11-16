@@ -16,21 +16,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing or invalid content' }, { status: 400 });
     }
 
-    const baseUrl = process.env.WEBDAV_URL || '';
-    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-
     const decodedPath = decodeURIComponent(path);
 
-    let targetUrl = `${normalizedBaseUrl}/${sharePath}`;
+    // Derive a file path relative to the WebDAV root, similar to other routes
+    // sharePath is already like `/etran`; decodedPath is the path within the share
+    let relativeFilePath = `${sharePath}`;
     if (decodedPath && decodedPath !== '/') {
-      targetUrl += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
+      relativeFilePath += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
     }
 
-    console.log('[text-save] Writing to URL:', targetUrl);
-    webdavService.updateUrl(targetUrl);
+    console.log('[text-save] Writing to path:', relativeFilePath);
 
     const buffer = Buffer.from(content, 'utf-8');
-    await webdavService.putFileContents(buffer, { overwrite: true });
+    await webdavService.uploadFile(relativeFilePath, buffer);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
