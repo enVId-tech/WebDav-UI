@@ -18,7 +18,9 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoom, setZoom] = useState<number>(1);
+  const [viewMode, setViewMode] = useState<'single' | 'continuous'>('single');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const continuousCanvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -78,25 +80,34 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
     };
   }, [src]);
 
-// Add new useEffect to render page when currentPage changes or when loading completes
+  // Render single page view
   useEffect(() => {
-    if (!loading && pdfDocRef.current && canvasRef.current) {
-      renderPage(currentPage).catch(err => {
+    if (!loading && pdfDocRef.current && canvasRef.current && viewMode === 'single') {
+      renderPage(currentPage, canvasRef.current).catch(err => {
         console.error('Error rendering page:', err);
         setError('Failed to render page: ' + err.message);
       });
     }
-  }, [currentPage, loading, zoom]);
+  }, [currentPage, loading, zoom, viewMode]);
 
-  const renderPage = async (pageNumber: number) => {
-    if (!pdfDocRef.current || !canvasRef.current) return;
+  // Render continuous view
+  useEffect(() => {
+    if (!loading && pdfDocRef.current && viewMode === 'continuous' && numPages > 0) {
+      renderAllPages().catch(err => {
+        console.error('Error rendering pages:', err);
+        setError('Failed to render pages: ' + err.message);
+      });
+    }
+  }, [loading, zoom, viewMode, numPages]);
+
+  const renderPage = async (pageNumber: number, canvas: HTMLCanvasElement) => {
+    if (!pdfDocRef.current || !canvas) return;
 
     try {
       // Get page
       const page = await pdfDocRef.current.getPage(pageNumber);
 
       // Get canvas context
-      const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       if (!context) return;
 
@@ -109,9 +120,9 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
       // Render PDF page
       const renderContext = {
-        canvas: canvas,
         canvasContext: context,
         viewport: viewport,
+        canvas: canvas,
       };
 
       await page.render(renderContext).promise;
@@ -122,16 +133,23 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
     }
   };
 
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      renderPage(currentPage - 1);
+  const renderAllPages = async () => {
+    if (!pdfDocRef.current) return;
+
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const canvas = continuousCanvasRefs.current.get(pageNum);
+      if (canvas) {
+        await renderPage(pageNum, canvas);
+      }
     }
   };
 
+  const goToPreviousPage = () => {
+    setCurrentPage((page) => Math.max(1, page - 1));
+  };
+
   const goToNextPage = () => {
-    if (currentPage < numPages) {
-      renderPage(currentPage + 1);
-    }
+    setCurrentPage((page) => Math.min(numPages, page + 1));
   };
 
   if (loading) {
@@ -156,25 +174,43 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
             <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
           </div>
           <div className={styles.pdfControls}>
-            <div className={styles.pageControls}>
-            <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-                className={styles.pdfButton}
-            >
-              Previous
-            </button>
-            <span className={styles.pageInfo}>
-              Page {currentPage} of {numPages}
-            </span>
-            <button
-                onClick={goToNextPage}
-                disabled={currentPage === numPages}
-                className={styles.pdfButton}
-            >
-              Next
-            </button>
+            <div className={styles.viewModeControls}>
+              <button
+                type="button"
+                className={`${styles.pdfButton} ${viewMode === 'single' ? styles.active : ''}`}
+                onClick={() => setViewMode('single')}
+              >
+                Single Page
+              </button>
+              <button
+                type="button"
+                className={`${styles.pdfButton} ${viewMode === 'continuous' ? styles.active : ''}`}
+                onClick={() => setViewMode('continuous')}
+              >
+                Continuous
+              </button>
             </div>
+            {viewMode === 'single' && (
+              <div className={styles.pageControls}>
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className={styles.pdfButton}
+                >
+                  Previous
+                </button>
+                <span className={styles.pageInfo}>
+                  Page {currentPage} of {numPages}
+                </span>
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === numPages}
+                  className={styles.pdfButton}
+                >
+                  Next
+                </button>
+              </div>
+            )}
             <div className={styles.scaleControls}>
               <span className={styles.scaleValue}>{Math.round(zoom * 100)}%</span>
               <input
@@ -219,7 +255,26 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
           </div>
         </div>
         <div className={styles.pdfCanvas}>
-          <canvas ref={canvasRef} />
+          {viewMode === 'single' ? (
+            <canvas ref={canvasRef} />
+          ) : (
+            <div className={styles.continuousView}>
+              {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
+                <div key={pageNum} className={styles.pageContainer}>
+                  <div className={styles.pageNumber}>Page {pageNum}</div>
+                  <canvas
+                    ref={(el) => {
+                      if (el) {
+                        continuousCanvasRefs.current.set(pageNum, el);
+                      } else {
+                        continuousCanvasRefs.current.delete(pageNum);
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
   );
