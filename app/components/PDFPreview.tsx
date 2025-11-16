@@ -18,7 +18,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoom, setZoom] = useState<number>(1);
-  const [viewMode, setViewMode] = useState<'single' | 'continuous'>('single');
+  const [viewMode, setViewMode] = useState<'single' | 'continuous-vertical' | 'continuous-horizontal'>('single');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const continuousCanvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
@@ -92,7 +92,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
   // Render continuous view
   useEffect(() => {
-    if (!loading && pdfDocRef.current && viewMode === 'continuous' && numPages > 0) {
+    if (!loading && pdfDocRef.current && (viewMode === 'continuous-vertical' || viewMode === 'continuous-horizontal') && numPages > 0) {
       renderAllPages().catch(err => {
         console.error('Error rendering pages:', err);
         setError('Failed to render pages: ' + err.message);
@@ -180,14 +180,21 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
                 className={`${styles.pdfButton} ${viewMode === 'single' ? styles.active : ''}`}
                 onClick={() => setViewMode('single')}
               >
-                Single Page
+                Single
               </button>
               <button
                 type="button"
-                className={`${styles.pdfButton} ${viewMode === 'continuous' ? styles.active : ''}`}
-                onClick={() => setViewMode('continuous')}
+                className={`${styles.pdfButton} ${viewMode === 'continuous-vertical' ? styles.active : ''}`}
+                onClick={() => setViewMode('continuous-vertical')}
               >
-                Continuous
+                ↓ Vertical
+              </button>
+              <button
+                type="button"
+                className={`${styles.pdfButton} ${viewMode === 'continuous-horizontal' ? styles.active : ''}`}
+                onClick={() => setViewMode('continuous-horizontal')}
+              >
+                → Horizontal
               </button>
             </div>
             {viewMode === 'single' && (
@@ -258,7 +265,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
           {viewMode === 'single' ? (
             <canvas ref={canvasRef} />
           ) : (
-            <div className={styles.continuousView}>
+            <div className={`${styles.continuousView} ${viewMode === 'continuous-horizontal' ? styles.horizontal : styles.vertical}`}>
               {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
                 <div key={pageNum} className={styles.pageContainer}>
                   <div className={styles.pageNumber}>Page {pageNum}</div>
