@@ -51,8 +51,18 @@ class WebDavService {
      * @param {string} path - The path to the directory. Defaults to '/'.
      */
     public async getDirectoryContents(path: string = '/'): Promise<any[]> {
-        const contents = await this.client.getDirectoryContents(path);
-        return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
+        try {
+            const contents = await this.client.getDirectoryContents(path);
+            return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
+        } catch (error: any) {
+            // If directory doesn't exist (404), return empty array instead of throwing
+            if (error.status === 404 || error.response?.status === 404) {
+                console.log(`Directory not found: ${path}, returning empty array`);
+                return [];
+            }
+            // For other errors, throw them
+            throw error;
+        }
     }
 
     async getFileContents(filePath?: string): Promise<Buffer> {

@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
                     const fileSize = await webdavService.getFileSize(filePath);
                     
                     // Optimize chunk size based on request pattern
-                    // Initial request (start=0): smaller chunk for fast startup
-                    // Subsequent requests: larger chunks for smooth playback
+                    // Initial request (start=0): moderate chunk for reasonable startup
+                    // Subsequent requests: very large chunks for smooth continuous playback
                     const isInitialRequest = start === 0;
-                    const INITIAL_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB for fast start
-                    const STREAMING_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB for smooth playback
+                    const INITIAL_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB for fast start
+                    const STREAMING_CHUNK_SIZE = 25 * 1024 * 1024; // 25MB for smooth playback
                     const MAX_CHUNK_SIZE = isInitialRequest ? INITIAL_CHUNK_SIZE : STREAMING_CHUNK_SIZE;
                     
                     const requestedEnd = match[2] ? parseInt(match[2], 10) : fileSize - 1;
@@ -113,16 +113,12 @@ export async function GET(request: NextRequest) {
                         headers.set('X-Quality', quality);
                     }
                     
-                    if (download) {
-                        const fileName = getFileName(decodedPath);
-                        headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-                    } else {
-                        const fileName = getFileName(decodedPath);
-                        headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-                    }
+                    const fileName = getFileName(decodedPath);
+                    const disposition = download ? 'attachment' : 'inline';
+                    headers.set('Content-Disposition', `${disposition}; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
                     
                     // Return 206 Partial Content
-                    return new NextResponse(partialContent, {
+                    return new NextResponse(new Uint8Array(partialContent), {
                         status: 206,
                         headers: headers,
                     });
@@ -137,18 +133,15 @@ export async function GET(request: NextRequest) {
             headers.set('Accept-Ranges', 'bytes'); // Indicate that range requests are supported
             headers.set('Content-Length', String(fileContent.length));
             
-            if (download) {
-                const fileName = getFileName(decodedPath);
-                headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-            } else {
-                const fileName = getFileName(decodedPath);
-                headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-            }
+            const fileName = getFileName(decodedPath);
+            const disposition = download ? 'attachment' : 'inline';
+            headers.set('Content-Disposition', `${disposition}; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
 
-            // fileContent is now always a Buffer, which is compatible with NextResponse
-            return new NextResponse(fileContent, {
-                headers: headers,
-            });        } else {
+                // Convert Buffer to Uint8Array so it's compatible with NextResponse body type
+                return new NextResponse(new Uint8Array(fileContent), {
+                    headers: headers,
+                });
+            } else {
             // Handle directory listing - ensure WebDAV client is at base URL  
             webdavService.updateUrl(process.env.WEBDAV_URL || '');
             
@@ -208,10 +201,11 @@ export async function POST(request: NextRequest) {
             // Consider deprecating POST for file fetching if possible.
             console.warn("Warning: File fetching via POST is deprecated. Use GET /api/webdav?path=...&isFile=true");
             const fileContent = await webdavService.getFileContents();
-            return new NextResponse(fileContent, {
+            const headFileName = getFileName(decodedPath);
+            return new NextResponse(new Uint8Array(fileContent), {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
-                    'Content-Disposition': `inline; filename="${encodeURIComponent(getFileName(decodedPath))}"; filename*=UTF-8''${encodeURIComponent(getFileName(decodedPath))}`,
+                    'Content-Disposition': `inline; filename="${headFileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(headFileName)}`,
                 }
             });
         } else {

@@ -35,13 +35,14 @@ export async function POST(request: NextRequest) {
         if (isFile) {
             // Handle file request
             const fileContent = await webdavService.getFileContents();
+            const body = new Uint8Array(fileContent);
 
             // Return file content with appropriate Content-Type header
             const fileName = getFileName(decodedPath);
-            return new NextResponse(fileContent, {
+            return new NextResponse(body, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
-                    'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+                    'Content-Disposition': `inline; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
                 }
             });
         } else {
