@@ -22,7 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkStatus = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/auth/status');
+        const response = await fetch('/api/auth/status', {
+          credentials: 'include' // Include cookies in request
+        });
         if (response.ok) {
           const data = await response.json();
           setLoggedIn(data.loggedIn);
@@ -49,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in request
         body: JSON.stringify({ username: user, password: pass }),
       });
       const data = await response.json();
@@ -75,7 +78,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include' // Include cookies in request
+      });
       setLoggedIn(false);
       setUsername(null);
     } catch (error) {
