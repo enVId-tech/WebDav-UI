@@ -9,6 +9,7 @@ import TextPreview from '@/app/components/TextPreview';
 import PDFPreview from '@/app/components/PDFPreview';
 import DocPreview from '@/app/components/DocPreview';
 import OfficePreview from '@/app/components/OfficePreview';
+import SQLitePreview from '@/app/components/SQLitePreview';
 import { lookup } from 'mime-types';
 import { geistSans } from '@/app/types/font';
 import ThemeToggle from '@/app/components/ThemeToggle';
@@ -21,7 +22,7 @@ const FilePreview = () => {
   const [mimeType, setMimeType] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'other'>('other');
+  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'database' | 'other'>('other');
   const [directoryPath, setDirectoryPath] = useState<string>('/etran');
 
   useEffect(() => {
@@ -66,6 +67,15 @@ const FilePreview = () => {
         setFileType('text');
       } else if (detectedMimeType === 'application/pdf' || fileExt === 'pdf') {
         setFileType('pdf');
+      } else if (
+        // Database files - SQLite and others
+        ['db', 'sqlite', 'sqlite3', 'db3', 's3db', 'sl3'].includes(fileExt) ||
+        detectedMimeType === 'application/x-sqlite3' ||
+        detectedMimeType === 'application/vnd.sqlite3' ||
+        detectedMimeType === 'application/x-sqlite-db'
+      ) {
+        console.log('Detected database file:', fileExt);
+        setFileType('database');
       } else if ([
         // Microsoft Office formats
         'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
@@ -186,6 +196,13 @@ const FilePreview = () => {
             <DocPreview
                 src={fileUrl}
                 mimeType={mimeType}
+                fileName={fileName}
+            />
+        )}
+
+        {fileType === 'database' && (
+            <SQLitePreview
+                src={fileUrl}
                 fileName={fileName}
             />
         )}

@@ -97,3 +97,29 @@ export function detectDocumentFormat(fileName: string, mimeType: string): string
 
   return null;
 }
+
+/**
+ * Detect database format from filename and MIME type
+ */
+export function detectDatabaseFormat(fileName: string, mimeType: string): string | null {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+  // SQLite databases
+  if (['db', 'sqlite', 'sqlite3', 'db3', 's3db', 'sl3'].includes(ext)) {
+    return 'sqlite';
+  }
+
+  // Other database formats that might need special handling
+  if (['mdb', 'accdb'].includes(ext)) {
+    return 'access';
+  }
+
+  // Check MIME type
+  if (mimeType === 'application/x-sqlite3' || 
+      mimeType === 'application/vnd.sqlite3' ||
+      mimeType === 'application/x-sqlite-db') {
+    return 'sqlite';
+  }
+
+  return null;
+}
