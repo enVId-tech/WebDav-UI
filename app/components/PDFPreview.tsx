@@ -107,6 +107,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
 
       // Render PDF page
       const renderContext = {
+        canvas: canvas,
         canvasContext: context,
         viewport: viewport,
       };

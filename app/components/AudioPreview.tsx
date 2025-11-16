@@ -25,7 +25,7 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   // const [albumArt, setAlbumArt] = useState<string | null>(null); // Album art not currently used
-  const [audioFrequencyData, setAudioFrequencyData] = useState<Uint8Array | null>(null);
+  const [audioFrequencyData, setAudioFrequencyData] = useState<Uint8Array<ArrayBufferLike> | Uint8Array | null>(null);
   const [skipDuration, setSkipDuration] = useState<number>(10);
   // const [showSkipOptions, setShowSkipOptions] = useState<boolean>(false); // Skip options UI not fully implemented
 
@@ -125,8 +125,10 @@ const AudioPreview: React.FC<AudioPreviewProps> = ({ src, fileName, mimeType }) 
     canvas.width = rect.width;
     canvas.height = rect.height;
 
-    // Get frequency data
-    analyserRef.current.getByteFrequencyData(audioFrequencyData);
+    const body = new Uint8Array(audioFrequencyData);
+
+    // Get frequency data (accept any Uint8Array-like buffer)
+    analyserRef.current.getByteFrequencyData(body);
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);

@@ -4,6 +4,7 @@ import "./globals.scss";
 import WebDavLogoSrc from "@/public/webdavlogo.svg";
 import { AuthProvider } from "./context/AuthContext";
 import { geistSans, geistMono } from "./types/font";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
     title: "WebDav UI",
@@ -51,7 +52,9 @@ export default function RootLayout({
             </head>
             <body className={`${geistSans.variable} ${geistMono.variable}`}>
                 <AuthProvider>
-                    {children}
+                    <Suspense>
+                        {children}
+                    </Suspense>
                 </AuthProvider>
             </body>
         </html>
