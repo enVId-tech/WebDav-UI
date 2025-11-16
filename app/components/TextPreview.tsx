@@ -24,7 +24,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { loggedIn } = useAuth();
+  const { loggedIn, username } = useAuth();
 
   // Determine language for syntax highlighting
   const getLanguage = () => {
@@ -116,21 +116,45 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
     }
     autosaveTimerRef.current = setTimeout(() => {
       handleSave();
-    }, 3000);
-  }, [loggedIn, content]);
+    }, 1500);
+  }, [loggedIn]);
 
   const handleSave = useCallback(async () => {
-    if (!loggedIn || !content) return;
+    if (!loggedIn) return;
     try {
       setIsSaving(true);
-      // TODO: Implement API route to persist edits back to WebDAV/source
-      // await fetch('/api/text/save', { method: 'POST', body: JSON.stringify({ src, content }) });
+
+      // src is like /api/webdav?path=...&sharePath=...&isFile=true
+      const url = new URL(src, window.location.origin);
+      const path = url.searchParams.get('path');
+      const sharePath = url.searchParams.get('sharePath');
+
+      if (!path || !sharePath) {
+        console.error('Missing path or sharePath on save');
+        return;
+      }
+
+      const response = await fetch('/api/webdav/text-save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path, sharePath, content }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save file');
+      }
+
       setIsDirty(false);
       setLastSavedAt(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.error('Error saving text file:', err);
     } finally {
       setIsSaving(false);
     }
-  }, [loggedIn, content, src]);
+  }, [loggedIn, src, content]);
 
   useEffect(() => {
     return () => {
@@ -174,6 +198,15 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
           </div>
         </div>
         <div className={styles.headerRight}>
+          {loggedIn && (
+            <div className={styles.saveStatus}>
+              {isSaving && <span>Saving…</span>}
+              {!isSaving && isDirty && <span>Unsaved changes</span>}
+              {!isSaving && !isDirty && lastSavedAt && (
+                <span>Saved at {lastSavedAt}</span>
+              )}
+            </div>
+          )}
           <div className={styles.zoomControls}>
             <button
               type="button"

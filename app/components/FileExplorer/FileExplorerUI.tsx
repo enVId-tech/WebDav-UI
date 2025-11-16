@@ -35,7 +35,7 @@ interface FileExplorerUIProps {
   onFileClick: (fileName: string) => void;
   onToggleFolderExpansion: (path: string) => void;
   onUploadFile: (file: File) => void;
-  onDeleteFile: (fileName: string) => void;
+  onDeleteFiles: (fileNames: string[]) => void;
 }
 
 const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
@@ -61,9 +61,10 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   onFileClick,
   onToggleFolderExpansion,
   onUploadFile,
-  onDeleteFile,
+  onDeleteFiles,
 }) => {
   const [deleteModeActive, setDeleteModeActive] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const { loggedIn, logout, isLoading: authIsLoading, username } = useAuth();
   const pathname = usePathname();
 
@@ -236,8 +237,31 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
       routerPush(`/login?redirect=${currentUrl}`);
       return;
     }
-    setDeleteModeActive(!deleteModeActive);
-  }
+    const next = !deleteModeActive;
+    setDeleteModeActive(next);
+    if (!next) {
+      setSelectedFiles(new Set());
+    }
+  };
+
+  const toggleFileSelection = (basename: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(basename)) {
+        next.delete(basename);
+      } else {
+        next.add(basename);
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    if (!loggedIn || selectedFiles.size === 0) return;
+    const names = Array.from(selectedFiles);
+    onDeleteFiles(names);
+    setSelectedFiles(new Set());
+  };
 
   if (authIsLoading) {
     return (
@@ -353,6 +377,15 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                   >
                     {deleteModeActive ? 'Cancel Delete' : 'Enable Delete'}
                   </button>
+                  {deleteModeActive && (
+                    <button
+                      className={styles.modernButton}
+                      onClick={handleDeleteSelected}
+                      disabled={selectedFiles.size === 0}
+                    >
+                      Delete Selected ({selectedFiles.size})
+                    </button>
+                  )}
                 </>
               )}
               {/* View Mode Toggle Button */}
@@ -415,13 +448,11 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                 <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                 <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
                                 {loggedIn && deleteModeActive && item.type === 'file' && (
-                                  <button
-                                    onClick={() => onDeleteFile(item.basename)}
-                                    className={`${styles.deleteButton} ${styles.visible}`}
-                                    title="Delete file"
-                                  >
-                                    🗑️
-                                  </button>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedFiles.has(item.basename)}
+                                    onChange={() => toggleFileSelection(item.basename)}
+                                  />
                                 )}
                             </div>
                         ))
@@ -435,11 +466,15 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 </>
             ) : (
                 <>
-                  <div className={styles.modernFileHeader}>
-                    <div className={styles.nameColumn}>Name</div>
-                    <div className={styles.dateColumn}>Modified</div>
-                    <div className={styles.sizeColumn}>Size</div>
-                  </div>
+                  
+                    {viewMode === 'list' && (
+                      <div className={styles.modernFileHeader}>
+                        <div className={styles.nameColumn}>Name</div>
+                        <div className={styles.dateColumn}>Modified</div>
+                        <div className={styles.sizeColumn}>Size</div>
+                      </div>
+                    )}
+                  
                   <div className={styles.modernFileItems}>
                     {viewMode === 'grid' ? (
                         <div style={gridStyles.gridContainer as React.CSSProperties}>
@@ -474,15 +509,12 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                         {item.type === 'file' && (item.size >= 0) && <div>{formatFileSize(item.size)}</div>}
                                       </div>
                                     </div>
-                                    {item.type === 'file' && (
-                                      <button
-                                        onClick={() => onDeleteFile(item.basename)}
-                                        className={`${styles.deleteButtonGrid} ${(loggedIn && deleteModeActive) ? styles.visible : ''}`}
-                                        title="Delete file"
-                                        style={{ marginTop: '8px', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
-                                      >
-                                        🗑️
-                                      </button>
+                                    {item.type === 'file' && deleteModeActive && (
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedFiles.has(item.basename)}
+                                        onChange={() => toggleFileSelection(item.basename)}
+                                      />
                                     )}
                                   </div>
                               ))
@@ -510,23 +542,23 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                         <div className={styles.sizeColumn}>-</div>
                                       </div>
                                   ) : (
-                                      <div
+                                        <div
                                           className={styles.modernFileRow}
-                                          onClick={() => onFileClick(item.basename)}
-                                      >
+                                          onClick={() => !deleteModeActive && onFileClick(item.basename)}
+                                        >
                                         <div className={styles.nameColumn}>
                                           <span className={styles.icon}>{getFileIcon(item.basename)}</span>
                                           <span className={styles.name}>{item.basename}</span>
                                         </div>
                                         <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
                                         <div className={styles.sizeColumn}>{formatFileSize(item.size)}</div>
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onDeleteFile(item.basename);}}
-                                          className={`${styles.deleteButton} ${deleteModeActive ? styles.visible : ''}`}
-                                          title="Delete file"
-                                        >
-                                          🗑️
-                                        </button>
+                                        {deleteModeActive && (
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedFiles.has(item.basename)}
+                                            onChange={(e) => { e.stopPropagation(); toggleFileSelection(item.basename); }}
+                                          />
+                                        )}
                                       </div>
                                   )}
                                 </div>

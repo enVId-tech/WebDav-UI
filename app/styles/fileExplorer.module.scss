@@ -400,9 +400,7 @@
     .modernFolderRow, .modernFileRow {
       display: grid;
       grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for delete button
-      padding: 0.8rem 1.5rem;
       cursor: pointer;
-      border-bottom: 1px solid var(--border); // Changed from --border-color
       color: var(--text-primary);
       transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
       width: 100%;

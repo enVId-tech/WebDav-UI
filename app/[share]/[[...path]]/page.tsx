@@ -325,47 +325,46 @@ export default function ShareFileBrowser() {
     }
   }, [share, relativePath, setLoadingState, setError, setCurrentData]);
 
-  const handleDeleteFile = useCallback(async (fileName: string) => {
-    if (!share || !relativePath) return;
+  const handleDeleteFiles = useCallback(async (fileNames: string[]) => {
+    if (!share || !relativePath || fileNames.length === 0) return;
 
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+    if (!confirm(`Delete ${fileNames.length} item(s)?`)) {
       return;
     }
-    setLoadingState('active');
+
     try {
-      const filePathToDelete = relativePath === '/' ? `/${fileName}` : `${relativePath}/${fileName}`;
+      // Optimistic UI update: remove files locally first
+      setCurrentData(prev => prev.filter(item => !fileNames.includes(item.basename)));
 
-      const response = await fetch('/api/webdav/delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          path: filePathToDelete,
-          sharePath: `/${share}`,
-        }),
-      });
+      await Promise.all(
+        fileNames.map(async (fileName) => {
+          const filePathToDelete = relativePath === '/' ? `/${fileName}` : `${relativePath}/${fileName}`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete file');
-      }
+          const response = await fetch('/api/webdav/delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              path: filePathToDelete,
+              sharePath: `/${share}`,
+            }),
+          });
 
-      // Refresh directory contents after deletion
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to delete "${fileName}"`);
+          }
+        })
+      );
+    } catch (err: any) {
+      console.error('Error deleting files:', err);
+      setError(`Failed to delete one or more files: ${err.message || 'Unknown error'}`);
+      // Optionally re-fetch if needed
       const data = await getDirectoryContents(relativePath, `/${share}`);
       setCurrentData(data);
-      // Optionally, update folder structure if a folder was deleted
-      // Consider a more targeted update or a full refresh of folderStructure if necessary
-
-    } catch (err: any) {
-      console.error('Error deleting file:', err);
-      setError(`Failed to delete file: ${err.message || 'Unknown error'}`);
-    } finally {
-      setLoadingState('fading');
-      setTimeout(() => setLoadingState('hidden'), 500);
     }
-  }, [share, relativePath, setLoadingState, setError, setCurrentData]);
+  }, [share, relativePath, setCurrentData, setError]);
 
   // Initial data loading - minimized dependencies to prevent excess fetching
   useEffect(() => {
@@ -485,7 +484,7 @@ export default function ShareFileBrowser() {
       onFileClick={handleFileClick}
       onToggleFolderExpansion={toggleFolderExpansion}
       onUploadFile={handleUploadFile} // Pass the new handler
-      onDeleteFile={handleDeleteFile} // Pass the new handler
+      onDeleteFiles={handleDeleteFiles}
     />
   );
 }
