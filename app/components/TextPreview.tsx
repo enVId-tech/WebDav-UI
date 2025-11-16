@@ -113,20 +113,28 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
   return (
     <div className={styles.textPreviewContainer}>
       <div className={styles.textHeader}>
-        <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
-        <div className={styles.fileInfo}>
-          <span>{mimeType}</span>
-          <span>{lineCount} lines</span>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.fileName}>{decodeURIComponent(fileName)}</h2>
+          <div className={styles.fileInfo}>
+            <span className={styles.fileType}>{getLanguage()}</span>
+            <span className={styles.separator}>•</span>
+            <span className={styles.lineCount}>{lineCount} lines</span>
+            <span className={styles.separator}>•</span>
+            <span className={styles.mimeType}>{mimeType}</span>
+          </div>
         </div>
-      </div>
-      <div className={styles.textPreviewHeader}>
-        <span className={styles.fileName}>{fileName}</span>
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className={styles.themeToggle}
-        >
-          {isDarkMode ? '☀️' : '🌙'}
-        </button>
+        <div className={styles.headerRight}>
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={styles.themeToggle}
+            aria-label="Toggle theme"
+          >
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+          <a href={`${src}&download=true`} download className={styles.downloadButton}>
+            ⬇ Download
+          </a>
+        </div>
       </div>
       <div className={styles.textPreviewContent}>
         <SyntaxHighlighter
@@ -136,18 +144,22 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
           wrapLines
           customStyle={{
             margin: 0,
-            borderRadius: '4px',
+            borderRadius: 0,
             maxHeight: '100%',
+            height: '100%',
             overflow: 'auto',
+            fontSize: '14px',
+            lineHeight: '1.6',
+          }}
+          lineNumberStyle={{
+            minWidth: '3em',
+            paddingRight: '1em',
+            color: isDarkMode ? '#858585' : '#999',
+            userSelect: 'none',
           }}
         >
           {content}
         </SyntaxHighlighter>
-      </div>
-      <div className={styles.textFooter}>
-        <a href={`${src}&download=true`} download className={styles.downloadButton}>
-          Download Text File
-        </a>
       </div>
     </div>
   );
