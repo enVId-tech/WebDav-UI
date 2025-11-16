@@ -37,10 +37,11 @@ export async function POST(request: NextRequest) {
             const fileContent = await webdavService.getFileContents();
 
             // Return file content with appropriate Content-Type header
+            const fileName = getFileName(decodedPath);
             return new NextResponse(fileContent, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
-                    'Content-Disposition': `inline; filename="${getFileName(decodedPath)}"`,
+                    'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
                 }
             });
         } else {

@@ -114,9 +114,11 @@ export async function GET(request: NextRequest) {
                     }
                     
                     if (download) {
-                        headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);
+                        const fileName = getFileName(decodedPath);
+                        headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
                     } else {
-                        headers.set('Content-Disposition', `inline; filename="${getFileName(decodedPath)}"`);
+                        const fileName = getFileName(decodedPath);
+                        headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
                     }
                     
                     // Return 206 Partial Content
@@ -136,9 +138,11 @@ export async function GET(request: NextRequest) {
             headers.set('Content-Length', String(fileContent.length));
             
             if (download) {
-                headers.set('Content-Disposition', `attachment; filename="${getFileName(decodedPath)}"`);
+                const fileName = getFileName(decodedPath);
+                headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
             } else {
-                headers.set('Content-Disposition', `inline; filename="${getFileName(decodedPath)}"`);
+                const fileName = getFileName(decodedPath);
+                headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
             }
 
             // fileContent is now always a Buffer, which is compatible with NextResponse
@@ -207,7 +211,7 @@ export async function POST(request: NextRequest) {
             return new NextResponse(fileContent, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
-                    'Content-Disposition': `inline; filename="${getFileName(decodedPath)}"`,
+                    'Content-Disposition': `inline; filename="${encodeURIComponent(getFileName(decodedPath))}"; filename*=UTF-8''${encodeURIComponent(getFileName(decodedPath))}`,
                 }
             });
         } else {
