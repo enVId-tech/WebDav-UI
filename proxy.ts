@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { hasGuestAccess } from '@/lib/permissions';
+import { hasGuestAccess, requiresGuestCredentials, hasAnyPermissionForPath } from '@/lib/permissions';
 
 // Define public routes that don't require authentication
 const publicRoutes = ['/login', '/api/auth/login', '/api/auth/status'];
@@ -62,11 +62,47 @@ export async function proxy(request: NextRequest) {
   }
   
   // User is not logged in
-  // By default, allow all read access (browsing, viewing files)
-  // Only restrict if path has explicit permissions set that deny access
-  
-  // This means everything is accessible by default
-  // Admins can use the permission system to restrict specific paths
+  // Treat all top-level non-auth, non-admin, non-home page routes
+  // (e.g. /documents, /media) as potential shares with permissions.
+
+  const isApiRoute = pathname.startsWith('/api/');
+  const isHome = pathname === '/';
+  const isAuthOrAdmin = pathname.startsWith('/login') || pathname.startsWith('/admin');
+
+  if (!isApiRoute && !isHome && !isAuthOrAdmin) {
+    // Only enforce permissions if there is an entry (direct or
+    // inherited) for this path. Otherwise, allow anonymous access
+    // as before.
+    const hasPermission = await hasAnyPermissionForPath(pathname);
+    if (!hasPermission) {
+      return NextResponse.next();
+    }
+
+    const allowed = await hasGuestAccess(pathname);
+
+    if (!allowed) {
+      // Path without guest access: require full login
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
+
+    // Guest access is enabled for this path; if guest credentials are
+    // configured, force a credential-based guest login instead of
+    // anonymous access.
+    const needsGuestLogin = await requiresGuestCredentials(pathname);
+    if (needsGuestLogin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirect', pathname);
+      url.searchParams.set('role', 'guest');
+      url.searchParams.set('path', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // For all other unauthenticated routes, allow anonymous access
   return NextResponse.next();
 }
 

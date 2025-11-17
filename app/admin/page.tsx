@@ -300,6 +300,15 @@ export default function AdminPermissionsPage() {
                   </button>
                 </div>
 
+                <div className={styles.permissionStatus}>
+                  <span className={perm.guestAccessEnabled ? styles.statusOn : styles.statusOff}>
+                    Guest access: {perm.guestAccessEnabled ? 'ON' : 'OFF'}
+                  </span>
+                  <span className={perm.inheritToChildren ? styles.statusOn : styles.statusOff}>
+                    Inheritance: {perm.inheritToChildren ? 'ON (subdirs)' : 'OFF'}
+                  </span>
+                </div>
+
                 <div className={styles.permissionControls}>
                   <label className={styles.checkbox}>
                     <input

@@ -155,6 +155,52 @@ export async function getGuestCredentials(requestPath: string): Promise<GuestCre
 }
 
 /**
+ * Check if a path requires guest credentials (i.e. has guest credentials
+ * configured either on the exact path or an inheritable parent).
+ */
+export async function requiresGuestCredentials(requestPath: string): Promise<boolean> {
+  const creds = await getGuestCredentials(requestPath);
+  return !!creds;
+}
+
+/**
+ * Check if any permission applies to a given path, either directly
+ * or via an inheritable parent entry. This is used to decide whether
+ * middleware should enforce login/guest access or allow anonymous
+ * access for paths with no permissions configured.
+ */
+export async function hasAnyPermissionForPath(requestPath: string): Promise<boolean> {
+  const store = await loadPermissions();
+
+  const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
+
+  // Exact match
+  if (store.permissions.some(p => p.path === normalizedPath)) {
+    return true;
+  }
+
+  // Check parent paths with inheritance enabled
+  const pathParts = normalizedPath.split('/').filter(Boolean);
+
+  for (let i = pathParts.length - 1; i >= 0; i--) {
+    const parentPath = '/' + pathParts.slice(0, i).join('/');
+    const parentPermission = store.permissions.find(p => p.path === parentPath);
+
+    if (parentPermission && parentPermission.inheritToChildren) {
+      return true;
+    }
+  }
+
+  // Root-level permission with inheritance
+  const rootPermission = store.permissions.find(p => p.path === '/');
+  if (rootPermission && rootPermission.inheritToChildren) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Set permission for a specific path
  */
 export async function setPathPermission(permission: PathPermission): Promise<void> {

@@ -17,6 +17,8 @@ export default function LoginPage() {
 
   // Get the redirect URL from query params, default to '/'
   const redirectUrl = searchParams.get('redirect') || '/';
+  const requestedRole = searchParams.get('role');
+  const requestedPath = searchParams.get('path') || undefined;
 
   // If already logged in, redirect immediately
   useEffect(() => {
@@ -28,7 +30,12 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const success = await login(username, password);
+    const success = await login(
+      username,
+      password,
+      requestedRole === 'guest' ? 'guest' : undefined,
+      requestedPath
+    );
     if (success) {
       // Redirect to the original page after successful login
       router.push(redirectUrl);
