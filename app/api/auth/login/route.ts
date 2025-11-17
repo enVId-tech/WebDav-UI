@@ -17,22 +17,15 @@ export async function POST(request: NextRequest) {
     let authenticatedRole: UserRole;
     let authenticatedUsername: string;
 
-    // Admin login
-    if (role === 'admin' || (!role && username === adminUsername)) {
-      if (username === adminUsername && password === adminPassword) {
-        authenticatedRole = 'admin';
-        authenticatedUsername = username;
-      } else {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid admin credentials' 
-        }, { status: 401 });
-      }
+    // Check if credentials match admin (regardless of role parameter)
+    if (username === adminUsername && password === adminPassword) {
+      authenticatedRole = 'admin';
+      authenticatedUsername = username;
     }
     // Guest login
-    else if (role === 'guest' || role === undefined) {
+    else if (role === 'guest' && path) {
       // Get guest credentials for the requested path
-      const guestCreds = path ? await getGuestCredentials(path) : null;
+      const guestCreds = await getGuestCredentials(path);
       
       if (!guestCreds) {
         return NextResponse.json({ 
@@ -54,8 +47,8 @@ export async function POST(request: NextRequest) {
     else {
       return NextResponse.json({ 
         success: false, 
-        message: 'Invalid role specified' 
-      }, { status: 400 });
+        message: 'Invalid credentials' 
+      }, { status: 401 });
     }
 
     // Create a new session with role

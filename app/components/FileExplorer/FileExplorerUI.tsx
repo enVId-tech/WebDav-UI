@@ -65,7 +65,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
 }) => {
   const [deleteModeActive, setDeleteModeActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  const { loggedIn, logout, isLoading: authIsLoading, username } = useAuth();
+  const { loggedIn, logout, isLoading: authIsLoading, username, isAdmin } = useAuth();
   const pathname = usePathname();
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
@@ -343,13 +343,25 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 </button>
               )}
               {loggedIn && (
-                <button 
-                  onClick={async () => { await logout(); }} 
-                  className={styles.modernButton} 
-                  style={{ marginRight: '10px' }}
-                >
-                  Logout ({username})
-                </button>
+                <>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => routerPush('/admin')} 
+                      className={styles.modernButton} 
+                      style={{ marginRight: '10px', background: '#ffc107', color: '#333' }}
+                      title="Manage Permissions"
+                    >
+                      ⚙️ Admin
+                    </button>
+                  )}
+                  <button 
+                    onClick={async () => { await logout(); }} 
+                    className={styles.modernButton} 
+                    style={{ marginRight: '10px' }}
+                  >
+                    Logout ({username})
+                  </button>
+                </>
               )}
               {relativePath !== '/' && (
                   <button className={styles.modernButton} onClick={onNavigateUp}>
