@@ -6,14 +6,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
-  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: absolute;
   transition: var(--transition-theme);
+  overflow-x: hidden;
+  top: 0;
+  left: 0;
+  width: 100%;
+  
+  // Dark mode gradient
+  html.dark & {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+  }
+  
+  @media (max-width: 640px) {
+    padding: 0.75rem;
+  }
 }
 
 .loginPageContainer {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
+  animation: fadeInUp 0.5s ease-out;
+  
+  @media (max-width: 640px) {
+    max-width: 100%;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loginSubtitle {
@@ -21,46 +50,64 @@
   font-size: 0.95rem;
   margin: -0.5rem 0 1.5rem 0;
   text-align: center;
+  line-height: 1.5;
+  
+  @media (max-width: 640px) {
+    font-size: 0.875rem;
+    margin: -0.25rem 0 1.25rem 0;
+  }
 }
 
 // Modal overlay for inline login (kept for backward compatibility)
 .loginFormOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); // Darker overlay
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050; // Ensure it's above other content
-    backdrop-filter: blur(5px); // Optional: blur background
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 
-  .loginFormContainer {
-    background-color: var(--bg-secondary);
-    padding: 2.5rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-    transition: var(--transition-theme);
-    position: relative;
-    
-    @media (max-width: 768px) {
-      padding: 2rem 1.5rem;
-      max-width: 90%;
-    }
+.loginFormContainer {
+  background-color: var(--bg-secondary);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: var(--transition-theme);
+  position: relative;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  
+  html.dark & {
+    background-color: rgba(31, 41, 55, 0.95);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
+  
+  @media (max-width: 640px) {
+    padding: 2rem 1.5rem;
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 400px) {
+    padding: 1.75rem 1.25rem;
+  }
+}
 
   .loginForm {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; // Space between elements
+    gap: 1.25rem;
   }
 
   .loginForm h1 {
@@ -70,55 +117,93 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    html.dark & {
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    @media (max-width: 640px) {
+      font-size: 1.75rem;
+    }
   }
 
   .loginForm h2 {
     color: var(--text-primary);
     margin: 0 0 0.5rem 0;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
+    
+    @media (max-width: 640px) {
+      font-size: 1.375rem;
+    }
   }
 
   .loginError {
-    color: var(--error-color);
-    background-color: rgba(var(--error-color-rgb), 0.1);
+    color: #dc2626;
+    background-color: rgba(220, 38, 38, 0.1);
     padding: 0.875rem 1rem;
     border-radius: 8px;
     font-size: 0.875rem;
-    border: 1px solid rgba(var(--error-color-rgb), 0.3);
+    border: 1px solid rgba(220, 38, 38, 0.3);
     text-align: left;
     margin: 0;
     line-height: 1.5;
+    animation: shake 0.4s ease-in-out;
     
     &::before {
       content: '⚠️ ';
       margin-right: 0.5rem;
     }
+    
+    @media (max-width: 640px) {
+      font-size: 0.8125rem;
+      padding: 0.75rem 0.875rem;
+    }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
   }
 
   .inputGroup {
     display: flex;
     flex-direction: column;
     text-align: left;
+    gap: 0.5rem;
   }
 
   .inputGroup label {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
     font-weight: 600;
     font-size: 0.875rem;
     color: var(--text-primary);
     display: block;
+    
+    @media (max-width: 640px) {
+      font-size: 0.8125rem;
+    }
   }
 
   .loginInput {
     padding: 0.875rem 1rem;
     border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    box-sizing: border-box;
 
     &::placeholder {
       color: var(--text-muted);
@@ -126,85 +211,178 @@
 
     &:focus {
       outline: none;
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.15);
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
       background-color: var(--bg-secondary);
+      transform: translateY(-2px);
+      
+      html.dark & {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+      }
     }
 
     &:hover:not(:focus) {
       border-color: var(--text-tertiary);
     }
+    
+    @media (max-width: 640px) {
+      padding: 0.75rem 0.875rem;
+      font-size: 0.9375rem;
+    }
   }
 
   .loginButton {
-    padding: 0.875rem 1.5rem;
-    background-color: var(--accent-color);
-    color: var(--button-text);
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     margin-top: 0.5rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    position: relative;
+    overflow: hidden;
 
-    &:hover:not(:disabled) {
-      background-color: var(--accent-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(var(--accent-color-rgb), 0.3);
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
     }
 
+    &:hover:not(:disabled) {
+      &::before {
+        opacity: 1;
+      }
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+    }
+    
     &:active:not(:disabled) {
       transform: translateY(0);
+      &::after {
+        width: 300px;
+        height: 300px;
+      }
     }
 
     &:disabled {
-      background-color: var(--disabled-color);
+      background: var(--disabled-color);
       color: var(--text-secondary);
       cursor: not-allowed;
       opacity: 0.6;
+      box-shadow: none;
+    }
+    
+    // Text needs to be above pseudo-elements
+    span, & {
+      position: relative;
+      z-index: 1;
+    }
+    
+    html.dark & {
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+      
+      &::before {
+        background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+      }
+      
+      &:hover:not(:disabled) {
+        box-shadow: 0 8px 20px rgba(96, 165, 250, 0.5);
+      }
+    }
+    
+    @media (max-width: 640px) {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.9375rem;
     }
   }
 
   .closeLoginButton {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
     padding: 0.6rem 1rem;
     background-color: transparent;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     color: var(--text-secondary);
     font-size: 0.9rem;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: all 0.2s ease;
 
     &:hover {
       background-color: var(--bg-tertiary);
       color: var(--text-primary);
+      border-color: var(--text-tertiary);
+    }
+    
+    @media (max-width: 640px) {
+      font-size: 0.875rem;
+      padding: 0.5rem 0.875rem;
     }
   }
 
   .backButton {
     padding: 0.875rem 1.5rem;
     background-color: transparent;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
     cursor: pointer;
     color: var(--text-primary);
     font-size: 1rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     margin-top: 0.5rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
     &:hover {
-      background-color: var(--bg-tertiary);
-      border-color: var(--text-tertiary);
+      background-color: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.3);
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     &:active {
       transform: translateY(0);
+    }
+    
+    html.dark & {
+      border-color: rgba(255, 255, 255, 0.15);
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+    }
+    
+    @media (max-width: 640px) {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.9375rem;
     }
   }
 
