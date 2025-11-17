@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getCurrentSession, deleteSession, clearSessionCookie } from '@/lib/session';
+import { clearSessionCookie } from '@/lib/session';
 
 export async function POST() {
   try {
-    // Get the current session
-    const session = await getCurrentSession();
-    
-    if (session) {
-      // Delete the session from the store
-      deleteSession(session.token);
-    }
-    
-    // Clear the session cookie regardless
+    // Clear the session cookie (JWT sessions are stateless, just remove cookie)
     await clearSessionCookie();
     
     return NextResponse.json({ success: true, message: 'Logged out successfully' }, { status: 200 });

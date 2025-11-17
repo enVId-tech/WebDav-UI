@@ -5,110 +5,93 @@ import crypto from 'crypto';
 export type UserRole = 'admin' | 'guest';
 
 export interface SessionData {
-  token: string;
   username: string;
   role: UserRole;
   createdAt: number;
   expiresAt: number;
 }
 
-// In-memory session store (for development)
-// In production, use Redis, database, or other persistent storage
-const sessionStore = new Map<string, SessionData>();
-
 // Session configuration
 const SESSION_DURATION = process.env.SESSION_DURATION 
   ? parseInt(process.env.SESSION_DURATION, 10) 
   : 24 * 60 * 60 * 1000; // Default: 24 hours in milliseconds
 const COOKIE_NAME = 'session_token';
+const SECRET_KEY = process.env.SESSION_SECRET || 'dev-secret-key-change-in-production';
 
 /**
- * Get session token from NextRequest (for route handlers)
+ * Sign session data into a JWT-like token
  */
-export function getSessionTokenFromRequest(request: NextRequest): string | null {
-  return request.cookies.get(COOKIE_NAME)?.value || null;
+function signSessionToken(data: SessionData): string {
+  const payload = JSON.stringify(data);
+  const hmac = crypto.createHmac('sha256', SECRET_KEY);
+  hmac.update(payload);
+  const signature = hmac.digest('base64url');
+  const token = `${Buffer.from(payload).toString('base64url')}.${signature}`;
+  return token;
+}
+
+/**
+ * Verify and decode a session token
+ */
+function verifySessionToken(token: string): SessionData | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+
+    const [payloadB64, signature] = parts;
+    const payload = Buffer.from(payloadB64, 'base64url').toString('utf-8');
+    
+    // Verify signature
+    const hmac = crypto.createHmac('sha256', SECRET_KEY);
+    hmac.update(payload);
+    const expectedSignature = hmac.digest('base64url');
+    
+    if (signature !== expectedSignature) {
+      return null;
+    }
+
+    const data = JSON.parse(payload) as SessionData;
+    
+    // Check expiry
+    if (Date.now() > data.expiresAt) {
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
  * Get current session from NextRequest (for route handlers)
  */
 export function getSessionFromRequest(request: NextRequest): SessionData | null {
-  const token = getSessionTokenFromRequest(request);
+  const token = request.cookies.get(COOKIE_NAME)?.value;
   
   if (!token) {
     return null;
   }
   
-  return verifySession(token);
-}
-
-/**
- * Generate a secure random token
- */
-export function generateToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return verifySessionToken(token);
 }
 
 /**
  * Create a new session for a user
  */
-export function createSession(username: string, role: UserRole = 'guest'): SessionData {
-  const token = generateToken();
+export function createSession(username: string, role: UserRole = 'guest'): { token: string; sessionData: SessionData } {
   const now = Date.now();
   
   const sessionData: SessionData = {
-    token,
     username,
     role,
     createdAt: now,
     expiresAt: now + SESSION_DURATION,
   };
   
-  sessionStore.set(token, sessionData);
+  const token = signSessionToken(sessionData);
   
-  // Clean up expired sessions periodically
-  cleanupExpiredSessions();
-  
-  return sessionData;
-}
-
-/**
- * Verify a session token and return session data if valid
- */
-export function verifySession(token: string): SessionData | null {
-  const session = sessionStore.get(token);
-  
-  if (!session) {
-    return null;
-  }
-  
-  // Check if session has expired
-  if (Date.now() > session.expiresAt) {
-    sessionStore.delete(token);
-    return null;
-  }
-  
-  return session;
-}
-
-/**
- * Delete a session
- */
-export function deleteSession(token: string): void {
-  sessionStore.delete(token);
-}
-
-/**
- * Clean up expired sessions from the store
- */
-function cleanupExpiredSessions(): void {
-  const now = Date.now();
-  
-  for (const [token, session] of sessionStore.entries()) {
-    if (now > session.expiresAt) {
-      sessionStore.delete(token);
-    }
-  }
+  return { token, sessionData };
 }
 
 /**
@@ -124,16 +107,6 @@ export async function setSessionCookie(token: string): Promise<void> {
     maxAge: SESSION_DURATION / 1000, // Convert to seconds
     path: '/',
   });
-}
-
-/**
- * Get session token from cookies
- */
-export async function getSessionToken(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(COOKIE_NAME);
-  
-  return cookie?.value || null;
 }
 
 /**
@@ -155,63 +128,34 @@ export async function clearSessionCookie(): Promise<void> {
  * Get current user session from cookies
  */
 export async function getCurrentSession(): Promise<SessionData | null> {
-  const token = await getSessionToken();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
   
   if (!token) {
     return null;
   }
   
-  return verifySession(token);
+  return verifySessionToken(token);
 }
 
 /**
- * Extend session expiration time
+ * Extend session expiration time by issuing a new token
  */
-export function extendSession(token: string): boolean {
-  const session = sessionStore.get(token);
+export async function extendSession(oldToken: string): Promise<boolean> {
+  const session = verifySessionToken(oldToken);
   
   if (!session) {
     return false;
   }
   
   const now = Date.now();
+  const newSessionData: SessionData = {
+    ...session,
+    expiresAt: now + SESSION_DURATION,
+  };
   
-  // Only extend if session hasn't expired
-  if (now > session.expiresAt) {
-    sessionStore.delete(token);
-    return false;
-  }
-  
-  // Extend the session
-  session.expiresAt = now + SESSION_DURATION;
-  sessionStore.set(token, session);
+  const newToken = signSessionToken(newSessionData);
+  await setSessionCookie(newToken);
   
   return true;
-}
-
-/**
- * Get all active sessions for a user (useful for "logout everywhere" functionality)
- */
-export function getUserSessions(username: string): SessionData[] {
-  const sessions: SessionData[] = [];
-  const now = Date.now();
-  
-  for (const [token, session] of sessionStore.entries()) {
-    if (session.username === username && now <= session.expiresAt) {
-      sessions.push(session);
-    }
-  }
-  
-  return sessions;
-}
-
-/**
- * Delete all sessions for a user
- */
-export function deleteAllUserSessions(username: string): void {
-  for (const [token, session] of sessionStore.entries()) {
-    if (session.username === username) {
-      sessionStore.delete(token);
-    }
-  }
 }

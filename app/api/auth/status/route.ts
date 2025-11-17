@@ -6,8 +6,7 @@ export async function GET(request: NextRequest) {
     const session = getSessionFromRequest(request);
     
     if (session) {
-      // Extend session on activity
-      extendSession(session.token);
+      // Session is valid (JWT verification already checked expiry)
       
       console.log('[auth/status] User authenticated:', session.username, 'Role:', session.role);
       

@@ -52,16 +52,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a new session with role
-    const session = createSession(authenticatedUsername, authenticatedRole);
+    const { token, sessionData } = createSession(authenticatedUsername, authenticatedRole);
     
     // Set the session cookie
-    await setSessionCookie(session.token);
+    await setSessionCookie(token);
     
     return NextResponse.json({ 
       success: true, 
       username: authenticatedUsername,
       role: authenticatedRole,
-      expiresAt: session.expiresAt 
+      expiresAt: sessionData.expiresAt 
     }, { status: 200 });
     
   } catch (error) {
