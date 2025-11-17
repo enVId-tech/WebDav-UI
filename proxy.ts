@@ -63,37 +63,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // User is not logged in - check if path has guest access enabled
-  // Extract the path from the URL for permission checking
-  let pathToCheck = pathname;
+  // User is not logged in
+  // By default, allow all read access (browsing, viewing files)
+  // Only restrict if path has explicit permissions set that deny access
   
-  // For share paths like /sharename/path/to/file
-  // Check guest access for that specific path
-  const pathMatch = pathname.match(/^\/([^\/]+)(\/.*)?$/);
-  if (pathMatch) {
-    pathToCheck = pathname;
-  }
-  
-  // Check if guest access is enabled for this path
-  const guestAccessAllowed = await hasGuestAccess(pathToCheck);
-  
-  if (guestAccessAllowed) {
-    // Allow access for browsing
-    return NextResponse.next();
-  }
-  
-  // No guest access, redirect to login for pages
-  if (!pathname.startsWith('/api/')) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-  
-  // API routes get 401
-  return NextResponse.json(
-    { error: 'Unauthorized', message: 'Login required or guest access not enabled for this path' },
-    { status: 401 }
-  );
+  // This means everything is accessible by default
+  // Admins can use the permission system to restrict specific paths
+  return NextResponse.next();
 }
 
 // Configure which routes use this middleware
