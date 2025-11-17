@@ -29,6 +29,7 @@ export default function AdminPermissionsPage() {
 
   // Fetch permissions
   useEffect(() => {
+    console.log("Auth loading:", authLoading, "isAdmin:", isAdmin);
     if (!authLoading && !isAdmin) {
       router.push('/login?redirect=/admin');
       return;

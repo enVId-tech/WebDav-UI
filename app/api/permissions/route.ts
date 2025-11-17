@@ -8,6 +8,12 @@ import {
   PathPermission
 } from '@/lib/permissions';
 
+function isAdminSession(session: { username: string; role?: string } | null): boolean {
+  if (!session) return false;
+  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+  return session.role === 'admin' || session.username === adminUsername;
+}
+
 /**
  * GET /api/permissions - Get all permissions (admin only)
  */
@@ -15,9 +21,9 @@ export async function GET(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request);
     
-    if (!session || session.role !== 'admin') {
+    if (!isAdminSession(session)) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Admin access required' },
+        { error: 'Forbidden', message: 'Admin access required' },
         { status: 403 }
       );
     }
@@ -44,9 +50,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request);
     
-    if (!session || session.role !== 'admin') {
+    if (!isAdminSession(session)) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Admin access required' },
+        { error: 'Forbidden', message: 'Admin access required' },
         { status: 403 }
       );
     }
@@ -83,9 +89,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request);
     
-    if (!session || session.role !== 'admin') {
+    if (!isAdminSession(session)) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Admin access required' },
+        { error: 'Forbidden', message: 'Admin access required' },
         { status: 403 }
       );
     }
@@ -122,9 +128,9 @@ export async function PUT(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request);
     
-    if (!session || session.role !== 'admin') {
+    if (!isAdminSession(session)) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Admin access required' },
+        { error: 'Forbidden', message: 'Admin access required' },
         { status: 403 }
       );
     }

@@ -9,8 +9,10 @@ const publicRoutes = ['/login', '/api/auth/login', '/api/auth/status'];
 // Define API routes that require authentication (write operations)
 const writeApiRoutes = ['/api/webdav/upload', '/api/webdav/delete', '/api/webdav/text-save'];
 
-// Admin-only routes
-const adminRoutes = ['/admin', '/api/permissions'];
+// Admin-only routes are now enforced in their respective
+// route handlers/pages. Middleware no longer special-cases them
+// to avoid inconsistencies across runtimes.
+const adminRoutes: string[] = [];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,16 +25,8 @@ export async function proxy(request: NextRequest) {
   // Check for session
   const session = getSessionFromRequest(request);
   
-  // Admin-only routes
-  if (adminRoutes.some(route => pathname.startsWith(route))) {
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-    return NextResponse.next();
-  }
+  // No special handling for admin routes here; authorization is
+  // performed inside the actual API routes and pages.
   
   // Check if this is a write operation API route
   const isWriteApi = writeApiRoutes.some(route => pathname.startsWith(route));
@@ -46,8 +40,12 @@ export async function proxy(request: NextRequest) {
       );
     }
     
-    // Guests cannot perform write operations
-    if (session.role === 'guest') {
+    // Check if user is admin (by role or username)
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const isAdminUser = session.role === 'admin' || session.username === adminUsername;
+    
+    // Guests cannot perform write operations (but admins can)
+    if (session.role === 'guest' && !isAdminUser) {
       return NextResponse.json(
         { error: 'Forbidden', message: 'Guest users cannot modify files' },
         { status: 403 }

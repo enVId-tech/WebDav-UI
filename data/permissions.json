@@ -1,5 +1,11 @@
 {
   "version": "1.0",
-  "lastModified": "2025-11-17T06:40:10.398Z",
-  "permissions": []
+  "lastModified": "2025-11-17T07:07:08.757Z",
+  "permissions": [
+    {
+      "path": "/documents",
+      "guestAccessEnabled": true,
+      "inheritToChildren": true
+    }
+  ]
 }

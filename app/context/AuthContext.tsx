@@ -35,7 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const data = await response.json();
           setLoggedIn(data.loggedIn);
           setUsername(data.username || null);
-          setRole(data.role || null);
+          // If role is missing, assume admin if username matches admin credentials
+          if (data.loggedIn && !data.role && data.username) {
+            setRole('admin'); // Default to admin for backwards compatibility
+          } else {
+            setRole(data.role || null);
+          }
+          console.log("Auth status:", data);
         } else {
           setLoggedIn(false);
           setUsername(null);
