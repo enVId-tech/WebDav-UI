@@ -70,9 +70,26 @@ cp example.env.local .env.local
 2. Open `.env.local` and set at least:
 
 - `WEBDAV_URL` – base URL to your WebDAV server.
-- Any auth-related secrets or credentials required by your deployment.
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD` – credentials for admin login.
+- `GUEST_ACCESS_ENABLED` (optional) – set to `true` to allow browsing without login (default), or `false` to require login for all pages.
 
 Refer to comments in `example.env.local` for all supported options.
+
+### Guest Access Configuration
+
+The application supports two modes:
+
+**Guest Access Enabled** (default: `GUEST_ACCESS_ENABLED=true`):
+- Users can browse and view files without logging in
+- Login is required only for write operations (upload, delete, edit)
+- Upload and Delete buttons redirect to login when clicked by guests
+- Ideal for public file sharing with protected modifications
+
+**Guest Access Disabled** (`GUEST_ACCESS_ENABLED=false`):
+- Login required to access any page or API endpoint
+- Users are redirected to login when accessing any share or file
+- Full authentication required for all operations
+- Ideal for private file servers
 
 ### Development
 
