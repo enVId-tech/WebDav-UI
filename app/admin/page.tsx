@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from '../styles/adminPermissions.module.scss';
+import { geistMono } from '../types/font';
 
 interface PathPermission {
   path: string;
@@ -192,7 +193,7 @@ export default function AdminPermissionsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${geistMono.className}`}>
         <div className={styles.loading}>Loading...</div>
       </div>
     );
@@ -203,7 +204,7 @@ export default function AdminPermissionsPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${geistMono.className}`}>
       <header className={styles.header}>
         <h1>Permission Management</h1>
         <button onClick={() => router.push('/')} className={styles.backButton}>
