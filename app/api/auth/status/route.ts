@@ -9,11 +9,12 @@ export async function GET(request: NextRequest) {
       // Extend session on activity
       extendSession(session.token);
       
-      console.log('[auth/status] User authenticated:', session.username);
+      console.log('[auth/status] User authenticated:', session.username, 'Role:', session.role);
       
       return NextResponse.json({ 
         loggedIn: true, 
         username: session.username,
+        role: session.role,
         expiresAt: session.expiresAt 
       }, { status: 200 });
     } else {

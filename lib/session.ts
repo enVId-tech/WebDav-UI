@@ -2,9 +2,12 @@ import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 
+export type UserRole = 'admin' | 'guest';
+
 export interface SessionData {
   token: string;
   username: string;
+  role: UserRole;
   createdAt: number;
   expiresAt: number;
 }
@@ -49,13 +52,14 @@ export function generateToken(): string {
 /**
  * Create a new session for a user
  */
-export function createSession(username: string): SessionData {
+export function createSession(username: string, role: UserRole = 'guest'): SessionData {
   const token = generateToken();
   const now = Date.now();
   
   const sessionData: SessionData = {
     token,
     username,
+    role,
     createdAt: now,
     expiresAt: now + SESSION_DURATION,
   };
