@@ -199,23 +199,26 @@
 
 .textPreviewContent {
   flex: 1;
-  max-height: calc(100vh - 64px - 64px); // viewport minus preview header and text header
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background-color: var(--bg-primary);
   transition: var(--transition-theme);
 }
 
 .zoomViewport {
   transform-origin: top left;
-  display: inline-block;
-  min-width: 100%;
-  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 
   pre {
     margin: 0 !important;
     padding: 1.5rem !important;
     min-height: 100%;
+    flex: 1;
 
     @media (max-width: 768px) {
       padding: 1rem !important;
@@ -235,19 +238,31 @@
 
 .editableTextarea {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  flex: 1;
   border: none;
   outline: none;
   resize: none;
   padding: 1.5rem;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
   line-height: 1.6;
+  transition: var(--transition-theme);
 
   @media (max-width: 768px) {
     padding: 1rem;
+    font-size: 12px;
   }
+}
+
+.darkEditor {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.lightEditor {
+  background-color: #fafafa;
+  color: #333333;
 }
 
 .loading,

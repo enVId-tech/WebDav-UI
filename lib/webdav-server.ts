@@ -1,4 +1,4 @@
-import { createClient, WebDAVClient } from "webdav";
+import { createClient, WebDAVClient, AuthType } from "webdav";
 import https from "https";
 import { streamFileWithRange } from "./webdav-stream";
 
@@ -23,12 +23,27 @@ class WebDavService {
     }    
     
     private createClientWithOptions(url: string): WebDAVClient {
-        return createClient(url, {
+        const options: any = {
             // For development only - disable SSL certificate validation
             httpsAgent: new https.Agent({
                 rejectUnauthorized: false
             })
-        });
+        };
+
+        // Check if credentials are provided in environment variables
+        const webdavUsername = process.env.WEBDAV_USERNAME;
+        const webdavPassword = process.env.WEBDAV_PASSWORD;
+
+        if (webdavUsername && webdavPassword) {
+            console.log('Using WebDAV credentials from environment variables');
+            options.username = webdavUsername;
+            options.password = webdavPassword;
+            options.authType = AuthType.Auto; // Try Digest first, fall back to Basic
+        } else {
+            console.log('No WebDAV credentials found in environment - using URL-embedded credentials or anonymous access');
+        }
+
+        return createClient(url, options);
     }
 
     /**

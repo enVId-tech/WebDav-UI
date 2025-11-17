@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 
 export interface SessionData {
@@ -13,8 +14,30 @@ export interface SessionData {
 const sessionStore = new Map<string, SessionData>();
 
 // Session configuration
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const SESSION_DURATION = process.env.SESSION_DURATION 
+  ? parseInt(process.env.SESSION_DURATION, 10) 
+  : 24 * 60 * 60 * 1000; // Default: 24 hours in milliseconds
 const COOKIE_NAME = 'session_token';
+
+/**
+ * Get session token from NextRequest (for route handlers)
+ */
+export function getSessionTokenFromRequest(request: NextRequest): string | null {
+  return request.cookies.get(COOKIE_NAME)?.value || null;
+}
+
+/**
+ * Get current session from NextRequest (for route handlers)
+ */
+export function getSessionFromRequest(request: NextRequest): SessionData | null {
+  const token = getSessionTokenFromRequest(request);
+  
+  if (!token) {
+    return null;
+  }
+  
+  return verifySession(token);
+}
 
 /**
  * Generate a secure random token

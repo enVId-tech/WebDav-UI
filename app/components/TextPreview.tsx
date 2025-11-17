@@ -28,6 +28,11 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
 
   const { loggedIn, username } = useAuth();
 
+  // Debug: Log authentication state
+  useEffect(() => {
+    console.log('[TextPreview] Auth state:', { loggedIn, username });
+  }, [loggedIn, username]);
+
   // Determine language for syntax highlighting
   const getLanguage = () => {
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
@@ -133,6 +138,7 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
 
       if (!path || !sharePath) {
         console.error('Missing path or sharePath on save');
+        setError('Unable to save: missing file path information');
         return;
       }
 
@@ -141,22 +147,31 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include session cookie
         body: JSON.stringify({ path, sharePath, content }),
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to save file');
+        const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorMsg = data.error || data.message || `Failed to save file (${response.status})`;
+        console.error('Save failed:', errorMsg, data);
+        setError(`Save failed: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
       setIsDirty(false);
       setLastSavedAt(new Date().toLocaleTimeString());
-    } catch (err) {
+      setError(null); // Clear any previous errors
+    } catch (err: any) {
       console.error('Error saving text file:', err);
+      // Error is already set above, but ensure it's set
+      if (!error) {
+        setError(err.message || 'Failed to save file');
+      }
     } finally {
       setIsSaving(false);
     }
-  }, [loggedIn, src, content]);
+  }, [loggedIn, src, content, error]);
 
   useEffect(() => {
     return () => {
@@ -240,13 +255,15 @@ const TextPreview: React.FC<TextPreviewProps> = ({ src, mimeType, fileName }) =>
         >
           {loggedIn ? (
             <textarea
-              className={`${styles.editableTextarea} ${isDarkMode ? styles.darkEditor : styles.lightEditor
-                }`}
+              className={`${styles.editableTextarea} ${isDarkMode ? styles.darkEditor : styles.lightEditor}`}
               value={content}
               onChange={(e) => {
                 setContent(e.target.value);
                 scheduleAutosave();
               }}
+              readOnly={false}
+              disabled={false}
+              spellCheck={false}
             />
           ) : (
             <SyntaxHighlighter

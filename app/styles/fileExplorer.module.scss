@@ -118,7 +118,8 @@
     color: var(--text-primary);
     transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: var(--bg-tertiary);
       transform: scale(1.02); // Added hover effect
     }
@@ -270,7 +271,7 @@
       font-weight: 500;
       transition: all 0.2s ease;
       background: var(--accent-color);
-        color: var(--button-text);
+      color: var(--button-text);
 
       &:hover {
         transform: translateY(-2px);
@@ -397,7 +398,8 @@
       position: relative; // For absolute positioning of delete button if needed in list view
     }
 
-    .modernFolderRow, .modernFileRow {
+    .modernFolderRow,
+    .modernFileRow {
       display: grid;
       grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for delete button
       cursor: pointer;
@@ -426,7 +428,7 @@
           display: inline-block; // Show when delete mode is active
         }
 
-         &:hover {
+        &:hover {
           color: var(--primary-hover); // Changed from #0056b3
           transform: scale(1.1); // Added hover effect
         }
@@ -615,7 +617,9 @@
   flex-grow: 1; // Allow name column to take available space
 }
 
-.dateColumn, .sizeColumn, .locationColumn {
+.dateColumn,
+.sizeColumn,
+.locationColumn {
   display: flex;
   align-items: center;
 }
@@ -733,8 +737,13 @@
 
 // Animations
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulseRing {
@@ -742,9 +751,11 @@
     transform: scale(.5);
     opacity: 0;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     transform: scale(1.2);
     opacity: 0;
@@ -752,24 +763,57 @@
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }
 
 @keyframes slideDown {
-  0% { transform: scaleY(0); opacity: 0; }
-  100% { transform: scaleY(1); opacity: 1; }
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-5px);
+  }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from '@/lib/webdav-server';
+import { getSessionFromRequest } from '@/lib/session';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -7,6 +8,19 @@ dotenv.config();
 
 export async function POST(request: NextRequest) {
     try {
+        // Check authentication
+        const session = getSessionFromRequest(request);
+        
+        if (!session) {
+            console.log('[upload] No valid session found');
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Please log in to upload files' },
+                { status: 401 }
+            );
+        }
+        
+        console.log('[upload] Authenticated user:', session.username);
+
         const formData = await request.formData();
         const file = formData.get('file') as File | null;
         const path = formData.get('path') as string | null; // This is the directory path within the share, e.g., "/" or "/subfolder"

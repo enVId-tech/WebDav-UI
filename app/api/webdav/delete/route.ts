@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webdavService from '@/lib/webdav-server';
+import { getSessionFromRequest } from '@/lib/session';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -7,6 +8,19 @@ dotenv.config();
 
 export async function POST(request: NextRequest) {
     try {
+        // Check authentication
+        const session = getSessionFromRequest(request);
+        
+        if (!session) {
+            console.log('[delete] No valid session found');
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Please log in to delete files' },
+                { status: 401 }
+            );
+        }
+        
+        console.log('[delete] Authenticated user:', session.username);
+
         const body = await request.json();
         const { path, sharePath } = body; // path is the path of the file within the share, e.g., /folder/file.txt
 

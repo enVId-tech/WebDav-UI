@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
-import { getCurrentSession, extendSession } from '@/lib/session';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromRequest, extendSession } from '@/lib/session';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getCurrentSession();
+    const session = getSessionFromRequest(request);
     
     if (session) {
       // Extend session on activity
       extendSession(session.token);
+      
+      console.log('[auth/status] User authenticated:', session.username);
       
       return NextResponse.json({ 
         loggedIn: true, 
@@ -15,6 +17,7 @@ export async function GET() {
         expiresAt: session.expiresAt 
       }, { status: 200 });
     } else {
+      console.log('[auth/status] No valid session found');
       return NextResponse.json({ loggedIn: false }, { status: 200 });
     }
   } catch (error) {
