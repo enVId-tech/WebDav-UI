@@ -8,6 +8,69 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.qualitySuggestion {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+  padding: 12px 16px;
+  margin: 0 0 16px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+  animation: slideDown 0.3s ease-out;
+  
+  span {
+    flex: 1;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.suggestionButton {
+  background: #78350f;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #92400e;
+    transform: translateY(-1px);
+  }
+}
+
+.dismissButton {
+  background: transparent;
+  color: #78350f;
+  border: 1px solid #78350f;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(120, 53, 15, 0.1);
+  }
+}
+
 .videoContainer {
   display: flex;
   flex-direction: column;

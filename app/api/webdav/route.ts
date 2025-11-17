@@ -66,12 +66,12 @@ export async function GET(request: NextRequest) {
                     // Get file size first
                     const fileSize = await webdavService.getFileSize(filePath);
                     
-                    // Optimize chunk size based on request pattern
-                    // Initial request (start=0): moderate chunk for reasonable startup
-                    // Subsequent requests: very large chunks for smooth continuous playback
+                    // Optimize chunk size based on request pattern for better perceived performance
+                    // Initial request (start=0): smaller chunk for instant startup
+                    // Subsequent requests: adaptive chunks for smooth playback
                     const isInitialRequest = start === 0;
-                    const INITIAL_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB for fast start
-                    const STREAMING_CHUNK_SIZE = 25 * 1024 * 1024; // 25MB for smooth playback
+                    const INITIAL_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB for instant start (reduced from 5MB)
+                    const STREAMING_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB for smooth buffering (reduced from 25MB)
                     const MAX_CHUNK_SIZE = isInitialRequest ? INITIAL_CHUNK_SIZE : STREAMING_CHUNK_SIZE;
                     
                     const requestedEnd = match[2] ? parseInt(match[2], 10) : fileSize - 1;
@@ -103,9 +103,12 @@ export async function GET(request: NextRequest) {
                     headers.set('Accept-Ranges', 'bytes');
                     headers.set('Content-Length', String(partialContent.length));
                     
-                    // Add caching headers for better performance
-                    headers.set('Cache-Control', 'public, max-age=3600, immutable');
+                    // Aggressive caching for video chunks - significantly improves perceived performance
+                    headers.set('Cache-Control', 'public, max-age=31536000, immutable'); // 1 year
                     headers.set('ETag', `"${fileSize}-${start}-${end}-${quality}"`);
+                    
+                    // Performance hints for browser
+                    headers.set('X-Content-Duration', String(fileSize));
                     
                     // Add transcoding indicator
                     if (needsTranscoding) {
@@ -132,6 +135,13 @@ export async function GET(request: NextRequest) {
             headers.set('Content-Type', getContentType(decodedPath));
             headers.set('Accept-Ranges', 'bytes'); // Indicate that range requests are supported
             headers.set('Content-Length', String(fileContent.length));
+            
+            // Add caching for full file requests
+            if (isVideoFile) {
+                headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+            } else {
+                headers.set('Cache-Control', 'public, max-age=86400'); // 24 hours for non-video
+            }
             
             const fileName = getFileName(decodedPath);
             const disposition = download ? 'attachment' : 'inline';

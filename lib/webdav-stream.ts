@@ -2,22 +2,22 @@ import https from "https";
 import http from "http";
 import { URL } from "url";
 
-// Create connection pools for better performance
+// Create optimized connection pools for better video streaming performance
 const httpsAgent = new https.Agent({
     keepAlive: true,
-    keepAliveMsecs: 30000,
-    maxSockets: 50,
-    maxFreeSockets: 10,
-    timeout: 30000,
+    keepAliveMsecs: 60000, // Increased from 30s to 60s
+    maxSockets: 100, // Increased from 50 to handle more concurrent requests
+    maxFreeSockets: 20, // Increased from 10 for better reuse
+    timeout: 45000, // Increased from 30s for slower connections
     rejectUnauthorized: false // For development with self-signed certs
 });
 
 const httpAgent = new http.Agent({
     keepAlive: true,
-    keepAliveMsecs: 30000,
-    maxSockets: 50,
-    maxFreeSockets: 10,
-    timeout: 30000
+    keepAliveMsecs: 60000, // Increased from 30s to 60s
+    maxSockets: 100, // Increased from 50 to handle more concurrent requests
+    maxFreeSockets: 20, // Increased from 10 for better reuse
+    timeout: 45000 // Increased from 30s for slower connections
 });
 
 /**
@@ -49,6 +49,7 @@ export async function streamFileWithRange(
                 'Range': `bytes=${start}-${end}`,
                 'Connection': 'keep-alive',
                 'Accept-Encoding': 'identity', // Disable compression for video
+                'Cache-Control': 'no-transform', // Prevent proxy modification
             };
             
             // Add basic auth if credentials provided

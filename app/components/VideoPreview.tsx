@@ -25,6 +25,8 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [skipAmount, setSkipAmount] = useState(10); // Default 10 seconds skip
     const [showSkipSettings, setShowSkipSettings] = useState(false);
     const [estimatedBitrate, setEstimatedBitrate] = useState<string | null>(null);
+    const [connectionSpeed, setConnectionSpeed] = useState<'slow' | 'medium' | 'fast' | null>(null);
+    const [showQualitySuggestion, setShowQualitySuggestion] = useState(false);
     const [videoDetails, setVideoDetails] = useState<{
         width: number;
         height: number;
@@ -292,7 +294,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     useEffect(() => {
         const checkCompression = async () => {
             try {
+                const startTime = performance.now();
                 const response = await fetch(videoSrc, { method: 'HEAD' });
+                const endTime = performance.now();
+                const latency = endTime - startTime;
+                
                 setIsCompressed(response.headers.get('X-Video-Compressed') === 'true');
                 const originalSizeHeader = response.headers.get('X-Original-Size');
                 if (originalSizeHeader) {
@@ -309,13 +315,43 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                         codec: codecInfo
                     }));
                 }
+                
+                // Estimate connection speed based on latency
+                // Use Network Information API if available
+                if ('connection' in navigator) {
+                    const conn = (navigator as any).connection;
+                    if (conn && conn.effectiveType) {
+                        const effectiveType = conn.effectiveType;
+                        if (effectiveType === '4g' || effectiveType === '3g') {
+                            setConnectionSpeed('fast');
+                        } else if (effectiveType === '2g') {
+                            setConnectionSpeed('slow');
+                            // Suggest lower quality for slow connections
+                            if (quality === 'original') {
+                                setShowQualitySuggestion(true);
+                            }
+                        } else {
+                            setConnectionSpeed('medium');
+                        }
+                    }
+                } else if (latency > 500) {
+                    // Fallback: high latency indicates slow connection
+                    setConnectionSpeed('slow');
+                    if (quality === 'original') {
+                        setShowQualitySuggestion(true);
+                    }
+                } else if (latency < 100) {
+                    setConnectionSpeed('fast');
+                } else {
+                    setConnectionSpeed('medium');
+                }
             } catch (err) {
                 console.error('Error checking compression:', err);
             }
         };
 
         checkCompression();
-    }, [videoSrc]);
+    }, [videoSrc, quality]);
 
     useEffect(() => {
         // Test if we can connect to the video source
@@ -637,6 +673,28 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             <div className={styles.videoHeader}>
                 <h2 className={`${styles.fileName}`}>{displayFileName}</h2>
             </div>
+            
+            {/* Show quality suggestion for slow connections */}
+            {showQualitySuggestion && connectionSpeed === 'slow' && (
+                <div className={styles.qualitySuggestion}>
+                    <span>🐌 Slow connection detected. Consider switching to 480p or 360p for faster loading.</span>
+                    <button 
+                        onClick={() => {
+                            changeQuality('480p');
+                            setShowQualitySuggestion(false);
+                        }}
+                        className={styles.suggestionButton}
+                    >
+                        Switch to 480p
+                    </button>
+                    <button 
+                        onClick={() => setShowQualitySuggestion(false)}
+                        className={styles.dismissButton}
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
 
             <div className={styles.videoContentContainer}>
                 {/* Video element automatically uses HTTP Range requests for chunked streaming.
