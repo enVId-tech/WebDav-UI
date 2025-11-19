@@ -89,6 +89,7 @@ export async function savePermissions(store: PermissionsStore): Promise<void> {
 /**
  * Check if a path has guest access enabled
  * Checks the path itself and parent paths with inheritToChildren
+ * Path-specific permissions OVERRIDE inherited permissions from parent paths
  */
 export async function hasGuestAccess(requestPath: string): Promise<boolean> {
   const store = await loadPermissions();
@@ -96,12 +97,13 @@ export async function hasGuestAccess(requestPath: string): Promise<boolean> {
   // Normalize path
   const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
   
-  // Check exact match first
+  // Check exact match first - this ALWAYS takes precedence over inherited permissions
   const exactMatch = store.permissions.find(p => p.path === normalizedPath);
   if (exactMatch) {
     return exactMatch.guestAccessEnabled;
   }
   
+  // Only check parent paths if no exact match exists
   // Check parent paths with inheritToChildren enabled
   const pathParts = normalizedPath.split('/').filter(Boolean);
   
@@ -127,19 +129,22 @@ export async function hasGuestAccess(requestPath: string): Promise<boolean> {
 /**
  * Get guest credentials for a specific path
  * Returns the most specific credentials (checks path and parents)
+ * Path-specific credentials OVERRIDE inherited credentials from parent paths
  */
 export async function getGuestCredentials(requestPath: string): Promise<GuestCredentials | null> {
   const store = await loadPermissions();
   
   const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
   
-  // Check exact match first
+  // Check exact match first - this ALWAYS takes precedence
   const exactMatch = store.permissions.find(p => p.path === normalizedPath);
-  if (exactMatch?.guestCredentials) {
-    return exactMatch.guestCredentials;
+  if (exactMatch) {
+    // If exact match exists, return its credentials (even if undefined/null)
+    // This allows a specific path to override inherited credentials by not having any
+    return exactMatch.guestCredentials || null;
   }
   
-  // Check parent paths
+  // Only check parent paths if no exact match exists
   const pathParts = normalizedPath.split('/').filter(Boolean);
   
   for (let i = pathParts.length - 1; i >= 0; i--) {
@@ -202,15 +207,22 @@ export async function hasAnyPermissionForPath(requestPath: string): Promise<bool
 
 /**
  * Set permission for a specific path
+ * Prevents duplicate entries by removing any existing permission for the same path first
  */
 export async function setPathPermission(permission: PathPermission): Promise<void> {
   const store = await loadPermissions();
   
-  // Remove existing permission for this path
-  store.permissions = store.permissions.filter(p => p.path !== permission.path);
+  // Normalize the path to prevent duplicates with different formats
+  const normalizedPath = permission.path.startsWith('/') ? permission.path : `/${permission.path}`;
   
-  // Add new permission
-  store.permissions.push(permission);
+  // Remove ALL existing permissions for this exact path (prevents duplicates)
+  store.permissions = store.permissions.filter(p => p.path !== normalizedPath);
+  
+  // Add new permission with normalized path
+  store.permissions.push({
+    ...permission,
+    path: normalizedPath
+  });
   
   await savePermissions(store);
 }
@@ -234,6 +246,7 @@ export async function getAllPermissions(): Promise<PathPermission[]> {
 
 /**
  * Bulk update permissions for multiple paths
+ * Prevents duplicate entries by normalizing paths and checking for existing entries
  */
 export async function bulkUpdatePermissions(
   paths: string[],
@@ -241,19 +254,32 @@ export async function bulkUpdatePermissions(
 ): Promise<void> {
   const store = await loadPermissions();
   
+  // Track processed paths to prevent duplicates within the same bulk update
+  const processedPaths = new Set<string>();
+  
   for (const path of paths) {
-    const existingIndex = store.permissions.findIndex(p => p.path === path);
+    // Normalize the path
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    
+    // Skip if we've already processed this path in this bulk update
+    if (processedPaths.has(normalizedPath)) {
+      continue;
+    }
+    processedPaths.add(normalizedPath);
+    
+    const existingIndex = store.permissions.findIndex(p => p.path === normalizedPath);
     
     if (existingIndex >= 0) {
       // Update existing
       store.permissions[existingIndex] = {
         ...store.permissions[existingIndex],
-        ...updates
+        ...updates,
+        path: normalizedPath // Ensure path stays normalized
       };
     } else {
       // Create new
       store.permissions.push({
-        path,
+        path: normalizedPath,
         guestAccessEnabled: updates.guestAccessEnabled ?? false,
         inheritToChildren: updates.inheritToChildren ?? false,
         guestCredentials: updates.guestCredentials
