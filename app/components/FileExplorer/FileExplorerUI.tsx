@@ -422,7 +422,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                     type="submit"
                     style={searchStyles.searchButton as React.CSSProperties}
                     className={styles.searchButton} // Added for consistency
-                    disabled={isSearching}
+                    title={isSearching ? 'Search in progress - click to start new search' : 'Search'}
                 >
                   {isSearching ? '🔍...' : '🔍'}
                 </button>

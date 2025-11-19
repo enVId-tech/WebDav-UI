@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
 import { FileItem, FolderNode } from '@/app/components/FileExplorer/types';
@@ -27,6 +27,9 @@ export default function ShareFileBrowser() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  
+  // AbortController ref to cancel ongoing searches
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
 
   // Operation status tracking
   const [operations, setOperations] = useState<OperationStatus[]>([]);
@@ -213,6 +216,15 @@ export default function ShareFileBrowser() {
       return;
     }
 
+    // Cancel any ongoing search before starting a new one
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+
+    // Create a new AbortController for this search
+    const abortController = new AbortController();
+    searchAbortControllerRef.current = abortController;
+
     setIsSearching(true);
     setShowSearchResults(true);
     setSearchResults([]);
@@ -225,6 +237,11 @@ export default function ShareFileBrowser() {
       let searchedCount = 0;
 
       const searchRecursive = async (path: string, results: FileItem[] = []): Promise<FileItem[]> => {
+        // Check if search was aborted
+        if (abortController.signal.aborted) {
+          throw new Error('Search aborted');
+        }
+
         // Skip if already searched this path
         if (searchedPaths.has(path)) return results;
         searchedPaths.add(path);
@@ -233,6 +250,11 @@ export default function ShareFileBrowser() {
         searchedCount++;
 
         const contents = await loadDirectoryContents(path, `/${share}`);
+
+        // Check again after async operation
+        if (abortController.signal.aborted) {
+          throw new Error('Search aborted');
+        }
 
         const matches = contents.filter(item =>
             item.basename.toLowerCase().includes(searchQuery.toLowerCase())
@@ -253,6 +275,11 @@ export default function ShareFileBrowser() {
         totalFolders += subDirs.length;
 
         for (const dir of subDirs) {
+          // Check if search was aborted before processing each subdirectory
+          if (abortController.signal.aborted) {
+            throw new Error('Search aborted');
+          }
+
           const dirPath = path === '/' ? `/${dir.basename}` : `${path}/${dir.basename}`;
           await searchRecursive(dirPath, results);
         }
@@ -261,10 +288,17 @@ export default function ShareFileBrowser() {
       };
 
       await searchRecursive(relativePath);
-    } catch (err) {
-      console.error('Search error:', err);
+    } catch (err: any) {
+      // Don't log error if search was intentionally aborted
+      if (err.message !== 'Search aborted') {
+        console.error('Search error:', err);
+      }
     } finally {
-      setIsSearching(false);
+      // Only set isSearching to false if this is still the current search
+      if (searchAbortControllerRef.current === abortController) {
+        setIsSearching(false);
+        searchAbortControllerRef.current = null;
+      }
     }
   }, [searchQuery, share, relativePath, loadDirectoryContents]);
 
