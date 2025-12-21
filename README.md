@@ -1,136 +1,122 @@
 # WebDav-UI
 
-Modern WebDAV-powered file explorer and preview UI built with Next.js, React, and TypeScript. It provides a clean web interface for browsing shares, previewing files, and doing basic management (upload, delete, edit text) against a WebDAV server.
+A modern, responsive, and feature-rich WebDAV file explorer and preview interface built with Next.js 16, React 19, and TypeScript. This application provides a seamless way to browse, manage, and preview files stored on any WebDAV-compliant server.
 
 ## Features
 
-- **WebDAV-backed explorer**: Browse directories and files from a configured WebDAV share.
-- **Rich previews**:
-  - Images, audio, and video (including HLS streaming).
-  - PDFs and common Office/doc formats.
-  - Text/code with syntax highlighting and zoom.
-- **Inline text editing**: Logged-in users can edit text files directly in the browser; changes are autosaved back to WebDAV.
-- **File operations**:
-  - Upload files into the current folder.
-  - Toggle delete mode, select multiple files, and delete in one action without reloading the page.
-- **Auth-aware UI**: Login/logout flow, with protected actions for authenticated users.
-- **Responsive design**: Desktop and mobile-friendly layout with a mobile nav.
-- **Theme toggle**: Switch between light and dark themes.
+- **WebDAV Explorer**: Browse directories and files with a familiar, intuitive interface.
+- **Rich File Previews**:
+  - **Images**: Native preview support.
+  - **Media**: Audio and Video playback (including HLS streaming support).
+  - **Documents**: PDF rendering and Office document previews (DOCX, etc.).
+  - **Code/Text**: Syntax highlighting with zoom capabilities.
+  - **Databases**: SQLite file preview support.
+- **Advanced Search**: 
+  - Real-time search functionality.
+  - **Pagination**: Efficiently handle large search results with adjustable items per page (25, 50, 100, 200).
+  - **Filtering**: Quick filters for Folders, Videos, Images, Audio, and Documents.
+- **Customizable View**:
+  - **View Modes**: Switch between List and Grid views.
+  - **Sizing**: Adjustable icon sizes (Small, Medium, Large).
+  - **Sorting**: Sort by Name, Date, or Size.
+  - **Themes**: Built-in Light and Dark mode toggle.
+- **File Management**:
+  - **Upload**: Drag-and-drop or file selection for uploads.
+  - **Edit**: Inline text editor for code and text files with auto-save.
+  - **Delete**: Batch delete functionality with selection mode.
+- **Authentication & Security**:
+  - Configurable Guest Access (Public/Private modes).
+  - Admin dashboard for permissions management.
+  - Protected write operations.
 
 ## Tech Stack
 
-- **Framework**: Next.js `16.x` (App Router) with React `19.x`, TypeScript.
-- **Styling**: SCSS Modules + custom theme variables.
-- **WebDAV**: `webdav` client plus custom API routes in `app/api/webdav`.
-- **Previews & utilities**:
-  - `react-pdf` + `pdfjs-dist` for PDFs.
-  - `react-syntax-highlighter` for text/code.
-  - `docx-preview` and custom viewers for Office/doc formats.
-  - `mime-types` for content detection.
-  - `material-file-icons` for file icons.
-  - `@ffmpeg-installer/ffmpeg` + `fluent-ffmpeg` for media handling.
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **UI Library**: [React 19](https://react.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: SCSS Modules with CSS Variables for theming.
+- **WebDAV Client**: `webdav` library for protocol communication.
+- **Media Processing**: `fluent-ffmpeg` for media handling.
+- **PDF Rendering**: `react-pdf`.
 
-## Project Layout
+## Project Structure
 
-- `app/`
-  - `page.tsx`: Landing page / share entry.
-  - `[share]/[[...path]]/page.tsx`: Main file explorer for a given share.
-  - `preview/[...filepath]/page.tsx`: Dedicated file preview route.
-  - `api/webdav/`: WebDAV proxy + helpers (listing, file fetch, delete, upload, text-save, etc.).
-  - `components/`: UI components (file explorer, previews, auth, theme toggle, etc.).
-  - `context/AuthContext.tsx`: Simple auth status + login/logout hooks.
-  - `styles/`: SCSS modules for explorer, previews, and common styles.
-- `lib/`: WebDAV client/server/stream helpers.
-- `public/`: Static assets.
-- `tests/`: Jest tests for pages and WebDAV helpers.
+```
+app/
+├── [share]/            # Dynamic route for file browsing
+├── admin/              # Admin dashboard
+├── api/                # API routes (Auth, WebDAV proxy, Config)
+├── components/         # Reusable UI components
+│   ├── FileExplorer/   # Main explorer logic and UI
+│   └── ...             # Previewers (PDF, Video, Text, etc.)
+├── context/            # React Context (Auth)
+├── login/              # Login page
+├── preview/            # Standalone file preview route
+└── styles/             # Global and module SCSS files
+lib/                    # Utilities (WebDAV client, Auth helpers)
+types/                  # TypeScript definitions
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js `>= 18`.
-- A reachable WebDAV server (URL and credentials).
+- Node.js 18+ installed.
+- Access to a WebDAV server (e.g., Nextcloud, Apache WebDAV, rclone serve).
 
 ### Installation
 
-```bash
-git clone https://github.com/enVId-tech/WebDav-UI.git
-cd WebDav-UI
-npm install
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/enVId-tech/WebDav-UI.git
+    cd WebDav-UI
+    ```
 
-### Configuration
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-1. Copy the example env file and adjust it:
+3.  **Configure Environment:**
+    Copy the example environment file:
+    ```bash
+    cp example.env.local .env.local
+    ```
+    
+    Edit `.env.local` and configure your WebDAV connection:
+    ```env
+    # WebDAV Server Configuration
+    WEBDAV_URL=https://your-webdav-server.com/remote.php/dav/files/user/
+    WEBDAV_USERNAME=your_username
+    WEBDAV_PASSWORD=your_password
 
-```bash
-cp example.env.local .env.local
-```
+    # App Admin Credentials
+    ADMIN_USERNAME=admin
+    ADMIN_PASSWORD=secure_password
 
-2. Open `.env.local` and set at least:
+    # Security
+    GUEST_ACCESS_ENABLED=true # Set to false to force login for all access
+    ```
 
-- `WEBDAV_URL` – base URL to your WebDAV server.
-- `ADMIN_USERNAME` and `ADMIN_PASSWORD` – credentials for admin login.
-- `GUEST_ACCESS_ENABLED` (optional) – set to `true` to allow browsing without login (default), or `false` to require login for all pages.
+4.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Refer to comments in `example.env.local` for all supported options.
-
-### Guest Access Configuration
-
-The application supports two modes:
-
-**Guest Access Enabled** (default: `GUEST_ACCESS_ENABLED=true`):
-- Users can browse and view files without logging in
-- Login is required only for write operations (upload, delete, edit)
-- Upload and Delete buttons redirect to login when clicked by guests
-- Ideal for public file sharing with protected modifications
-
-**Guest Access Disabled** (`GUEST_ACCESS_ENABLED=false`):
-- Login required to access any page or API endpoint
-- Users are redirected to login when accessing any share or file
-- Full authentication required for all operations
-- Ideal for private file servers
-
-### Development
-
-Start the dev server:
-
-```bash
-npm run dev
-```
-
-Then open `http://localhost:3000` in your browser. Use the main page to navigate into a share (e.g. `/etran`) and explore files.
-
-### Tests
-
-This repo is wired for Jest tests (see `tests/`), but Jest is not bundled globally. To run tests you may need to install it (e.g. `npm install --save-dev jest @types/jest ts-jest`) or adapt the test setup to your environment, then run:
-
-```bash
-npm test
-```
-
-## Production Build
-
-Build and start the app in production mode:
+### Building for Production
 
 ```bash
 npm run build
-npm run start
+npm start
 ```
 
-## Docker
+## Configuration Options
 
-The included `Dockerfile` lets you build and run the app in a container:
-
-```bash
-docker build -t webdav-ui .
-docker run -p 3000:3000 --env-file .env.local webdav-ui
-```
+### Guest Access
+- **Enabled (`true`)**: Public users can browse and view files. Write operations (Upload, Delete, Edit) require login.
+- **Disabled (`false`)**: All access requires authentication. Users are redirected to login immediately.
 
 ## License
 
-This project is licensed under the terms in the [`LICENSE`](LICENSE) file.
-
-## Contributing
-
-Bug reports, feature ideas, and pull requests are welcome. Please open an issue or PR in this repository.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
