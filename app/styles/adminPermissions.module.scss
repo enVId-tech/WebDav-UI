@@ -666,8 +666,10 @@
 
   .input {
     margin-bottom: 0.75rem;
-    background: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: 2px solid #e2e8f0;
+    color: #2d3748;
+    font-weight: bold;
 
     &:last-of-type {
       margin-bottom: 1rem;
@@ -863,8 +865,12 @@
     background: rgba(30, 27, 75, 0.6);
     border-color: rgba(139, 92, 246, 0.3);
 
+    input {
+      color: rgba(139, 92, 246, 0.3);
+      background-color: black;
+    }
     span {
-      color: #cbd5e1;
+      color: rgba(139, 92, 246, 0.3);
 
       &.noCredentials {
         color: #6366f1;
@@ -872,7 +878,7 @@
     }
 
     h4 {
-      color: #e0e7ff;
+      color: rgba(139, 92, 246, 0.3);
     }
   }
 

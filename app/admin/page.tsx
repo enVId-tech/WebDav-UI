@@ -191,6 +191,10 @@ export default function AdminPermissionsPage() {
     setSelectedPaths(new Set());
   };
 
+  const saveChanges = async () => {
+    await loadPermissions();
+  }
+
   if (authLoading || loading) {
     return (
       <div className={`${styles.container} ${geistMono.className}`}>
@@ -207,7 +211,13 @@ export default function AdminPermissionsPage() {
     <div className={`${styles.container} ${geistMono.className}`}>
       <header className={styles.header}>
         <h1>Permission Management</h1>
-        <button onClick={() => router.push('/')} className={styles.backButton}>
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = '/';
+          }} 
+          className={styles.backButton}
+        >
           ← Back to Files
         </button>
       </header>
@@ -341,33 +351,51 @@ export default function AdminPermissionsPage() {
                       type="text"
                       placeholder="Username"
                       value={perm.guestCredentials?.username || ''}
-                      onChange={(e) =>
-                        handleUpdatePermission({
-                          ...perm,
-                          guestCredentials: {
-                            username: e.target.value,
-                            password: perm.guestCredentials?.password || '',
-                          },
-                        })
-                      }
+                      onChange={(e) => {
+                        setPermissions(prevPermissions =>
+                          prevPermissions.map(p =>
+                            p.path === perm.path
+                              ? {
+                                  ...p,
+                                  guestCredentials: {
+                                    username: e.target.value,
+                                    password: p.guestCredentials?.password || '',
+                                  },
+                                }
+                              : p
+                          )
+                        );
+                      }}
                       className={styles.input}
                     />
                     <input
                       type="password"
                       placeholder="Password"
                       value={perm.guestCredentials?.password || ''}
-                      onChange={(e) =>
-                        handleUpdatePermission({
-                          ...perm,
-                          guestCredentials: {
-                            username: perm.guestCredentials?.username || '',
-                            password: e.target.value,
-                          },
-                        })
-                      }
+                      onChange={(e) => {
+                        setPermissions(prevPermissions =>
+                          prevPermissions.map(p =>
+                            p.path === perm.path
+                              ? {
+                                  ...p,
+                                  guestCredentials: {
+                                    username: p.guestCredentials?.username || '',
+                                    password: e.target.value,
+                                  },
+                                }
+                              : p
+                          )
+                        );
+                      }}
                       className={styles.input}
                     />
-                    <button onClick={() => setEditingPath(null)} className={styles.doneButton}>
+                    <button 
+                      onClick={async () => {
+                        await handleUpdatePermission(perm);
+                        setEditingPath(null);
+                      }} 
+                      className={styles.doneButton}
+                    >
                       Done
                     </button>
                   </div>
