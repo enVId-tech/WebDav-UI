@@ -154,8 +154,15 @@ export function validatePermission(
  * Check if a path has guest access enabled
  * Checks the path itself and parent paths with inheritToChildren
  * Path-specific permissions OVERRIDE inherited permissions from parent paths
+ * @param requestPath - The path to check
+ * @param isAdmin - If true, bypasses all permission checks and grants access
  */
-export async function hasGuestAccess(requestPath: string): Promise<boolean> {
+export async function hasGuestAccess(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
+  // Admin users have full access to everything
+  if (isAdmin) {
+    return true;
+  }
+  
   const store = await loadPermissions();
   
   // Normalize path
@@ -226,8 +233,15 @@ export async function getGuestCredentials(requestPath: string): Promise<GuestCre
 /**
  * Check if a path requires guest credentials (i.e. has guest credentials
  * configured either on the exact path or an inheritable parent).
+ * @param requestPath - The path to check
+ * @param isAdmin - If true, bypasses credential requirements
  */
-export async function requiresGuestCredentials(requestPath: string): Promise<boolean> {
+export async function requiresGuestCredentials(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
+  // Admin users don't need guest credentials
+  if (isAdmin) {
+    return false;
+  }
+  
   const creds = await getGuestCredentials(requestPath);
   return !!creds;
 }
@@ -237,8 +251,15 @@ export async function requiresGuestCredentials(requestPath: string): Promise<boo
  * or via an inheritable parent entry. This is used to decide whether
  * middleware should enforce login/guest access or allow anonymous
  * access for paths with no permissions configured.
+ * @param requestPath - The path to check
+ * @param isAdmin - If true, bypasses permission checks
  */
-export async function hasAnyPermissionForPath(requestPath: string): Promise<boolean> {
+export async function hasAnyPermissionForPath(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
+  // Admin users have full access - no permission checks needed
+  if (isAdmin) {
+    return true;
+  }
+  
   const store = await loadPermissions();
 
   const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;

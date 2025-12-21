@@ -70,15 +70,19 @@ export async function proxy(request: NextRequest) {
   const isAuthOrAdmin = pathname.startsWith('/login') || pathname.startsWith('/admin');
 
   if (!isApiRoute && !isHome && !isAuthOrAdmin) {
+    // Check if user is admin (logged in sessions were already handled above)
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const isAdminUser = session ? (session.role === 'admin' || session.username === adminUsername) : false;
+    
     // Only enforce permissions if there is an entry (direct or
     // inherited) for this path. Otherwise, allow anonymous access
     // as before.
-    const hasPermission = await hasAnyPermissionForPath(pathname);
+    const hasPermission = await hasAnyPermissionForPath(pathname, isAdminUser);
     if (!hasPermission) {
       return NextResponse.next();
     }
 
-    const allowed = await hasGuestAccess(pathname);
+    const allowed = await hasGuestAccess(pathname, isAdminUser);
 
     if (!allowed) {
       // Path without guest access: require full login
@@ -91,7 +95,7 @@ export async function proxy(request: NextRequest) {
     // Guest access is enabled for this path; if guest credentials are
     // configured, force a credential-based guest login instead of
     // anonymous access.
-    const needsGuestLogin = await requiresGuestCredentials(pathname);
+    const needsGuestLogin = await requiresGuestCredentials(pathname, isAdminUser);
     if (needsGuestLogin) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
