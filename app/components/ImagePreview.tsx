@@ -25,11 +25,11 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
   };
 
   const zoomIn = () => {
-    setZoom(prev => Math.min(prev * 1.2, 30));
+    setZoom(prev => prev * 1.2);
   };
 
   const zoomOut = () => {
-    setZoom(prev => Math.max(prev / 1.2, 0.1));
+    setZoom(prev => Math.max(prev / 1.2, 0.01));
   };
 
   const resetZoom = () => {
@@ -83,20 +83,20 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
         <p className={styles.zoomLabel}>Zoom: {(zoom * 100).toFixed(0)}%</p>
         <input
           type="range"
-          min="0.1"
-          max="30"
+          min="0.01"
+          max="500"
           step="0.1"
           value={zoom}
           onChange={(e) => setZoom(parseFloat(e.target.value))}
           className={styles.zoomSlider}
         />
-        <button onClick={zoomOut} className={styles.controlButton} disabled={zoom <= 0.1}>
+        <button onClick={zoomOut} className={styles.controlButton} disabled={zoom <= 0.01}>
           -
         </button>
         <button onClick={resetZoom} className={styles.controlButton}>
           100%
         </button>
-        <button onClick={zoomIn} className={styles.controlButton} disabled={zoom >= 30}>
+        <button onClick={zoomIn} className={styles.controlButton}>
           +
         </button>
         <a href={`${src}&download=true`} download className={styles.downloadButton}>

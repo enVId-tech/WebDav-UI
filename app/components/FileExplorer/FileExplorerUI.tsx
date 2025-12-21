@@ -75,30 +75,56 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   // Sorting and Filtering State
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [filterType, setFilterType] = useState<'all' | 'video' | 'image' | 'audio' | 'document'>('all');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [viewSize, setViewSize] = useState<'small' | 'medium' | 'large'>('medium');
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
+
+  const handleFilterToggle = (type: string) => {
+    setActiveFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
+
+  const handleSort = (column: 'name' | 'date' | 'size') => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
 
   // Filter and Sort Logic
   const getFilteredAndSortedFiles = useCallback(() => {
     let files = [...currentData];
 
     // Filter
-    if (filterType !== 'all') {
+    if (activeFilters.size > 0) {
       files = files.filter(item => {
-        if (item.type === 'directory') return true; // Always show folders
+        let type = 'other';
         const mimeType = lookup(item.basename) || '';
-        if (filterType === 'video') return mimeType.startsWith('video/');
-        if (filterType === 'image') return mimeType.startsWith('image/');
-        if (filterType === 'audio') return mimeType.startsWith('audio/');
-        if (filterType === 'document') return mimeType.startsWith('text/') || mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('spreadsheet') || mimeType.includes('presentation');
-        return true;
+        
+        if (item.type === 'directory') type = 'folder';
+        else if (mimeType.startsWith('video/')) type = 'video';
+        else if (mimeType.startsWith('image/')) type = 'image';
+        else if (mimeType.startsWith('audio/')) type = 'audio';
+        else if (mimeType.startsWith('text/') || mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('spreadsheet') || mimeType.includes('presentation')) type = 'document';
+        
+        return activeFilters.has(type);
       });
     }
 
     // Sort
     files.sort((a, b) => {
-      // Always keep directories on top
+      // Always keep directories on top unless sorting by size/date specifically requested to mix? 
+      // Usually folders are always on top in Windows.
       if (a.type === 'directory' && b.type !== 'directory') return -1;
       if (a.type !== 'directory' && b.type === 'directory') return 1;
 
@@ -118,9 +144,26 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     });
 
     return files;
-  }, [currentData, filterType, sortBy, sortOrder]);
+  }, [currentData, activeFilters, sortBy, sortOrder]);
 
   const displayedFiles = getFilteredAndSortedFiles();
+
+  // Filter Search Results
+  const filteredSearchResults = React.useMemo(() => {
+    if (activeFilters.size === 0) return searchResults;
+    return searchResults.filter(item => {
+        let type = 'other';
+        const mimeType = lookup(item.basename) || '';
+        
+        if (item.type === 'directory') type = 'folder';
+        else if (mimeType.startsWith('video/')) type = 'video';
+        else if (mimeType.startsWith('image/')) type = 'image';
+        else if (mimeType.startsWith('audio/')) type = 'audio';
+        else if (mimeType.startsWith('text/') || mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('spreadsheet') || mimeType.includes('presentation')) type = 'document';
+        
+        return activeFilters.has(type);
+    });
+  }, [searchResults, activeFilters]);
 
   const searchStyles = {
     searchForm: {
@@ -612,39 +655,47 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 {viewMode === 'grid' ? 'List' : 'Grid'} View
               </button>
 
-              {/* Sort and Filter Controls */}
-              <div className={styles.sortFilterControls}>
-                <select 
-                  value={filterType} 
-                  onChange={(e) => setFilterType(e.target.value as any)}
-                  className={styles.filterSelect}
-                  title="Filter by type"
-                >
-                  <option value="all">All Types</option>
-                  <option value="video">Video</option>
-                  <option value="image">Image</option>
-                  <option value="audio">Audio</option>
-                  <option value="document">Documents</option>
-                </select>
-
-                <select 
-                  value={sortBy} 
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className={styles.filterSelect}
-                  title="Sort by"
-                >
-                  <option value="name">Name</option>
-                  <option value="date">Date</option>
-                  <option value="size">Size</option>
-                </select>
-
+              {/* View Size Controls */}
+              <div className={styles.viewSizeControls}>
                 <button 
-                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                  className={styles.sortOrderButton}
-                  title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </button>
+                  className={`${styles.sizeButton} ${viewSize === 'small' ? styles.active : ''}`}
+                  onClick={() => setViewSize('small')}
+                  title="Small Icons"
+                >S</button>
+                <button 
+                  className={`${styles.sizeButton} ${viewSize === 'medium' ? styles.active : ''}`}
+                  onClick={() => setViewSize('medium')}
+                  title="Medium Icons"
+                >M</button>
+                <button 
+                  className={`${styles.sizeButton} ${viewSize === 'large' ? styles.active : ''}`}
+                  onClick={() => setViewSize('large')}
+                  title="Large Icons"
+                >L</button>
+              </div>
+
+              {/* Filter Controls */}
+              <div className={styles.filterControls}>
+                {['folder', 'video', 'image', 'audio', 'document'].map(type => (
+                  <button
+                    key={type}
+                    className={`${styles.filterButton} ${activeFilters.has(type) ? styles.active : ''}`}
+                    onClick={() => handleFilterToggle(type)}
+                    title={`Filter by ${type}`}
+                  >
+                    {type === 'folder' ? '📁' : 
+                     type === 'video' ? '🎬' : 
+                     type === 'image' ? '🖼️' : 
+                     type === 'audio' ? '🎵' : '📄'}
+                  </button>
+                ))}
+                {activeFilters.size > 0 && (
+                  <button 
+                    className={styles.clearFilterButton}
+                    onClick={() => setActiveFilters(new Set())}
+                    title="Clear Filters"
+                  >✕</button>
+                )}
               </div>
 
               <form onSubmit={onSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
@@ -686,24 +737,26 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                     <div className={styles.dateColumn}>Modified</div>
                     <div className={styles.sizeColumn}>Size</div>
                   </div>
-                  <div className={styles.modernFileItems}>
-                    {searchResults.length > 0 ? (
-                        searchResults.map((item) => (
-                            <div key={item.filename + (item.relativePath || '')} className={styles.fileItem}>
-                                <div className={styles.nameColumn}>
-                                  <span className={styles.icon}>{item.type === 'directory' ? '📁' : getFileIcon(item.basename)}</span>
-                                  <span className={styles.name} onClick={() => item.type === 'directory' ? onNavigateToFolder(item.relativePath || item.filename) : onFileClick(item.basename)}>{item.basename}</span>
+                  <div className={`${styles.modernFileItems} ${styles[viewSize]}`}>
+                    {filteredSearchResults.length > 0 ? (
+                        filteredSearchResults.map((item) => (
+                            <div key={item.filename + (item.relativePath || '')} className={`${styles.fileItem} ${styles[viewSize]}`}>
+                                <div className={styles.modernFileRow}>
+                                  <div className={styles.nameColumn}>
+                                    <span className={styles.icon}>{item.type === 'directory' ? '📁' : getFileIcon(item.basename)}</span>
+                                    <span className={styles.name} onClick={() => item.type === 'directory' ? onNavigateToFolder(item.relativePath || item.filename) : onFileClick(item.basename)}>{item.basename}</span>
+                                  </div>
+                                  <div className={styles.locationColumn}>{item.relativePath?.replaceAll("%20", " ").substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
+                                  <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
+                                  <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
+                                  {loggedIn && deleteModeActive && item.type === 'file' && (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedFiles.has(item.basename)}
+                                      onChange={() => toggleFileSelection(item.basename)}
+                                    />
+                                  )}
                                 </div>
-                                <div className={styles.locationColumn}>{item.relativePath?.replaceAll("%20", " ").substring(0, item.relativePath.lastIndexOf('/')) || '/'}</div>
-                                <div className={styles.dateColumn}>{formatDate(item.lastmod)}</div>
-                                <div className={styles.sizeColumn}>{item.type === 'file' ? formatFileSize(item.size) : '-'}</div>
-                                {loggedIn && deleteModeActive && item.type === 'file' && (
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedFiles.has(item.basename)}
-                                    onChange={() => toggleFileSelection(item.basename)}
-                                  />
-                                )}
                             </div>
                         ))
                     ) : (
@@ -719,21 +772,44 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                   
                     {viewMode === 'list' && (
                       <div className={styles.modernFileHeader}>
-                        <div className={styles.nameColumn}>Name</div>
-                        <div className={styles.dateColumn}>Modified</div>
-                        <div className={styles.sizeColumn}>Size</div>
+                        <div 
+                          className={`${styles.nameColumn} ${styles.sortableHeader}`} 
+                          onClick={() => handleSort('name')}
+                          title="Sort by Name"
+                        >
+                          Name <span className={`${styles.sortIcon} ${sortBy === 'name' ? styles.active : ''}`}>{sortBy === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        </div>
+                        <div 
+                          className={`${styles.dateColumn} ${styles.sortableHeader}`}
+                          onClick={() => handleSort('date')}
+                          title="Sort by Date"
+                        >
+                          Modified <span className={`${styles.sortIcon} ${sortBy === 'date' ? styles.active : ''}`}>{sortBy === 'date' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        </div>
+                        <div 
+                          className={`${styles.sizeColumn} ${styles.sortableHeader}`}
+                          onClick={() => handleSort('size')}
+                          title="Sort by Size"
+                        >
+                          Size <span className={`${styles.sortIcon} ${sortBy === 'size' ? styles.active : ''}`}>{sortBy === 'size' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        </div>
                       </div>
                     )}
                   
-                  <div className={styles.modernFileItems}>
+                  <div className={`${styles.modernFileItems} ${styles[viewSize]}`}>
                     {viewMode === 'grid' ? (
-                        <div style={gridStyles.gridContainer as React.CSSProperties}>
+                        <div style={{
+                          ...gridStyles.gridContainer,
+                          gridTemplateColumns: viewSize === 'small' ? 'repeat(auto-fill, minmax(120px, 1fr))' : 
+                                             viewSize === 'large' ? 'repeat(auto-fill, minmax(240px, 1fr))' : 
+                                             'repeat(auto-fill, minmax(180px, 1fr))'
+                        } as React.CSSProperties}>
                           {displayedFiles.length > 0 ? (
                               displayedFiles.map((item) => (
                                   <div
                                       key={item.filename}
                                       style={gridStyles.gridItem as React.CSSProperties}
-                                      className={styles.gridItem} // Added class
+                                      className={`${styles.gridItem} ${styles[viewSize]}`}
                                       // onClick handled by individual elements now
                                   >
                                     <div style={{cursor: 'pointer'}} onClick={() => {
@@ -743,9 +819,14 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                                           onFileClick(item.basename);
                                         }
                                       }}>
-                                      <div style={gridStyles.gridIcon as React.CSSProperties}>
+                                      <div style={{
+                                        ...gridStyles.gridIcon,
+                                        width: viewSize === 'small' ? '60px' : viewSize === 'large' ? '140px' : '100px',
+                                        height: viewSize === 'small' ? '60px' : viewSize === 'large' ? '140px' : '100px',
+                                        fontSize: viewSize === 'small' ? '2rem' : viewSize === 'large' ? '4rem' : '3rem'
+                                      } as React.CSSProperties}>
                                         {item.type === 'directory' ? (
-                                            <svg width="60" height="60" viewBox="0 0 24 24">
+                                            <svg width="100%" height="100%" viewBox="0 0 24 24">
                                               <path fill="#ffc107" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
                                             </svg>
                                         ) : (
@@ -778,7 +859,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                     ) : (
                         displayedFiles.length > 0 ? (
                             displayedFiles.map((item) => (
-                                <div key={item.filename} className={styles.fileItem}>
+                                <div key={item.filename} className={`${styles.fileItem} ${styles[viewSize]}`}>
                                   {item.type === 'directory' ? (
                                       <div
                                           className={styles.modernFolderRow}
