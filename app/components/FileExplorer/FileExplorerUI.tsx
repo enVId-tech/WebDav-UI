@@ -72,7 +72,55 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
 
+  // Sorting and Filtering State
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [filterType, setFilterType] = useState<'all' | 'video' | 'image' | 'audio' | 'document'>('all');
+
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
+
+  // Filter and Sort Logic
+  const getFilteredAndSortedFiles = useCallback(() => {
+    let files = [...currentData];
+
+    // Filter
+    if (filterType !== 'all') {
+      files = files.filter(item => {
+        if (item.type === 'directory') return true; // Always show folders
+        const mimeType = lookup(item.basename) || '';
+        if (filterType === 'video') return mimeType.startsWith('video/');
+        if (filterType === 'image') return mimeType.startsWith('image/');
+        if (filterType === 'audio') return mimeType.startsWith('audio/');
+        if (filterType === 'document') return mimeType.startsWith('text/') || mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('spreadsheet') || mimeType.includes('presentation');
+        return true;
+      });
+    }
+
+    // Sort
+    files.sort((a, b) => {
+      // Always keep directories on top
+      if (a.type === 'directory' && b.type !== 'directory') return -1;
+      if (a.type !== 'directory' && b.type === 'directory') return 1;
+
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.basename.localeCompare(b.basename);
+          break;
+        case 'size':
+          comparison = (a.size || 0) - (b.size || 0);
+          break;
+        case 'date':
+          comparison = new Date(a.lastmod).getTime() - new Date(b.lastmod).getTime();
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return files;
+  }, [currentData, filterType, sortBy, sortOrder]);
+
+  const displayedFiles = getFilteredAndSortedFiles();
 
   const searchStyles = {
     searchForm: {
@@ -462,7 +510,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
         <div className={styles.modernContent}>
           <div className={styles.topBar}>
             <div className={styles.modernHeader}>
-              <h1 className={styles.explorerTitle}>File Explorer</h1>
+              <h1 className={styles.explorerTitle}>WebDav Content Explorer</h1>
               <MobileNav
                   currentPath={relativePath}
                   onNavigate={routerPush} // Assuming routerPush can handle this
@@ -563,6 +611,42 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
               >
                 {viewMode === 'grid' ? 'List' : 'Grid'} View
               </button>
+
+              {/* Sort and Filter Controls */}
+              <div className={styles.sortFilterControls}>
+                <select 
+                  value={filterType} 
+                  onChange={(e) => setFilterType(e.target.value as any)}
+                  className={styles.filterSelect}
+                  title="Filter by type"
+                >
+                  <option value="all">All Types</option>
+                  <option value="video">Video</option>
+                  <option value="image">Image</option>
+                  <option value="audio">Audio</option>
+                  <option value="document">Documents</option>
+                </select>
+
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className={styles.filterSelect}
+                  title="Sort by"
+                >
+                  <option value="name">Name</option>
+                  <option value="date">Date</option>
+                  <option value="size">Size</option>
+                </select>
+
+                <button 
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className={styles.sortOrderButton}
+                  title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+
               <form onSubmit={onSearchSubmit} style={searchStyles.searchForm as React.CSSProperties}>
                 <input
                     type="text"
@@ -644,8 +728,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                   <div className={styles.modernFileItems}>
                     {viewMode === 'grid' ? (
                         <div style={gridStyles.gridContainer as React.CSSProperties}>
-                          {currentData.length > 0 ? (
-                              currentData.map((item) => (
+                          {displayedFiles.length > 0 ? (
+                              displayedFiles.map((item) => (
                                   <div
                                       key={item.filename}
                                       style={gridStyles.gridItem as React.CSSProperties}
@@ -692,8 +776,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                           )}
                         </div>
                     ) : (
-                        currentData.length > 0 ? (
-                            currentData.map((item) => (
+                        displayedFiles.length > 0 ? (
+                            displayedFiles.map((item) => (
                                 <div key={item.filename} className={styles.fileItem}>
                                   {item.type === 'directory' ? (
                                       <div

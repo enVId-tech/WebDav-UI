@@ -26,20 +26,20 @@
 
 .imageViewportContainer {
   display: flex;
-  overflow: hidden;
+  overflow: auto;
   background-color: var(--bg-primary);
   position: relative;
   flex: 1;
 }
 
 .imageViewport {
-  display: inline-flex;
-  transition: transform 0.2s ease-out;
-  transform-origin: top left;
+  display: flex;
+  transition: width 0.2s ease-out, height 0.2s ease-out;
   min-width: 100%;
   min-height: 100%;
   align-items: center;
   justify-content: center;
+  margin: auto;
 }
 
 .imageContent {

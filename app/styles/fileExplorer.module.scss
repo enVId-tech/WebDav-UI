@@ -1093,3 +1093,40 @@
     transform: translateX(-5px);
   }
 }
+
+.sortFilterControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 10px;
+}
+
+.filterSelect {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+
+  &:focus {
+    border-color: var(--primary);
+  }
+}
+
+.sortOrderButton {
+  padding: 0.5rem 0.8rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--bg-tertiary);
+  }
+}
