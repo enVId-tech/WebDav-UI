@@ -54,7 +54,7 @@ export default function MobileNav({
     
     // Apply mobile expansion state
     const applyExpansion = (node: FolderNode): FolderNode => {
-      node.expanded = mobileExpandedFolders.has(node.path);
+      node.isExpanded = mobileExpandedFolders.has(node.path);
       node.children = node.children.map(child => applyExpansion(child));
       return node;
     };
@@ -100,7 +100,7 @@ export default function MobileNav({
               toggleMobileFolderExpansion(node.path);
             }}
           >
-            {hasChildren ? (node.expanded ? '▾' : '▸') : '•'}
+            {hasChildren ? (node.isExpanded ? '▾' : '▸') : '•'}
           </span>
           <span 
             className={styles.mobileFolderName}
@@ -111,7 +111,7 @@ export default function MobileNav({
             📁 {node.name}
           </span>
         </div>
-        {node.expanded && node.children.length > 0 && (
+        {node.isExpanded && node.children.length > 0 && (
           <div className={styles.mobileFolderChildren}>
             {node.children.map(child => renderFolderNode(child, level + 1))}
           </div>

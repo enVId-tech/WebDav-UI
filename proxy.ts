@@ -23,7 +23,7 @@ export async function proxy(request: NextRequest) {
   }
   
   // Check for session
-  const session = getSessionFromRequest(request);
+  const session: any = getSessionFromRequest(request);
   
   // No special handling for admin routes here; authorization is
   // performed inside the actual API routes and pages.
