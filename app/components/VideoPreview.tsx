@@ -21,6 +21,8 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [isDownloading, setIsDownloading] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isSeeking, setIsSeeking] = useState(false);
+    const [showControls, setShowControls] = useState(true);
+    const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
     // Decode the filename for display (convert %20 back to spaces, etc.)
     const displayFileName = decodeURIComponent(fileName);
@@ -57,6 +59,50 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
         };
     }, []);
+
+    useEffect(() => {
+        // Auto-hide controls in fullscreen after 4 seconds of no mouse movement
+        const resetHideTimer = () => {
+            if (!isFullscreen) {
+                setShowControls(true);
+                return;
+            }
+
+            // Show controls when mouse moves
+            setShowControls(true);
+
+            // Clear existing timeout
+            if (hideControlsTimeoutRef.current) {
+                clearTimeout(hideControlsTimeoutRef.current);
+            }
+
+            // Set new timeout to hide controls after 4 seconds
+            hideControlsTimeoutRef.current = setTimeout(() => {
+                setShowControls(false);
+            }, 4000);
+        };
+
+        if (isFullscreen && containerRef.current) {
+            containerRef.current.addEventListener('mousemove', resetHideTimer);
+            // Show controls immediately when entering fullscreen
+            resetHideTimer();
+
+            return () => {
+                if (containerRef.current) {
+                    containerRef.current.removeEventListener('mousemove', resetHideTimer);
+                }
+                if (hideControlsTimeoutRef.current) {
+                    clearTimeout(hideControlsTimeoutRef.current);
+                }
+            };
+        } else {
+            // Always show controls when not in fullscreen
+            setShowControls(true);
+            if (hideControlsTimeoutRef.current) {
+                clearTimeout(hideControlsTimeoutRef.current);
+            }
+        }
+    }, [isFullscreen]);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -211,7 +257,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
             >
                 <video
                     ref={videoRef}
-                    className={styles.videoPlayer}
+                    className={`${styles.videoPlayer}  ${showControls ? styles.visible : styles.hidden}`}
                     playsInline
                     preload="auto"
                     src={videoUrl}
@@ -223,7 +269,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     Your browser does not support video playback.
                 </video>
 
-                <div className={styles.customControls}>
+                <div className={`${styles.customControls} ${showControls ? styles.visible : styles.hidden}`}>
                     <div className={styles.progressBarContainer}>
                         <input
                             type="range"

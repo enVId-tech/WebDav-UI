@@ -745,24 +745,44 @@
 .videoPlayer {
   width: 100%;
   max-width: 100%;
-  max-height: 80vh;
+  max-height: 70vh;
   aspect-ratio: 16 / 9;
   background-color: black;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   object-fit: contain;
+
+  &.hidden {
+    cursor: none;
+  }
+
+  &.visible {
+    cursor: default;
+  }
 }
 
 .customControls {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   padding: 10px 20px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+  }
 }
 
 .progressBarContainer {
@@ -1257,6 +1277,19 @@
       right: 0;
       background: rgba(0, 0, 0, 0.7);
       padding: 1rem;
+      
+      &.hidden {
+        cursor: none;
+      }
+    }
+    
+    // Hide cursor when controls are hidden
+    &:has(.customControls.hidden) {
+      cursor: none;
+      
+      .videoPlayer {
+        cursor: none;
+      }
     }
   }
 }
