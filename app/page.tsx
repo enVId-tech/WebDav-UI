@@ -30,17 +30,18 @@ export default function HomePage() {
             <ThemeToggle />
             <div className={styles.container}>
                 <header className={styles.header}>
-                    <h1>WebDAV File Explorer</h1>
-                    <p className={styles.subtitle}>Access, browse, and manage your files with ease</p>
+                    <h1>WebDav-UI</h1>
+                    <p className={styles.subtitle}>Modern WebDAV-powered file management, reimagined for the web</p>
                 </header>
 
                 <section className={styles.heroSection}>
                     <div className={styles.heroContent}>
-                        <h2>Your files, anywhere, anytime</h2>
+                        <h2>Transform how you interact with your files</h2>
                         <p>
-                            WebDAV File Explorer provides a simple and intuitive interface to access
-                            your WebDAV shares. Browse directories, view files, and manage your content
-                            from any device with a web browser.
+                            Experience a powerful, browser-based file explorer built on Next.js and WebDAV. 
+                            Navigate folder hierarchies with an intuitive tree view, preview rich media and 
+                            documents without downloading, edit text files inline with autosave, and manage 
+                            your content—all from any device with a modern web browser.
                         </p>
 
                         <form className={styles.accessForm} onSubmit={accessShare}>
@@ -49,88 +50,136 @@ export default function HomePage() {
                                     type="text"
                                     value={shareInput}
                                     onChange={(e) => setShareInput(e.target.value)}
-                                    placeholder="Enter share name"
+                                    placeholder="Enter your WebDAV share name"
                                     className={styles.shareInput}
+                                    aria-label="WebDAV share name"
                                 />
                                 <button type="submit" className={styles.accessButton}>
-                                    Access Files
+                                    Launch Explorer
                                 </button>
                             </div>
                             {error && <div className={styles.errorMessage}>{error}</div>}
+                            <p className={styles.inputHint}>
+                                Enter the name of your configured WebDAV share to begin exploring
+                            </p>
                         </form>
                     </div>
                     <div className={styles.heroImage}>
                         <div className={styles.fileExplorerImage}>
                             <div className={styles.mockTreeView}>
                                 <div className={styles.mockFolder}>📁 Documents</div>
-                                <div className={styles.mockFolder}>📁 Images</div>
+                                <div className={styles.mockFolder}>📁 Media</div>
                                 <div className={styles.mockFolder}>📁 Projects</div>
+                                <div className={styles.mockFolder}>📁 Archives</div>
                             </div>
                             <div className={styles.mockFileView}>
-                                <div className={styles.mockFileRow}><span>📄</span> Report.pdf</div>
-                                <div className={styles.mockFileRow}><span>📊</span> Data.xlsx</div>
-                                <div className={styles.mockFileRow}><span>🖼️</span> Image.jpg</div>
-                                <div className={styles.mockFileRow}><span>📝</span> Notes.docx</div>
+                                <div className={styles.mockFileRow}><span>📄</span> Presentation.pdf</div>
+                                <div className={styles.mockFileRow}><span>📊</span> Analytics.xlsx</div>
+                                <div className={styles.mockFileRow}><span>🎬</span> Demo.mp4</div>
+                                <div className={styles.mockFileRow}><span>📝</span> README.md</div>
+                                <div className={styles.mockFileRow}><span>🖼️</span> Banner.png</div>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 <section className={styles.featuresSection}>
-                    <h2>Key Features</h2>
+                    <h2>Powerful Features for Modern File Management</h2>
                     <div className={styles.featureGrid}>
                         <div className={styles.featureCard}>
                             <div className={styles.featureIcon}>🌲</div>
-                            <h3>Folder Hierarchy</h3>
-                            <p>Navigate through your folder structure with an intuitive tree view</p>
+                            <h3>Hierarchical Navigation</h3>
+                            <p>Explore your directory structure with a responsive tree view and breadcrumb navigation</p>
                         </div>
                         <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>🔍</div>
-                            <h3>File Preview</h3>
-                            <p>Preview files directly in your browser without downloading</p>
+                            <div className={styles.featureIcon}>👁️</div>
+                            <h3>Rich Media Previews</h3>
+                            <p>View images, videos (HLS streaming), audio, PDFs, Office docs, and code with syntax highlighting</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>✏️</div>
+                            <h3>Inline Text Editing</h3>
+                            <p>Edit text and code files directly in the browser with auto-save to WebDAV</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>📤</div>
+                            <h3>File Operations</h3>
+                            <p>Upload multiple files, batch delete, and manage content without page reloads</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>🔐</div>
+                            <h3>Secure Authentication</h3>
+                            <p>Login-protected actions with session management for secure file operations</p>
                         </div>
                         <div className={styles.featureCard}>
                             <div className={styles.featureIcon}>📱</div>
-                            <h3>Responsive Design</h3>
-                            <p>Access your files from any device with a consistent experience</p>
+                            <h3>Fully Responsive</h3>
+                            <p>Optimized for desktop and mobile with adaptive layouts and touch-friendly controls</p>
                         </div>
                         <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>🔒</div>
-                            <h3>Secure Access</h3>
-                            <p>Your files are accessed securely through WebDAV protocol</p>
+                            <div className={styles.featureIcon}>🎨</div>
+                            <h3>Theme Support</h3>
+                            <p>Switch between light and dark modes with smooth transitions and custom styling</p>
+                        </div>
+                        <div className={styles.featureCard}>
+                            <div className={styles.featureIcon}>⚡</div>
+                            <h3>Next.js Performance</h3>
+                            <p>Built on Next.js 16 with React 19, TypeScript, and modern web standards</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section className={styles.techSection}>
+                    <h2>Built with Modern Technology</h2>
+                    <div className={styles.techContent}>
+                        <p>
+                            WebDav-UI leverages cutting-edge web technologies to deliver a seamless experience. 
+                            Powered by <strong>Next.js 16</strong> with the App Router, <strong>React 19</strong>, 
+                            and <strong>TypeScript</strong>, it provides type-safe, server-rendered performance. 
+                            Rich previews are enabled through specialized libraries including react-pdf, 
+                            react-syntax-highlighter, and docx-preview, while FFmpeg handles media transcoding 
+                            for adaptive streaming.
+                        </p>
+                        <div className={styles.techStack}>
+                            <span className={styles.techBadge}>Next.js 16</span>
+                            <span className={styles.techBadge}>React 19</span>
+                            <span className={styles.techBadge}>TypeScript</span>
+                            <span className={styles.techBadge}>WebDAV</span>
+                            <span className={styles.techBadge}>SCSS Modules</span>
+                            <span className={styles.techBadge}>HLS Streaming</span>
                         </div>
                     </div>
                 </section>
 
                 <section className={styles.quickStartSection}>
-                    <h2>Quick Start</h2>
+                    <h2>Get Started in Seconds</h2>
                     <div className={styles.quickStartSteps}>
                         <div className={styles.step}>
                             <div className={styles.stepNumber}>1</div>
                             <div className={styles.stepContent}>
-                                <h3>Enter Share Name</h3>
-                                <p>Type the name of your WebDAV share in the input field above</p>
+                                <h3>Access Your Share</h3>
+                                <p>Enter the name of your WebDAV share in the input field above and click "Launch Explorer"</p>
                             </div>
                         </div>
                         <div className={styles.step}>
                             <div className={styles.stepNumber}>2</div>
                             <div className={styles.stepContent}>
-                                <h3>Browse Your Files</h3>
-                                <p>Navigate through folders using the tree view or file list</p>
+                                <h3>Navigate Intuitively</h3>
+                                <p>Use the tree view sidebar or file list to browse directories and locate your content</p>
                             </div>
                         </div>
                         <div className={styles.step}>
                             <div className={styles.stepNumber}>3</div>
                             <div className={styles.stepContent}>
-                                <h3>Access Your Content</h3>
-                                <p>View, download, or interact with your files directly in the browser</p>
+                                <h3>Preview & Manage</h3>
+                                <p>Click files to preview them in-browser, upload new content, or edit text files inline with autosave</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 <footer className={styles.footer}>
-                    <p>Erick Tran © {new Date().getFullYear()}</p>
+                    <p>WebDav-UI © {new Date().getFullYear()} Erick Tran • Built with Next.js & WebDAV</p>
                 </footer>
             </div>
         </div>

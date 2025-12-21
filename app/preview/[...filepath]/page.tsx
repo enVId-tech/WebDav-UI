@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import styles from '@/app/styles/preview.module.scss';
 import VideoPreview from '@/app/components/VideoPreview';
 import ImagePreview from '@/app/components/ImagePreview';
@@ -9,16 +9,21 @@ import TextPreview from '@/app/components/TextPreview';
 import PDFPreview from '@/app/components/PDFPreview';
 import DocPreview from '@/app/components/DocPreview';
 import OfficePreview from '@/app/components/OfficePreview';
+import SQLitePreview from '@/app/components/SQLitePreview';
 import { lookup } from 'mime-types';
+import { geistSans } from '@/app/types/font';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 const FilePreview = () => {
   const params = useParams();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'other'>('other');
+  const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'database' | 'other'>('other');
+  const [directoryPath, setDirectoryPath] = useState<string>('/etran');
 
   useEffect(() => {
     if (!params.filepath) return;
@@ -31,6 +36,15 @@ const FilePreview = () => {
 
       // IMPORTANT: Remove any leading "etran/" from the filepath to prevent duplication
       const cleanPath = filePath.replace(/^etran\//, '');
+
+      // Compute parent directory for the back button (within the /etran share)
+      const segments = cleanPath.split('/').filter(Boolean);
+      if (segments.length >= 1) {
+        const parentSegments = segments.slice(0, -1);
+        setDirectoryPath(`/${parentSegments.join('/')}`);
+      } else {
+        setDirectoryPath('/');
+      }
 
       // Get filename for mime type detection
       const fileNameOnly = cleanPath.split('/').pop() || '';
@@ -53,6 +67,15 @@ const FilePreview = () => {
         setFileType('text');
       } else if (detectedMimeType === 'application/pdf' || fileExt === 'pdf') {
         setFileType('pdf');
+      } else if (
+        // Database files - SQLite and others
+        ['db', 'sqlite', 'sqlite3', 'db3', 's3db', 'sl3'].includes(fileExt) ||
+        detectedMimeType === 'application/x-sqlite3' ||
+        detectedMimeType === 'application/vnd.sqlite3' ||
+        detectedMimeType === 'application/x-sqlite-db'
+      ) {
+        console.log('Detected database file:', fileExt);
+        setFileType('database');
       } else if ([
         // Microsoft Office formats
         'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
@@ -101,15 +124,28 @@ const FilePreview = () => {
   }, [params.filepath]);
 
   if (isLoading) {
-    return <div className={styles.loading}>Loading...</div>;
+    return <div className={`${styles.loading} ${geistSans.className}`}>Loading...</div>;
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return <div className={`${styles.error} ${geistSans.className}`}>{error}</div>;
   }
 
   return (
-      <div className={styles.previewContainer}>
+      <div className={`${styles.previewContainer} ${geistSans.className}`}>
+        <header className={styles.previewHeader}>
+          <div className={styles.previewHeaderLeft}>
+            <button
+              type="button"
+              className={styles.backButton}
+              onClick={() => router.push(directoryPath)}
+            >
+              ← Back
+            </button>
+            <h1 className={styles.previewTitle}>File Preview</h1>
+          </div>
+          <ThemeToggle />
+        </header>
         {fileType === 'video' && (
             <VideoPreview
                 src={fileUrl}
@@ -165,8 +201,15 @@ const FilePreview = () => {
             />
         )}
 
+        {fileType === 'database' && (
+            <SQLitePreview
+                src={fileUrl}
+                fileName={fileName}
+            />
+        )}
+
         {fileType === 'other' && (
-            <div className={styles.unsupportedFile}>
+            <div className={`${styles.unsupportedFile} ${geistSans.className}`}>
               <h2>This file type ({mimeType}) is not supported for preview.</h2>
               <p>The file cannot be previewed directly in the browser.</p>
               <a href={fileUrl + '&download=true'} download className={styles.downloadLink}>

@@ -27,8 +27,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 if (pathMatch) {
                     const filePath = decodeURIComponent(pathMatch[1]);
                     // Construct direct WebDAV URL
-                    const directUrl = `${webdavBaseUrl}/${filePath}`;
-                    console.log('Constructed direct video URL:', directUrl);
+                    const directUrl = `${webdavBaseUrl}/etran/${filePath}`;
                     setVideoUrl(directUrl);
                 }
                 setIsLoading(false);

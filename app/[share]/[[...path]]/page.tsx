@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getDirectoryContents } from '@/lib/webdav-client';
 import { FileItem, FolderNode } from '@/app/components/FileExplorer/types';
 import FileExplorerUI from '@/app/components/FileExplorer/FileExplorerUI';
+import FileOperationStatus, { OperationStatus } from '@/app/components/FileOperationStatus';
 
 export default function ShareFileBrowser() {
   const router = useRouter();
@@ -26,6 +27,12 @@ export default function ShareFileBrowser() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  
+  // AbortController ref to cancel ongoing searches
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Operation status tracking
+  const [operations, setOperations] = useState<OperationStatus[]>([]);
 
   // Extract share and path from URL params - memoized to prevent recalculation
   const share = useMemo(() => params.share as string, [params.share]);
@@ -209,6 +216,15 @@ export default function ShareFileBrowser() {
       return;
     }
 
+    // Cancel any ongoing search before starting a new one
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+
+    // Create a new AbortController for this search
+    const abortController = new AbortController();
+    searchAbortControllerRef.current = abortController;
+
     setIsSearching(true);
     setShowSearchResults(true);
     setSearchResults([]);
@@ -221,6 +237,11 @@ export default function ShareFileBrowser() {
       let searchedCount = 0;
 
       const searchRecursive = async (path: string, results: FileItem[] = []): Promise<FileItem[]> => {
+        // Check if search was aborted
+        if (abortController.signal.aborted) {
+          throw new Error('Search aborted');
+        }
+
         // Skip if already searched this path
         if (searchedPaths.has(path)) return results;
         searchedPaths.add(path);
@@ -229,6 +250,11 @@ export default function ShareFileBrowser() {
         searchedCount++;
 
         const contents = await loadDirectoryContents(path, `/${share}`);
+
+        // Check again after async operation
+        if (abortController.signal.aborted) {
+          throw new Error('Search aborted');
+        }
 
         const matches = contents.filter(item =>
             item.basename.toLowerCase().includes(searchQuery.toLowerCase())
@@ -249,6 +275,11 @@ export default function ShareFileBrowser() {
         totalFolders += subDirs.length;
 
         for (const dir of subDirs) {
+          // Check if search was aborted before processing each subdirectory
+          if (abortController.signal.aborted) {
+            throw new Error('Search aborted');
+          }
+
           const dirPath = path === '/' ? `/${dir.basename}` : `${path}/${dir.basename}`;
           await searchRecursive(dirPath, results);
         }
@@ -257,10 +288,17 @@ export default function ShareFileBrowser() {
       };
 
       await searchRecursive(relativePath);
-    } catch (err) {
-      console.error('Search error:', err);
+    } catch (err: any) {
+      // Don't log error if search was intentionally aborted
+      if (err.message !== 'Search aborted') {
+        console.error('Search error:', err);
+      }
     } finally {
-      setIsSearching(false);
+      // Only set isSearching to false if this is still the current search
+      if (searchAbortControllerRef.current === abortController) {
+        setIsSearching(false);
+        searchAbortControllerRef.current = null;
+      }
     }
   }, [searchQuery, share, relativePath, loadDirectoryContents]);
 
@@ -293,79 +331,182 @@ export default function ShareFileBrowser() {
 
   const handleUploadFile = useCallback(async (file: File) => {
     if (!share || !relativePath) return;
-    setLoadingState('active');
+    
+    const operationId = `${file.name}-${Date.now()}`;
+    const startTime = Date.now();
+    
+    // Add operation to tracking
+    setOperations(prev => [...prev, {
+      type: 'upload',
+      fileName: file.name,
+      status: 'processing',
+      progress: 0,
+      startTime
+    }]);
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('path', relativePath); // The current directory path
+      formData.append('path', relativePath);
       formData.append('sharePath', `/${share}`);
+
+      // Simulate progress for better UX (actual progress requires XMLHttpRequest or custom streaming)
+      const progressInterval = setInterval(() => {
+        setOperations(prev => prev.map(op => 
+          op.fileName === file.name && op.status === 'processing'
+            ? { ...op, progress: Math.min((op.progress || 0) + 10, 90) }
+            : op
+        ));
+      }, 200);
 
       const response = await fetch('/api/webdav/upload', {
         method: 'POST',
         body: formData,
       });
 
+      clearInterval(progressInterval);
+
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload file');
+        throw new Error(result.userMessage || result.error || 'Failed to upload file');
       }
+
+      // Update operation status to success with details
+      setOperations(prev => prev.map(op => 
+        op.fileName === file.name
+          ? { 
+              ...op, 
+              status: 'success', 
+              progress: 100,
+              speed: result.details?.uploadSpeedMBps ? `${result.details.uploadSpeedMBps} MB/s` : undefined
+            }
+          : op
+      ));
 
       // Refresh directory contents after upload
       const data = await getDirectoryContents(relativePath, `/${share}`);
       setCurrentData(data);
-      // Optionally, update folder structure if a new folder was created (though upload is usually files)
-      // Consider a more targeted update or a full refresh of folderStructure if necessary
+
+      // Auto-clear successful operations after 5 seconds
+      setTimeout(() => {
+        setOperations(prev => prev.filter(op => op.fileName !== file.name));
+      }, 5000);
 
     } catch (err: any) {
       console.error('Error uploading file:', err);
-      setError(`Failed to upload file: ${err.message || 'Unknown error'}`);
-    } finally {
-      setLoadingState('fading');
-      setTimeout(() => setLoadingState('hidden'), 500);
+      
+      // Update operation status to error
+      setOperations(prev => prev.map(op => 
+        op.fileName === file.name
+          ? { ...op, status: 'error', error: err.message || 'Upload failed' }
+          : op
+      ));
+
+      // Keep error visible longer
+      setTimeout(() => {
+        setOperations(prev => prev.filter(op => op.fileName !== file.name));
+      }, 10000);
     }
-  }, [share, relativePath, setLoadingState, setError, setCurrentData]);
+  }, [share, relativePath, setCurrentData]);
 
-  const handleDeleteFile = useCallback(async (fileName: string) => {
-    if (!share || !relativePath) return;
+  const handleDeleteFiles = useCallback(async (fileNames: string[]) => {
+    if (!share || !relativePath || fileNames.length === 0) return;
 
-    // Confirmation dialog
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+    if (!confirm(`Delete ${fileNames.length} item(s)?`)) {
       return;
     }
-    setLoadingState('active');
-    try {
-      const filePathToDelete = relativePath === '/' ? `/${fileName}` : `${relativePath}/${fileName}`;
 
+    const startTime = Date.now();
+
+    // Add all files to operation tracking
+    const newOperations: OperationStatus[] = fileNames.map(fileName => ({
+      type: 'delete',
+      fileName,
+      status: 'processing',
+      startTime
+    }));
+    setOperations(prev => [...prev, ...newOperations]);
+
+    try {
+      // Optimistic UI update: remove files locally first
+      setCurrentData(prev => prev.filter(item => !fileNames.includes(item.basename)));
+
+      // Build paths for batch delete
+      const filePaths = fileNames.map(fileName => 
+        relativePath === '/' ? `/${fileName}` : `${relativePath}/${fileName}`
+      );
+
+      // Use batch delete API with 'paths' parameter
       const response = await fetch('/api/webdav/delete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          path: filePathToDelete,
+          paths: filePaths,
           sharePath: `/${share}`,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete file');
+      const result = await response.json();
+
+      if (result.success || response.status === 207) {
+        // Update operation statuses based on individual results
+        if (result.details?.results) {
+          result.details.results.forEach((fileResult: any) => {
+            setOperations(prev => prev.map(op => 
+              op.fileName === fileResult.fileName
+                ? {
+                    ...op,
+                    status: fileResult.success ? 'success' : 'error',
+                    error: fileResult.error
+                  }
+                : op
+            ));
+          });
+        } else {
+          // Mark all as successful
+          setOperations(prev => prev.map(op => 
+            fileNames.includes(op.fileName)
+              ? { ...op, status: 'success' }
+              : op
+          ));
+        }
+
+        // Auto-clear successful operations after 5 seconds
+        setTimeout(() => {
+          setOperations(prev => prev.filter(op => !fileNames.includes(op.fileName) || op.status === 'error'));
+        }, 5000);
+
+      } else {
+        throw new Error(result.userMessage || result.error || 'Failed to delete files');
       }
 
-      // Refresh directory contents after deletion
+      // Refresh directory contents
       const data = await getDirectoryContents(relativePath, `/${share}`);
       setCurrentData(data);
-      // Optionally, update folder structure if a folder was deleted
-      // Consider a more targeted update or a full refresh of folderStructure if necessary
 
     } catch (err: any) {
-      console.error('Error deleting file:', err);
-      setError(`Failed to delete file: ${err.message || 'Unknown error'}`);
-    } finally {
-      setLoadingState('fading');
-      setTimeout(() => setLoadingState('hidden'), 500);
+      console.error('Error deleting files:', err);
+      
+      // Update all operations to error status
+      setOperations(prev => prev.map(op => 
+        fileNames.includes(op.fileName)
+          ? { ...op, status: 'error', error: err.message || 'Delete failed' }
+          : op
+      ));
+
+      // Re-fetch to restore UI
+      const data = await getDirectoryContents(relativePath, `/${share}`);
+      setCurrentData(data);
+
+      // Keep errors visible longer
+      setTimeout(() => {
+        setOperations(prev => prev.filter(op => !fileNames.includes(op.fileName)));
+      }, 10000);
     }
-  }, [share, relativePath, setLoadingState, setError, setCurrentData]);
+  }, [share, relativePath, setCurrentData]);
 
   // Initial data loading - minimized dependencies to prevent excess fetching
   useEffect(() => {
@@ -458,35 +599,41 @@ export default function ShareFileBrowser() {
   }, []);
 
   return (
-    <FileExplorerUI
-      loadingState={loadingState}
-      error={error}
-      folderStructure={folderStructure}
-      share={share}
-      relativePath={relativePath}
-      breadcrumbs={breadcrumbs}
-      currentData={currentData}
-      viewMode={viewMode}
-      searchQuery={searchQuery}
-      searchResults={searchResults}
-      isSearching={isSearching}
-      showSearchResults={showSearchResults}
-      routerPush={(path) => router.push(path)}
-      onNavigateUp={navigateUp}
-      onToggleViewMode={() => {
-        const newViewMode = viewMode === 'list' ? 'grid' : 'list';
-        setViewMode(newViewMode);
-        localStorage.setItem('fileExplorer.viewMode', newViewMode);
-      }}
-      onSearchChange={handleSearchChange}
-      onSearchSubmit={handleSearchSubmit}
-      onSetShowSearchResults={setShowSearchResults}
-      onNavigateToFolder={navigateToFolder}
-      onFileClick={handleFileClick}
-      onToggleFolderExpansion={toggleFolderExpansion}
-      onUploadFile={handleUploadFile} // Pass the new handler
-      onDeleteFile={handleDeleteFile} // Pass the new handler
-    />
+    <>
+      <FileExplorerUI
+        loadingState={loadingState}
+        error={error}
+        folderStructure={folderStructure}
+        share={share}
+        relativePath={relativePath}
+        breadcrumbs={breadcrumbs}
+        currentData={currentData}
+        viewMode={viewMode}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        showSearchResults={showSearchResults}
+        routerPush={(path) => router.push(path)}
+        onNavigateUp={navigateUp}
+        onToggleViewMode={() => {
+          const newViewMode = viewMode === 'list' ? 'grid' : 'list';
+          setViewMode(newViewMode);
+          localStorage.setItem('fileExplorer.viewMode', newViewMode);
+        }}
+        onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
+        onSetShowSearchResults={setShowSearchResults}
+        onNavigateToFolder={navigateToFolder}
+        onFileClick={handleFileClick}
+        onToggleFolderExpansion={toggleFolderExpansion}
+        onUploadFile={handleUploadFile}
+        onDeleteFiles={handleDeleteFiles}
+      />
+      <FileOperationStatus 
+        operations={operations} 
+        onClose={() => setOperations([])} 
+      />
+    </>
   );
 }
 

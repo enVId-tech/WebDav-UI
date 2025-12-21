@@ -62,7 +62,13 @@ export function transcodeVideoSegment(
       return reject(new Error('FFmpeg is not installed or not found in PATH'));
     }
 
-    const preset = VIDEO_QUALITY_PRESETS[quality];
+    // Map quality to preset key
+    const qualityMap: Record<'low' | 'medium' | 'high', '360p' | '480p' | '720p' | '1080p'> = {
+      low: '360p',
+      medium: '480p',
+      high: '720p'
+    };
+    const preset = VIDEO_QUALITY_PRESETS[qualityMap[quality]];
 
     try {
       // Create ffmpeg process

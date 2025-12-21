@@ -41,10 +41,11 @@ export async function POST(request: NextRequest) {
                 Buffer.isBuffer(fileContent) ? new Uint8Array(fileContent) : (fileContent as unknown as BodyInit);
 
             // Return file content with appropriate Content-Type header
-            return new NextResponse(responseBody, {
+            const fileName = getFileName(decodedPath);
+            return new NextResponse(body, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
-                    'Content-Disposition': `inline; filename="${getFileName(decodedPath)}"`,
+                    'Content-Disposition': `inline; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
                 }
             });
         } else {

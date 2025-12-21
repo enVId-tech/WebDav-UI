@@ -1,16 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromRequest, extendSession } from '@/lib/session';
 
-export async function GET() {
-  // TODO: Implement actual session/token checking logic here
-  // For now, let's assume the user is not logged in by default
-  // You would typically check a cookie or a session store
-  const isLoggedIn = false; // Replace with actual check
-  const username = isLoggedIn ? 'admin' : null; // Replace with actual username retrieval
-
-  if (isLoggedIn) {
-    return NextResponse.json({ loggedIn: true, username }, { status: 200 });
-  } else {
-    return NextResponse.json({ loggedIn: false }, { status: 200 }); // Or 401 if you prefer to signal unauthenticated that way
+export async function GET(request: NextRequest) {
+  try {
+    const session = getSessionFromRequest(request);
+    
+    if (session) {
+      // Session is valid (JWT verification already checked expiry)
+      
+      console.log('[auth/status] User authenticated:', session.username, 'Role:', session.role);
+      
+      return NextResponse.json({ 
+        loggedIn: true, 
+        username: session.username,
+        role: session.role,
+        expiresAt: session.expiresAt 
+      }, { status: 200 });
+    } else {
+      console.log('[auth/status] No valid session found');
+      return NextResponse.json({ loggedIn: false }, { status: 200 });
+    }
+  } catch (error) {
+    console.error('Session status check error:', error);
+    return NextResponse.json({ loggedIn: false }, { status: 200 });
   }
 }
 

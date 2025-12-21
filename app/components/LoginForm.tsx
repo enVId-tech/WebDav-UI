@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import styles from '@/app/styles/loginForm.module.scss'; // Changed to use dedicated loginForm styles
+import styles from '@/app/styles/loginForm.module.scss';
+import { geistSans } from '@/app/types/font';
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
@@ -15,14 +16,12 @@ const LoginForm = () => {
     setError('');
     const success = await login(username, password);
     if (!success) {
-      setError('Invalid username or password. Try admin/password.'); // Added hint for default credentials
+      setError('Invalid username or password.');
     }
-    // On success, AuthProvider handles hiding the form via FileExplorerUI state change if login is successful
   };
 
   return (
-    // The .loginFormOverlay is applied in FileExplorerUI.tsx when showLoginForm is true
-    <div className={styles.loginFormContainer}>
+    <div className={`${styles.loginFormContainer} ${geistSans.className}`}>
       <form onSubmit={handleSubmit} className={styles.loginForm}>
         <h2>Login</h2>
         {error && <p className={styles.loginError}>{error}</p>}

@@ -118,7 +118,8 @@
     color: var(--text-primary);
     transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: var(--bg-tertiary);
       transform: scale(1.02); // Added hover effect
     }
@@ -270,7 +271,7 @@
       font-weight: 500;
       transition: all 0.2s ease;
       background: var(--accent-color);
-        color: var(--button-text);
+      color: var(--button-text);
 
       &:hover {
         transform: translateY(-2px);
@@ -363,13 +364,24 @@
 
   .modernFileHeader {
     display: grid;
-    grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for potential delete column in search
+    grid-template-columns: 3fr 1.5fr 0.5fr auto;
     font-weight: 600;
     padding: 1rem 1.5rem;
     background-color: var(--file-header-bg);
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border); // Changed from --border-color
+    border-bottom: 1px solid var(--border);
     transition: var(--transition-theme);
+
+    // Specific styling when in search results mode
+    &.searchHeader {
+      grid-template-columns: 3fr 2fr 1.5fr 0.8fr auto;
+      background-color: var(--bg-tertiary);
+      border-bottom: 2px solid var(--border-color);
+
+      @media (max-width: 1024px) {
+        grid-template-columns: 2.5fr 1.5fr 1fr;
+      }
+    }
 
     @media (max-width: 768px) {
       grid-template-columns: 2fr 1fr;
@@ -386,19 +398,19 @@
       position: relative; // For absolute positioning of delete button if needed in list view
     }
 
-    .modernFolderRow, .modernFileRow {
+    .modernFolderRow,
+    .modernFileRow {
       display: grid;
       grid-template-columns: 3fr 1.5fr 0.5fr auto; // Adjusted for delete button
-      padding: 0.8rem 1.5rem;
       cursor: pointer;
-      border-bottom: 1px solid var(--border); // Changed from --border-color
       color: var(--text-primary);
       transition: background-color var(--transition-normal), transform var(--transition-fast); // Modified transition
+      width: 100%;
 
-      &:hover {
-        background-color: var(--bg-tertiary);
-        transform: translateX(3px); // Added hover effect
-      }
+      // &:hover {
+      //   background-color: var(--bg-tertiary);
+      //   transform: translateX(3px); // Added hover effect
+      // }
 
       .deleteButton {
         color: var(--text-accent); // Changed from #007bff
@@ -416,7 +428,7 @@
           display: inline-block; // Show when delete mode is active
         }
 
-         &:hover {
+        &:hover {
           color: var(--primary-hover); // Changed from #0056b3
           transform: scale(1.1); // Added hover effect
         }
@@ -469,12 +481,131 @@
     transition: var(--transition-theme);
   }
 
-  .searchResultsHeader { // Added from previous step, ensure it's here
+  .searchResultsHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border); // Changed from --border-color
+    padding: 1.5rem 1.5rem;
+    background-color: var(--bg-accent);
+    border-bottom: 2px solid var(--accent-color);
+    transition: var(--transition-theme);
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--accent-color);
+      margin: 0;
+    }
+
+    button {
+      padding: 0.5rem 1.25rem;
+      background: var(--accent-color);
+      color: var(--button-text);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px var(--shadow-color);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  // Search results file items styling
+  .modernFileItems {
+    .fileItem {
+      display: flex;
+      grid-template-columns: 3fr 2fr 1.5fr 0.8fr auto;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      align-items: center;
+
+      &:hover {
+        background-color: var(--bg-tertiary);
+        border-left: 3px solid var(--accent-color);
+        padding-left: calc(1.5rem - 3px);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .nameColumn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .icon {
+          font-size: 1.5rem;
+          flex-shrink: 0;
+        }
+
+        .name {
+          font-weight: 500;
+          color: var(--text-primary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+
+          &:hover {
+            color: var(--accent-color);
+            text-decoration: underline;
+          }
+        }
+      }
+
+      .locationColumn {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-style: italic;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 1rem;
+      }
+
+      .dateColumn {
+        color: var(--text-tertiary);
+        font-size: 0.875rem;
+      }
+
+      .sizeColumn {
+        color: var(--text-tertiary);
+        font-size: 0.875rem;
+        text-align: right;
+      }
+
+      @media (max-width: 1024px) {
+        grid-template-columns: 2.5fr 1.5fr 1fr;
+
+        .locationColumn {
+          display: none;
+        }
+
+        .sizeColumn {
+          display: none;
+        }
+      }
+
+      @media (max-width: 768px) {
+        grid-template-columns: 3fr 1fr;
+        padding: 0.875rem 1rem;
+
+        .dateColumn {
+          display: none;
+        }
+      }
+    }
   }
 }
 
@@ -486,7 +617,9 @@
   flex-grow: 1; // Allow name column to take available space
 }
 
-.dateColumn, .sizeColumn, .locationColumn {
+.dateColumn,
+.sizeColumn,
+.locationColumn {
   display: flex;
   align-items: center;
 }
@@ -604,8 +737,13 @@
 
 // Animations
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulseRing {
@@ -613,9 +751,11 @@
     transform: scale(.5);
     opacity: 0;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     transform: scale(1.2);
     opacity: 0;
@@ -623,24 +763,57 @@
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }
 
 @keyframes slideDown {
-  0% { transform: scaleY(0); opacity: 0; }
-  100% { transform: scaleY(1); opacity: 1; }
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-5px);
+  }
 }
