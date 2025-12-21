@@ -13,6 +13,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [zoomInput, setZoomInput] = useState('100');
   const imageRef = useRef<HTMLImageElement>(null);
 
   const handleImageLoad = () => {
@@ -24,16 +25,50 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
     setError('Failed to load image');
   };
 
+  const handleZoomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d]/g, ''); // Only allow digits
+    setZoomInput(value);
+  };
+
+  const handleZoomInputBlur = () => {
+    const numValue = parseInt(zoomInput, 10);
+    if (!isNaN(numValue) && numValue > 0) {
+      // Convert percentage to zoom level (10% to 2000% maps to 0.1 to 20)
+      const newZoom = Math.min(Math.max(numValue / 100, 0.1), 20);
+      setZoom(newZoom);
+      setZoomInput(Math.round(newZoom * 100).toString());
+    } else {
+      setZoomInput(Math.round(zoom * 100).toString());
+    }
+  };
+
+  const handleZoomInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
   const zoomIn = () => {
-    setZoom(prev => prev * 1.2);
+    const newZoom = Math.min(zoom * 1.2, 20);
+    setZoom(newZoom);
+    setZoomInput(Math.round(newZoom * 100).toString());
   };
 
   const zoomOut = () => {
-    setZoom(prev => Math.max(prev / 1.2, 0.01));
+    const newZoom = Math.max(zoom / 1.2, 0.1);
+    setZoom(newZoom);
+    setZoomInput(Math.round(newZoom * 100).toString());
   };
 
   const resetZoom = () => {
     setZoom(1);
+    setZoomInput('100');
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newZoom = parseFloat(e.target.value);
+    setZoom(newZoom);
+    setZoomInput(Math.round(newZoom * 100).toString());
   };
 
   return (
@@ -62,8 +97,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
         <div
           className={styles.imageViewport}
           style={{
-            width: `${zoom * 100}%`,
-            height: `${zoom * 100}%`,
+            transform: `scale(${zoom})`,
             cursor: zoom > 1 ? 'zoom-out' : 'zoom-in'
           }}
           onClick={() => zoom > 1 ? resetZoom() : zoomIn()}
@@ -80,23 +114,33 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
       </div>
 
       <div className={styles.controls}>
-        <p className={styles.zoomLabel}>Zoom: {(zoom * 100).toFixed(0)}%</p>
+        <div className={styles.zoomLabel}>
+          Zoom: 
+          <input 
+            type="text" 
+            value={zoomInput} 
+            onChange={handleZoomInputChange}
+            onBlur={handleZoomInputBlur}
+            onKeyDown={handleZoomInputKeyDown}
+            className={styles.zoomInput}
+          />%
+        </div>
         <input
           type="range"
-          min="0.01"
-          max="500"
+          min="0.1"
+          max="20"
           step="0.1"
           value={zoom}
-          onChange={(e) => setZoom(parseFloat(e.target.value))}
+          onChange={handleSliderChange}
           className={styles.zoomSlider}
         />
-        <button onClick={zoomOut} className={styles.controlButton} disabled={zoom <= 0.01}>
+        <button onClick={zoomOut} className={styles.controlButton} disabled={zoom <= 0.1}>
           -
         </button>
         <button onClick={resetZoom} className={styles.controlButton}>
           100%
         </button>
-        <button onClick={zoomIn} className={styles.controlButton}>
+        <button onClick={zoomIn} className={styles.controlButton} disabled={zoom >= 20}>
           +
         </button>
         <a href={`${src}&download=true`} download className={styles.downloadButton}>
@@ -108,4 +152,3 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, fileName, mimeType }) 
 };
 
 export default ImagePreview;
-
