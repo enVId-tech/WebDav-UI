@@ -36,8 +36,12 @@ export async function POST(request: NextRequest) {
             // Handle file request
             const fileContent = await webdavService.getFileContents();
 
+            // NextResponse expects a Web BodyInit; convert Node Buffer to Uint8Array for type compatibility
+            const responseBody: BodyInit =
+                Buffer.isBuffer(fileContent) ? new Uint8Array(fileContent) : (fileContent as unknown as BodyInit);
+
             // Return file content with appropriate Content-Type header
-            return new NextResponse(fileContent, {
+            return new NextResponse(responseBody, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
                     'Content-Disposition': `inline; filename="${getFileName(decodedPath)}"`,

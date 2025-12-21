@@ -4,7 +4,6 @@ import styles from '@/app/styles/pdfPreview.module.scss';
 
 // PDF.js types
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
-import {render} from "sass";
 
 interface PDFPreviewProps {
   src: string;
@@ -109,6 +108,7 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ src, fileName }) => {
       const renderContext = {
         canvasContext: context,
         viewport: viewport,
+        canvas,
       };
 
       await page.render(renderContext).promise;

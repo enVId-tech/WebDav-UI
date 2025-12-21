@@ -8,10 +8,6 @@ const nextConfig = {
                 destination: '/api/webdav/:path*',
             },
         ];
-    },
-    eslint: {
-        // Disable ESLint during production builds
-        ignoreDuringBuilds: true,
     }
 };
 

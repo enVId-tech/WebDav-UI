@@ -84,6 +84,7 @@ const FilePreview = () => {
       // Construct WebDAV API URL with proper encoding - use the cleaned path
       const apiUrl = `/api/webdav?path=${encodeURIComponent(cleanPath)}&sharePath=${encodeURIComponent('/etran')}&isFile=true&debug=true`;
 
+      console.log('Clean file path:', cleanPath);
       console.log('WebDAV API URL:', apiUrl);
       console.log('File type:', detectedMimeType);
       console.log('Detected file type category:', fileType);

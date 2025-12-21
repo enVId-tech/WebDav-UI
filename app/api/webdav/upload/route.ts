@@ -5,13 +5,6 @@ import dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-// Disable Next.js body parsing to handle FormData
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
