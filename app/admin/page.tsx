@@ -10,6 +10,7 @@ interface PathPermission {
   path: string;
   guestAccessEnabled: boolean;
   inheritToChildren: boolean;
+  permissionLevel: number;
   guestCredentials?: {
     username: string;
     password: string;
@@ -72,6 +73,7 @@ export default function AdminPermissionsPage() {
       path: normalizedPath,
       guestAccessEnabled: false,
       inheritToChildren: false,
+      permissionLevel: 50, // Default to mid-level
     };
 
     try {
@@ -342,6 +344,29 @@ export default function AdminPermissionsPage() {
                     />
                     <span>Apply to Subdirectories</span>
                   </label>
+
+                  <div className={styles.permissionLevelControl}>
+                    <label>
+                      <span>Permission Level: {perm.permissionLevel ?? 50}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={perm.permissionLevel ?? 50}
+                        onChange={(e) =>
+                          handleUpdatePermission({ ...perm, permissionLevel: parseInt(e.target.value) })
+                        }
+                        className={styles.slider}
+                      />
+                      <div className={styles.levelLabels}>
+                        <span>Most Restricted (0)</span>
+                        <span>Most Permissive (100)</span>
+                      </div>
+                    </label>
+                    <p className={styles.levelHelp}>
+                      Nested paths with credentials must have equal or higher level than parent paths.
+                    </p>
+                  </div>
                 </div>
 
                 {editingPath === perm.path ? (

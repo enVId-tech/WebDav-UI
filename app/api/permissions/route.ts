@@ -5,7 +5,8 @@ import {
   setPathPermission,
   removePathPermission,
   bulkUpdatePermissions,
-  PathPermission
+  PathPermission,
+  validatePermission
 } from '@/lib/permissions';
 
 function isAdminSession(session: { username: string; role?: string } | null): boolean {
@@ -63,6 +64,17 @@ export async function POST(request: NextRequest) {
     if (!permission || !permission.path) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Permission object with path is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate permission before saving
+    const allPermissions = await getAllPermissions();
+    const validation = validatePermission(permission, allPermissions);
+    
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: 'Validation Error', message: validation.error },
         { status: 400 }
       );
     }

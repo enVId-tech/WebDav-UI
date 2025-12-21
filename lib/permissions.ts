@@ -18,6 +18,7 @@ export interface PathPermission {
   guestAccessEnabled: boolean;
   guestCredentials?: GuestCredentials; // Optional guest-specific credentials
   inheritToChildren: boolean; // Whether subdirectories inherit this permission
+  permissionLevel?: number; // 0 = lowest (most restricted), 100 = highest (most permissive)
 }
 
 export interface PermissionsStore {
@@ -84,6 +85,69 @@ export async function savePermissions(store: PermissionsStore): Promise<void> {
   // Update cache
   permissionsCache = store;
   lastLoadTime = Date.now();
+}
+
+/**
+ * Validate permission to ensure no conflicts with existing permissions
+ * - No duplicate credentials on the same path
+ * - Nested paths with lower permission level than parent are invalid
+ * - Nested paths with credentials must have equal or higher permission level
+ */
+export function validatePermission(
+  newPermission: PathPermission,
+  existingPermissions: PathPermission[]
+): { valid: boolean; error?: string } {
+  const newPath = newPermission.path;
+  const newLevel = newPermission.permissionLevel ?? 50; // Default to mid-level
+  const hasNewCredentials = !!newPermission.guestCredentials?.username;
+
+  // Check for duplicate credentials on the same path
+  const existingOnPath = existingPermissions.find(p => p.path === newPath);
+  if (existingOnPath && existingOnPath.guestCredentials?.username && 
+      hasNewCredentials && existingOnPath !== newPermission) {
+    return {
+      valid: false,
+      error: 'Cannot have multiple login credentials on the same path. Please edit the existing credentials instead.'
+    };
+  }
+
+  // Check parent paths for permission level conflicts
+  for (const existing of existingPermissions) {
+    if (existing.path === newPath) continue;
+
+    const existingLevel = existing.permissionLevel ?? 50;
+    const hasExistingCredentials = !!existing.guestCredentials?.username;
+
+    // Check if newPath is a child of existing path
+    if (newPath.startsWith(existing.path + '/') || 
+        (existing.path === '/' && newPath !== '/')) {
+      
+      // If child has credentials, it must have equal or higher permission level
+      if (hasNewCredentials) {
+        if (newLevel < existingLevel) {
+          return {
+            valid: false,
+            error: `Cannot set credentials on nested path with lower permission level (${newLevel}) than parent path ${existing.path} (${existingLevel}). Child paths with credentials must have equal or higher permission levels.`
+          };
+        }
+      }
+    }
+
+    // Check if existing path is a child of new path
+    if (existing.path.startsWith(newPath + '/') || 
+        (newPath === '/' && existing.path !== '/')) {
+      
+      // If parent has credentials and child has lower level, warn
+      if (hasNewCredentials && hasExistingCredentials && existingLevel < newLevel) {
+        return {
+          valid: false,
+          error: `Cannot set credentials on parent path: child path ${existing.path} has lower permission level (${existingLevel}). This would prevent access to subdirectories.`
+        };
+      }
+    }
+  }
+
+  return { valid: true };
 }
 
 /**
