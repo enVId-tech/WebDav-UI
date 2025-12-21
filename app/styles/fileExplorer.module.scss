@@ -1068,18 +1068,40 @@
         .locationColumn {
           display: none;
         }
-
-        .sizeColumn {
-          display: none;
-        }
       }
 
       @media (max-width: 768px) {
-        grid-template-columns: 3fr 1fr;
-        padding: 0.875rem 1rem;
-
-        .dateColumn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.6rem 0.8rem;
+        gap: 0.3rem;
+        
+        .nameColumn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .locationColumn {
           display: none;
+        }
+        
+        .dateColumn, .sizeColumn {
+          display: inline-block;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          padding: 0;
+          margin-right: 0.8rem;
+        }
+        
+        .dateColumn::before {
+          content: '📅 ';
+        }
+        
+        .sizeColumn::before {
+          content: '📦 ';
         }
       }
     }
@@ -1418,7 +1440,7 @@
     }
     
     @media (max-width: 768px) {
-      padding: 0.4rem 0.6rem;
+      padding: 0.4rem 0rem;
       
       .nameColumn {
         .icon {
@@ -1473,7 +1495,8 @@
     }
     
     @media (max-width: 768px) {
-      padding: 0.7rem 0.9rem;
+      padding: 0.5rem 0;
+      margin: 0;
       min-height: auto;
       font-size: 1rem;
       

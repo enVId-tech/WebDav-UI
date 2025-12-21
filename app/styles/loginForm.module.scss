@@ -13,6 +13,9 @@
   top: 0;
   left: 0;
   width: 100%;
+  padding: 0;
+  margin: 0;
+  
   
   // Dark mode gradient
   html.dark & {
@@ -20,7 +23,7 @@
   }
   
   @media (max-width: 640px) {
-    padding: 0.75rem;
+    // padding: 0.75rem;
   }
 }
 
@@ -30,7 +33,9 @@
   animation: fadeInUp 0.5s ease-out;
   
   @media (max-width: 640px) {
-    max-width: 100%;
+    max-width: 95%;
+    display: flex;
+
   }
 }
 

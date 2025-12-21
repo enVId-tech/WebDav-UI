@@ -219,7 +219,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     </button>
 
                     <button className={styles.controlButton} onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
-                        {isFullscreen ? "⤓" : "⤢"}
+                        {isFullscreen ? "⏏" : "⤢"}
                     </button>
 
                     <button className={styles.controlButton} onClick={downloadVideo} title="Download Video" disabled={isDownloading}>
