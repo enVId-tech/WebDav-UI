@@ -78,6 +78,10 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [viewSize, setViewSize] = useState<'small' | 'medium' | 'large'>('medium');
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
   const handleFilterToggle = (type: string) => {
@@ -164,6 +168,59 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
         return activeFilters.has(type);
     });
   }, [searchResults, activeFilters]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredSearchResults.length / itemsPerPage);
+  
+  const paginatedSearchResults = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredSearchResults.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredSearchResults, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when search results or filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchResults, activeFilters, itemsPerPage]);
+
+  // Pagination Controls
+  const renderPaginationControls = () => (
+    <div className={styles.paginationControls}>
+      <div className={styles.paginationInfo}>
+        <span>Show:</span>
+        <select 
+          value={itemsPerPage} 
+          onChange={(e) => setItemsPerPage(Number(e.target.value))}
+          className={styles.itemsPerPageSelect}
+        >
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+          <option value={200}>200</option>
+        </select>
+        <span>items per page</span>
+      </div>
+      
+      <div className={styles.paginationButtons}>
+        <button 
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className={styles.paginationButton}
+        >
+          Previous
+        </button>
+        <span className={styles.pageIndicator}>
+          Page {currentPage} of {Math.max(totalPages, 1)}
+        </span>
+        <button 
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage >= totalPages}
+          className={styles.paginationButton}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 
   const searchStyles = {
     searchForm: {
@@ -731,6 +788,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                       Back to Files
                     </button>
                   </div>
+                  {filteredSearchResults.length > 0 && renderPaginationControls()}
                   <div className={`${styles.modernFileHeader} ${styles.searchHeader}`}>
                     <div className={styles.nameColumn}>Name</div>
                     <div className={styles.locationColumn}>Location</div>
@@ -738,8 +796,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                     <div className={styles.sizeColumn}>Size</div>
                   </div>
                   <div className={`${styles.modernFileItems} ${styles[viewSize]}`}>
-                    {filteredSearchResults.length > 0 ? (
-                        filteredSearchResults.map((item) => (
+                    {paginatedSearchResults.length > 0 ? (
+                        paginatedSearchResults.map((item) => (
                             <div key={item.filename + (item.relativePath || '')} className={`${styles.fileItem} ${styles[viewSize]}`}>
                                 <div className={styles.modernFileRow}>
                                   <div className={styles.nameColumn}>
@@ -766,6 +824,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                         </div>
                     )}
                   </div>
+                  {filteredSearchResults.length > 0 && renderPaginationControls()}
                 </>
             ) : (
                 <>
