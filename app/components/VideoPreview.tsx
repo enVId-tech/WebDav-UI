@@ -20,6 +20,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isSeeking, setIsSeeking] = useState(false);
     
     // Decode the filename for display (convert %20 back to spaces, etc.)
     const displayFileName = decodeURIComponent(fileName);
@@ -160,6 +161,31 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = parseFloat(e.target.value);
+        if (videoRef.current) {
+            videoRef.current.currentTime = time;
+            setCurrentTime(time);
+        }
+    };
+
+    const handleSeekStart = () => {
+        setIsSeeking(true);
+    };
+
+    const handleSeekEnd = () => {
+        setIsSeeking(false);
+    };
+
+    const handleProgressBarWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+        e.stopPropagation();
+    };
+
+    const getProgressPercentage = () => {
+        if (duration === 0) return 0;
+        return (currentTime / duration) * 100;
+    };
+
     if (isLoading) {
         return (
             <div className={styles.videoPreviewContainer}>
@@ -198,10 +224,30 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 </video>
 
                 <div className={styles.customControls}>
+                    <div className={styles.progressBarContainer}>
+                        <input
+                            type="range"
+                            min="0"
+                            max={duration || 0}
+                            value={currentTime}
+                            onChange={handleSeek}
+                            onMouseDown={handleSeekStart}
+                            onMouseUp={handleSeekEnd}
+                            onTouchStart={handleSeekStart}
+                            onTouchEnd={handleSeekEnd}
+                            onWheel={handleProgressBarWheel}
+                            className={styles.progressBar}
+                            style={{
+                                background: `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${getProgressPercentage()}%, var(--bg-tertiary) ${getProgressPercentage()}%, var(--bg-tertiary) 100%)`
+                            }}
+                        />
+                    </div>
+
+                    <div className={styles.controlsContainer}>
                     <div className={styles.timeLabel}>
                         {formatTime(currentTime)} / {formatTime(duration)}
                     </div>
-                    
+
                     <button className={styles.controlButton} onClick={() => skip(-10)} title="Skip Backward 10s">
                         🡠
                     </button>
@@ -217,7 +263,13 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     <button className={styles.controlButton} onClick={changePlaybackRate} title="Playback Speed">
                         {playbackRate}x
                     </button>
+                    </div>
 
+                    <div className={styles.controlsContainer}>
+                        <button className={styles.controlButton} onClick={() =>
+                            window.history.back()} title="Back to Files">
+                            ⬅
+                        </button>
                     <button className={styles.controlButton} onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                         {isFullscreen ? "⏏" : "⤢"}
                     </button>
@@ -225,6 +277,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     <button className={styles.controlButton} onClick={downloadVideo} title="Download Video" disabled={isDownloading}>
                         {isDownloading ? '⊘' : '⭳'}
                     </button>
+                    </div>
                 </div>
             </div>
         </div>
