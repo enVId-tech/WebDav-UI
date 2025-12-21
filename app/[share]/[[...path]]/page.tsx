@@ -26,13 +26,24 @@ export default function ShareFileBrowser() {
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fileExplorer_viewMode');
+      return (saved === 'list' || saved === 'grid') ? saved : 'list';
+    }
+    return 'list';
+  });
   
   // AbortController ref to cancel ongoing searches
   const searchAbortControllerRef = useRef<AbortController | null>(null);
 
   // Operation status tracking
   const [operations, setOperations] = useState<OperationStatus[]>([]);
+
+  // Save viewMode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('fileExplorer_viewMode', viewMode);
+  }, [viewMode]);
 
   // Extract share and path from URL params - memoized to prevent recalculation
   const share = useMemo(() => params.share as string, [params.share]);

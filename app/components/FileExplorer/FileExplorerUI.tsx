@@ -107,12 +107,50 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   // Sorting and Filtering State
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
-  const [viewSize, setViewSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fileExplorer_activeFilters');
+      if (saved) {
+        try {
+          return new Set(JSON.parse(saved));
+        } catch {
+          return new Set();
+        }
+      }
+    }
+    return new Set();
+  });
+  const [viewSize, setViewSize] = useState<'small' | 'medium' | 'large'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fileExplorer_viewSize');
+      return (saved === 'small' || saved === 'medium' || saved === 'large') ? saved : 'medium';
+    }
+    return 'medium';
+  });
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fileExplorer_itemsPerPage');
+      const parsed = saved ? parseInt(saved, 10) : 25;
+      return !isNaN(parsed) && parsed > 0 ? parsed : 25;
+    }
+    return 25;
+  });
+
+  // Save settings to localStorage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('fileExplorer_itemsPerPage', itemsPerPage.toString());
+  }, [itemsPerPage]);
+
+  React.useEffect(() => {
+    localStorage.setItem('fileExplorer_viewSize', viewSize);
+  }, [viewSize]);
+
+  React.useEffect(() => {
+    localStorage.setItem('fileExplorer_activeFilters', JSON.stringify(Array.from(activeFilters)));
+  }, [activeFilters]);
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
