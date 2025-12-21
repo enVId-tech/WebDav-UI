@@ -14,6 +14,10 @@ export async function getDirectoryContents(path = '/', sharePath = '/'): Promise
     // Remove leading slash from sharePath if present to avoid double slashes
     const normalizedSharePath = sharePath.startsWith('/') ? sharePath.substring(1) : sharePath;
 
+    console.log(`Normalized Share Path: ${normalizedSharePath}`);
+
+    console.log(`Path: ${path}`);
+
     const request = await fetch(`/api/webdav/${normalizedSharePath}`, {
         method: 'POST',
         headers: {

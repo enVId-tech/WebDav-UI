@@ -170,7 +170,12 @@ export default function ShareFileBrowser() {
           };
         }
 
-        if (path.startsWith(node.path + '/') || path === node.path) {
+        // Check if the target path is a descendant of the current node
+        const isDescendant = node.path === '/' 
+          ? path !== '/' 
+          : path.startsWith(node.path + '/');
+
+        if (isDescendant) {
           return {
             ...node,
             children: node.children.map(toggleNode),

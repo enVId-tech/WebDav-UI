@@ -16,20 +16,21 @@ export async function POST(request: NextRequest) {
         const decodedPath = decodeURIComponent(requestPath);
 
         // Construct base URL with normalized sharePath
-        // Ensure we don't have double slashes between base URL and sharePath
         const baseUrl = process.env.WEBDAV_URL || '';
         const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
-        // Build the full path carefully to avoid path issues
+        // Build the full path
+        // We construct the full URL to the target folder
         let fullPath = `${normalizedBaseUrl}/${sharePath}`;
 
-        // Add the path if it exists and isn't just '/'
         if (decodedPath && decodedPath !== '/') {
-            // Ensure we have exactly one slash between paths
-            fullPath += decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`;
+            const cleanPath = decodedPath.startsWith('/') ? decodedPath.substring(1) : decodedPath;
+            fullPath += `/${cleanPath}`;
         }
 
         console.log(`Full URL: ${fullPath}, isFile: ${isFile}`);
+        
+        // Update service to point to the specific folder/file
         webdavService.updateUrl(fullPath);
 
         if (isFile) {
@@ -42,27 +43,33 @@ export async function POST(request: NextRequest) {
 
             // Return file content with appropriate Content-Type header
             const fileName = getFileName(decodedPath);
-            return new NextResponse(body, {
+            return new NextResponse(responseBody, {
                 headers: {
                     'Content-Type': getContentType(decodedPath),
                     'Content-Disposition': `inline; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
                 }
             });
         } else {
-            // Handle directory request - ensure URL ends with trailing slash
+            // Handle directory request
+            // When the client is pointed to the folder, we request the root of that folder
+            
+            // Ensure URL ends with trailing slash for directory requests if not already
             if (!fullPath.endsWith('/')) {
-                fullPath += '/';
-                webdavService.updateUrl(fullPath);
+                webdavService.updateUrl(fullPath + '/');
             }
 
-            // Fetch directory contents
-            const directoryContents = await webdavService.getDirectoryContents();
+            // Fetch directory contents of the current URL
+            const directoryContents = await webdavService.getDirectoryContents('/');
 
-            const formattedContents = directoryContents.map((item: any) => ({
+            const formattedContents = directoryContents
+                .filter((item: any) => {
+                    return true;
+                })
+                .map((item: any) => ({
                 name: item.basename,
                 type: item.type,
                 size: item.size,
-                lastModified: new Date(item.lastmod).toLocaleString(),
+                lastModified: item.lastmod,
             }));
 
             return NextResponse.json(formattedContents);

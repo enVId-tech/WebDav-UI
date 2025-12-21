@@ -69,7 +69,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const pathname = usePathname();
   const [sidebarSearchQuery, setSidebarSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(120);
+  const [sidebarWidth, setSidebarWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
@@ -228,7 +228,9 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
 
   const renderFolderNode = useCallback((node: FolderNode, level = 0): React.JSX.Element | null => {
     const isCurrentPath = node.path === relativePath || `/${share}${relativePath}` === node.path;
-    
+
+    console.log('Rendering folder node:', node.path, 'Current path:', `/${share}${relativePath}`, 'Is current:', isCurrentPath);
+
     // Filter based on sidebar search
     if (sidebarSearchQuery && !node.name.toLowerCase().includes(sidebarSearchQuery.toLowerCase())) {
       // Check if any children match
