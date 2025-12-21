@@ -7,7 +7,6 @@ import styles from '../../styles/fileExplorer.module.scss';
 import commonStyles from '../../styles/common.module.scss';
 import { lookup } from 'mime-types';
 import MobileNav from '../MobileNav';
-import ThemeToggle from '../ThemeToggle';
 import { useAuth } from '@/app/context/AuthContext';
 import { geistMono } from '@/app/types/font';
 import { usePathname } from 'next/navigation';
@@ -71,6 +70,39 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Theme management
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    
+    setIsDarkMode(shouldBeDark);
+    
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   // Sorting and Filtering State
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
@@ -526,8 +558,6 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   }
   return (
       <div className={`${styles.modernExplorerContainer} ${commonStyles.themeVariables}`}>
-        <ThemeToggle />
-
         <div className={`${styles.modernSidebar} ${sidebarCollapsed ? styles.collapsed : ''}`} style={{ width: sidebarCollapsed ? '60px' : `${sidebarWidth}px` }}>
           <div className={styles.sidebarHeader}>
             <div className={styles.sidebarHeaderContent}>
@@ -613,8 +643,11 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
               <h1 className={styles.explorerTitle}>WebDav Content Explorer</h1>
               <MobileNav
                   currentPath={relativePath}
-                  onNavigate={routerPush} // Assuming routerPush can handle this
+                  onNavigate={routerPush}
                   breadcrumbs={breadcrumbs}
+                  folderStructure={folderStructure}
+                  onToggleFolderExpansion={onToggleFolderExpansion}
+                  share={share}
               />
               <div className={styles.modernBreadcrumb}>
                 {breadcrumbs.map((crumb, index) => (
@@ -632,6 +665,13 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
             </div>
 
             <div className={styles.modernActions}>
+              <button 
+                onClick={toggleTheme}
+                className={styles.themeToggleButton}
+                title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
               {!loggedIn && (
                 <button 
                   onClick={() => {
@@ -732,7 +772,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
               </div>
 
               {/* Filter Controls */}
-              <div className={styles.filterControls}>
+              <div className={`${styles.filterControls} ${commonStyles.themeVariables}`}>
+                Filter:
                 {['folder', 'video', 'image', 'audio', 'document'].map(type => (
                   <button
                     key={type}

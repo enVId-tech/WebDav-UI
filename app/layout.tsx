@@ -33,31 +33,6 @@ export const metadata: Metadata = {
         { name: 'enVId Tech', url: 'https://github.com/enVId-tech' },
         { name: 'Erick Tran' }
     ],
-    // OpenGraph for social sharing
-    openGraph: {
-        title: 'WebDav UI — web interface for WebDav servers',
-        description: 'Manage files, preview documents, stream audio/video, and more via a clean web interface for WebDAV servers.',
-        url: process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com',
-        siteName: 'WebDav UI',
-        images: [
-            {
-                url: WebDavLogoSrc.src,
-                width: 800,
-                height: 600,
-                alt: 'WebDav UI Logo'
-            }
-        ],
-        locale: 'en_US',
-        type: 'website',
-    },
-    // Twitter card for tweets
-    twitter: {
-        card: 'summary_large_image',
-        title: 'WebDav UI — web interface for WebDav servers',
-        description: 'Manage files, preview documents, stream audio/video, and more via a clean web interface for WebDAV servers.',
-        images: [WebDavLogoSrc.src],
-    },
-    viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
     robots: {
         index: true,
         follow: true,

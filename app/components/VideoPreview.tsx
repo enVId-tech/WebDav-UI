@@ -13,11 +13,13 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [videoUrl, setVideoUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     
     // Decode the filename for display (convert %20 back to spaces, etc.)
     const displayFileName = decodeURIComponent(fileName);
@@ -43,6 +45,17 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 setIsLoading(false);
             });
     }, [src]);
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        };
+    }, []);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -84,6 +97,22 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         setPlaybackRate(nextRate);
         if (videoRef.current) {
             videoRef.current.playbackRate = nextRate;
+        }
+    };
+
+    const toggleFullscreen = async () => {
+        if (!containerRef.current) return;
+
+        if (!document.fullscreenElement) {
+            try {
+                await containerRef.current.requestFullscreen();
+            } catch (err) {
+                console.error(`Error attempting to enable fullscreen: ${err}`);
+            }
+        } else {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+            }
         }
     };
 
@@ -150,7 +179,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                 <h2 className={styles.fileName}>{displayFileName}</h2>
             </div>
 
-            <div className={styles.videoContentContainer}>
+            <div 
+                className={`${styles.videoContentContainer} ${isFullscreen ? styles.fullscreen : ''}`}
+                ref={containerRef}
+            >
                 <video
                     ref={videoRef}
                     className={styles.videoPlayer}
@@ -184,6 +216,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
                     <button className={styles.controlButton} onClick={changePlaybackRate} title="Playback Speed">
                         {playbackRate}x
+                    </button>
+
+                    <button className={styles.controlButton} onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
+                        {isFullscreen ? "⤓" : "⤢"}
                     </button>
 
                     <button className={styles.controlButton} onClick={downloadVideo} title="Download Video" disabled={isDownloading}>

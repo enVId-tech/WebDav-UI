@@ -66,16 +66,33 @@
   }
 
   @media (max-width: 768px) {
-    top: 0.7rem;
-    right: 0.7rem;
-    width: 35px;
-    height: 35px;
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+    width: 45px;
+    height: 45px;
+    z-index: 999;
+    opacity: 0.85;
+    background-color: var(--accent-color);
+    color: var(--button-text);
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 2px 8px var(--shadow-color);
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &:hover {
+      opacity: 1;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px var(--shadow-color);
+    }
   }
 }
 
 .modernExplorerContainer {
   display: flex;
-  width: 100%;
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -104,16 +121,7 @@
   transition: var(--transition-theme);
 
   @media (max-width: 768px) {
-    width: 100%;
-    height: auto;
-    max-height: 40vh;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-
-    &.collapsed {
-      max-height: 60px;
-    }
+    display: none;
   }
 
   .sidebarHeader {
@@ -164,8 +172,11 @@
 
 .mobileNav {
   display: none;
-  position: relative;
-  z-index: 20;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-primary);
+  box-shadow: 0 2px 4px var(--shadow-color);
 
   @media (max-width: 768px) {
     display: block;
@@ -173,66 +184,270 @@
 
   .mobileMenuButton {
     width: 100%;
-    padding: 0.85rem 1.2rem;
-    background-color: var(--bg-secondary);
+    padding: 0.5rem;
+    background-color: var(--accent-color);
     border: none;
     border-bottom: 1px solid var(--border-color);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
     text-align: left;
-    color: var(--text-primary);
+    color: var(--button-text);
     transition: var(--transition-theme);
+    cursor: pointer;
 
     &:hover, &:focus {
-      background-color: var(--bg-tertiary);
+      filter: brightness(0.95);
     }
 
-    &::after {
-      content: '▾';
-      transition: transform 0.2s ease;
-    }
-
-    &.active::after {
-      transform: rotate(180deg);
+    .currentLocation {
+      font-size: 0.9rem;
+      font-weight: 400;
+      opacity: 0.9;
     }
   }
 
   .mobileBreadcrumbMenu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: relative;
+    width: 100%;
     background-color: var(--bg-secondary);
-    box-shadow: 0 4px 6px var(--shadow-color);
-    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
-    max-height: 60vh;
+    max-height: calc(100vh - 120px);
     overflow-y: auto;
     transform-origin: top;
     animation: slideDown 0.2s ease forwards;
+    padding: 0.5rem 0;
+    z-index: 50;
     transition: var(--transition-theme);
+    border: 1px solid var(--border-color);
+    border-top: none;
 
     .mobileBreadcrumbItem {
-      padding: 0.8rem 1.2rem;
+      padding: 1rem 1.5rem;
       border-bottom: 1px solid var(--border-color);
       color: var(--text-primary);
       transition: var(--transition-theme);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
 
       &:hover {
         background-color: var(--bg-tertiary);
+        padding-left: 1.8rem;
+      }
+      
+      .mobileIndent {
+        color: var(--text-muted);
+        margin-right: 0.5rem;
+        font-family: monospace;
       }
     }
 
     .mobileCloseMenu {
+      width: 100%;
       text-align: center;
-      padding: 0.8rem;
-      color: var(--text-secondary);
-      font-weight: 500;
+      padding: 1rem;
+      color: var(--accent-color);
+      font-weight: 600;
       background-color: var(--bg-tertiary);
       transition: var(--transition-theme);
+      border: none;
+      cursor: pointer;
+      
+      &:hover {
+        background-color: var(--bg-secondary);
+      }
+    }
+  }
+
+  .mobileSearchSection {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+
+    .mobileSearchBar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem;
+      transition: var(--transition-theme);
+
+      &:focus-within {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(var(--accent-color), 0.1);
+      }
+
+      .mobileSearchIcon {
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+
+      .mobileSearchInput {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+
+        &::placeholder {
+          color: var(--text-muted);
+        }
+      }
+
+      .mobileClearSearch {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition-theme);
+
+        &:hover {
+          color: var(--text-primary);
+        }
+      }
+    }
+  }
+
+  .mobileBreadcrumbs {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+
+    .mobileBreadcrumbHeader {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .mobileFolderTree {
+    padding: 0;
+
+    .mobileFolderTreeHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-primary);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+
+      .mobileSearchResultBadge {
+        background-color: var(--accent-color);
+        color: var(--button-text);
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+      }
+    }
+
+    .mobileFolderTreeContent {
+      padding: 0.5rem 0;
+      max-height: 50vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      
+      // Custom scrollbar styling
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--text-muted);
+        border-radius: 3px;
+        
+        &:hover {
+          background: var(--text-secondary);
+        }
+      }
+    }
+
+    .mobilefolderTreeNode {
+      .mobileFolderTreeItem {
+        display: flex;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        cursor: pointer;
+        color: var(--text-primary);
+        border-left: 3px solid transparent;
+        transition: var(--transition-theme);
+
+        &:hover {
+          background-color: var(--bg-tertiary);
+        }
+
+        &.mobileActivePath {
+          background-color: var(--bg-tertiary);
+          border-left-color: var(--accent-color);
+          font-weight: 600;
+        }
+
+        .mobileFolderExpander {
+          width: 20px;
+          flex-shrink: 0;
+          color: var(--text-muted);
+          cursor: pointer;
+          user-select: none;
+
+          &:hover {
+            color: var(--text-primary);
+          }
+        }
+
+        .mobileFolderName {
+          flex: 1;
+          font-size: 0.9rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .mobileFolderChildren {
+        // Nested children styling
+      }
+    }
+
+    .mobileEmptyFolderTree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+
+      svg {
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
     }
   }
 }
