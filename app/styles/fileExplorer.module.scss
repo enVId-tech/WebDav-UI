@@ -6,33 +6,87 @@
 .modernExplorerContainer {
   display: flex;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-primary);
   font-family: system-ui, -apple-system, sans-serif;
   color: var(--text-primary);
   transition: var(--transition-theme);
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
 
   @media (max-width: 768px) {
     flex-direction: column;
+    position: relative;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 }
 
 .modernSidebar {
-  width: 280px;
+  width: 180px;
+  /* Removed min-width to allow collapsing and smaller resizing */
   background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border); // Changed from --border-color
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  height: 100%;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px var(--shadow-color);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
   z-index: 10;
-  transition: var(--transition-theme);
+  transition: width 0s;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &.collapsed {
+    width: 60px;
+
+    .sidebarHeader h3,
+    .sidebarLogo {
+      display: none;
+    }
+  }
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--text-muted);
+    }
+  }
+
+  .resizeHandle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+    z-index: 1000;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--accent-color);
+    }
+
+    &:active {
+      background-color: var(--primary-hover);
+    }
+  }
 
   @media (max-width: 768px) {
     width: 100%;
@@ -48,48 +102,266 @@
   }
 
   .sidebarHeader {
-    padding: 1.5rem;
+    padding: 1.2rem 1rem;
     border-bottom: 1px solid var(--border);
-    background: var(--primary);
-    position: relative;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
     transition: var(--transition-theme);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .sidebarHeaderContent {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      justify-content: space-between;
+    }
+
+    .sidebarLogo {
+      color: var(--button-text);
+      flex-shrink: 0;
+      animation: fadeIn 0.3s ease;
+    }
 
     h3 {
       margin: 0;
       color: var(--button-text);
+      font-weight: 600;
+      font-size: 1.1rem;
+      flex: 1;
+      letter-spacing: 0.5px;
+    }
+
+    .collapseButton {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--button-text);
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+
+  .folderTreeHeader {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 61px;
+    z-index: 98;
+    transition: var(--transition-theme);
+
+    .searchResultCount {
+      background-color: var(--accent-color);
+      color: var(--button-text);
+      padding: 0.2rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
       font-weight: 500;
     }
   }
 
-  .modernFolderTree {
-    flex: 1;
-    padding: 0.5rem 0;
+  .sidebarSearch {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-primary);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+    transition: var(--transition-theme);
 
-    .folderTreeItem {
-      display: flex;
-      align-items: center;
-      padding: 0.7rem 1.2rem;
-      cursor: pointer;
+    .searchIcon {
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .sidebarSearchInput {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--bg-secondary);
       color: var(--text-primary);
-      border-left: 3px solid transparent;
-      margin: 2px 0;
-      transition: background-color var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal), transform var(--transition-fast); // Modified transition
+      font-size: 0.9rem;
+      transition: var(--transition-theme);
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+      }
+
+      &::placeholder {
+        color: var(--text-muted);
+      }
+    }
+
+    .clearSearchButton {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
 
       &:hover {
         background-color: var(--bg-tertiary);
-        transform: translateX(2px); // Added hover effect
+        color: var(--text-primary);
       }
+    }
+  }
 
-      &.activePath {
+  /* Removed flex: 1 that was causing layout issues */
+  padding: 0.5rem 0;
+  /* overflow-y is already handled in .modernSidebar */
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--text-muted);
+    }
+  }
+
+  .folderTreeNode {
+    animation: fadeIn 0.2s ease;
+  }
+
+  .folderTreeItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    border-left: 3px solid transparent;
+    margin: 1px 0;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .folderExpandIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      &:hover {
         background-color: var(--bg-tertiary);
-        border-left: 3px solid var(--accent-color);
-        font-weight: 500;
         color: var(--accent-color);
+        transform: scale(1.1);
       }
+    }
+
+    .folderIconWrapper {
+      display: flex;
+      align-items: center;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .folderIcon {
+      transition: all 0.2s ease;
+    }
+
+    .folderName {
+      flex: 1;
+      font-size: 0.9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: color 0.2s ease;
+    }
+
+    .activeIndicator {
+      position: absolute;
+      right: 0.5rem;
+      width: 6px;
+      height: 6px;
+      background-color: var(--accent-color);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    &:hover {
+      background-color: var(--bg-tertiary);
+      transform: translateX(2px);
 
       .folderIcon {
-        margin-right: 10px;
+        transform: scale(1.1);
       }
+
+      .folderName {
+        color: var(--accent-color);
+      }
+    }
+
+    &.activePath {
+      background: linear-gradient(90deg, var(--bg-tertiary) 0%, transparent 100%);
+      border-left: 3px solid var(--accent-color);
+      font-weight: 600;
+
+      .folderName {
+        color: var(--accent-color);
+      }
+    }
+  }
+
+  .emptyFolderTree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    text-align: center;
+
+    p {
+      margin: 0.5rem 0 0;
+      font-size: 0.9rem;
     }
   }
 }
@@ -176,12 +448,16 @@
 .modernContent {
   flex: 1;
   padding: 2rem;
+  height: 100%;
+  padding: 2rem;
   overflow-y: auto;
   background-color: var(--bg-primary);
   transition: var(--transition-theme);
 
   @media (max-width: 768px) {
     padding: 1.2rem;
+    height: auto;
+    overflow-y: visible
   }
 
   .topBar {

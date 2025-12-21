@@ -67,6 +67,10 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const { loggedIn, logout, isLoading: authIsLoading, username, isAdmin } = useAuth();
   const pathname = usePathname();
+  const [sidebarSearchQuery, setSidebarSearchQuery] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(120);
+  const [isResizing, setIsResizing] = useState(false);
 
   const getEnhancedFileIcon = utilGetEnhancedFileIcon;
 
@@ -189,33 +193,111 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
     return <div dangerouslySetInnerHTML={{ __html: getEnhancedFileIcon(filename) }} />;
   }, [share, getEnhancedFileIcon, gridStyles.thumbnail]);
 
-  const renderFolderNode = useCallback((node: FolderNode, level = 0): React.JSX.Element => {
+  // Handle sidebar resize
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const newWidth = e.clientX;
+    if (newWidth >= 50 && newWidth <= 800) {
+      setSidebarWidth(newWidth);
+    }
+  }, [isResizing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // Add and remove event listeners for resize
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  const renderFolderNode = useCallback((node: FolderNode, level = 0): React.JSX.Element | null => {
     const isCurrentPath = node.path === relativePath || `/${share}${relativePath}` === node.path;
+    
+    // Filter based on sidebar search
+    if (sidebarSearchQuery && !node.name.toLowerCase().includes(sidebarSearchQuery.toLowerCase())) {
+      // Check if any children match
+      const hasMatchingChild = node.children.some(child => 
+        child.name.toLowerCase().includes(sidebarSearchQuery.toLowerCase())
+      );
+      if (!hasMatchingChild) return null;
+    }
+    
+    const hasChildren = node.children.length > 0 || !node.isLoaded;
+    
     return (
         <div key={node.path} className={styles.folderTreeNode}>
           <div
               className={`${styles.folderTreeItem} ${isCurrentPath ? styles.activePath : ''}`}
-              style={{ paddingLeft: `${level * 16}px` }}
+              style={{ paddingLeft: `${level * 12 + 8}px` }}
+              title={node.path}
           >
-          <span
-              className={styles.folderExpandIcon}
-              onClick={() => onToggleFolderExpansion(node.path)}
-          >
-            {node.children.length > 0 || !node.isLoaded ? (node.isExpanded ? '▾' : '▸') : '○'}
-          </span>
             <span
-                className={styles.folderIcon}
+                className={styles.folderExpandIcon}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFolderExpansion(node.path);
+                }}
+            >
+              {hasChildren ? (
+                node.isExpanded ? (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M2 4l4 4 4-4z"/>
+                  </svg>
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                    <path d="M4 2l4 4-4 4z"/>
+                  </svg>
+                )
+              ) : (
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ opacity: 0.3 }}>
+                  <circle cx="4" cy="4" r="2"/>
+                </svg>
+              )}
+            </span>
+            <span
+                className={styles.folderIconWrapper}
                 onClick={() => onNavigateToFolder(node.path)}
-            >📁</span>
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={styles.folderIcon}>
+                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" 
+                      fill={isCurrentPath ? 'var(--accent-color)' : 'currentColor'}
+                      opacity={isCurrentPath ? '1' : '0.7'}/>
+              </svg>
+            </span>
             <span
                 className={styles.folderName}
                 onClick={() => onNavigateToFolder(node.path)}
             >{node.name}</span>
+            {isCurrentPath && <span className={styles.activeIndicator}></span>}
           </div>
-          {node.isExpanded && node.children.map(child => renderFolderNode(child, level + 1))}
+          {node.isExpanded && (
+            node.children.length > 0 ? (
+              node.children.map(child => renderFolderNode(child, level + 1))
+            ) : (
+              <div style={{ paddingLeft: `${(level + 1) * 12 + 8}px`, paddingTop: '4px', paddingBottom: '4px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                {!node.isLoaded ? 'Loading...' : 'Empty'}
+              </div>
+            )
+          )}
         </div>
     );
-  }, [relativePath, share, onToggleFolderExpansion, onNavigateToFolder, styles]);
+  }, [relativePath, share, sidebarSearchQuery, onToggleFolderExpansion, onNavigateToFolder, styles]);
 
   // Handler for file input change
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,13 +378,83 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
       <div className={`${styles.modernExplorerContainer} ${commonStyles.themeVariables}`}>
         <ThemeToggle />
 
-        <div className={styles.modernSidebar}>
+        <div className={`${styles.modernSidebar} ${sidebarCollapsed ? styles.collapsed : ''}`} style={{ width: sidebarCollapsed ? '60px' : `${sidebarWidth}px` }}>
           <div className={styles.sidebarHeader}>
-            <h3>Folders</h3>
+            <div className={styles.sidebarHeaderContent}>
+              {!sidebarCollapsed && (
+                <>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={styles.sidebarLogo}>
+                    <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+                  </svg>
+                  <h3>Navigation</h3>
+                </>
+              )}
+              <button 
+                className={styles.collapseButton}
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  {sidebarCollapsed ? (
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                  ) : (
+                    <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className={styles.modernFolderTree}>
-            {folderStructure.name && renderFolderNode(folderStructure)}
-          </div>
+          
+          {!sidebarCollapsed && (
+            <>
+              <div className={styles.sidebarSearch}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className={styles.searchIcon}>
+                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search folders..."
+                  value={sidebarSearchQuery}
+                  onChange={(e) => setSidebarSearchQuery(e.target.value)}
+                  className={styles.sidebarSearchInput}
+                />
+                {sidebarSearchQuery && (
+                  <button
+                    className={styles.clearSearchButton}
+                    onClick={() => setSidebarSearchQuery('')}
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.folderTreeHeader}>
+                <span>Folders</span>
+                {sidebarSearchQuery && (
+                  <span className={styles.searchResultCount}>Filtered</span>
+                )}
+              </div>
+              <div className={styles.modernFolderTree}>
+                {folderStructure.name ? (
+                  renderFolderNode(folderStructure)
+                ) : (
+                  <div className={styles.emptyFolderTree}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
+                      <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                    </svg>
+                    <p>No folders found</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+          {!sidebarCollapsed && (
+            <div 
+              className={styles.resizeHandle}
+              onMouseDown={handleMouseDown}
+            />
+          )}
         </div>
 
         <div className={styles.modernContent}>
