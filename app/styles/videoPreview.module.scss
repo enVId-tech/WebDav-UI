@@ -1208,8 +1208,19 @@
 
 // Responsive adjustments
 @media (max-width: 768px) {
+  .videoContentContainer {
+    height: 100vh;
+    padding: 0;
+    justify-content: center;
+  }
+
   .videoPlayer {
-    max-height: 50vh;
+    max-height: none;
+    height: calc(100vh - 120px); /* Account for header and controls */
+    width: 100vw;
+    aspect-ratio: unset;
+    object-fit: contain;
+    border-radius: 0;
   }
 
   .skipControls {

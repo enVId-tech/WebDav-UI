@@ -348,16 +348,50 @@ export default function AdminPermissionsPage() {
                   <div className={styles.permissionLevelControl}>
                     <label>
                       <span>Permission Level: {perm.permissionLevel ?? 50}</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={perm.permissionLevel ?? 50}
-                        onChange={(e) =>
-                          handleUpdatePermission({ ...perm, permissionLevel: parseInt(e.target.value) })
-                        }
-                        className={styles.slider}
-                      />
+                      <div className={styles.levelInputs}>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={perm.permissionLevel ?? 50}
+                          onChange={(e) => {
+                            const newLevel = parseInt(e.target.value);
+                            setPermissions(prevPermissions =>
+                              prevPermissions.map(p =>
+                                p.path === perm.path ? { ...p, permissionLevel: newLevel } : p
+                              )
+                            );
+                          }}
+                          onMouseUp={(e) => {
+                            const newLevel = parseInt((e.target as HTMLInputElement).value);
+                            handleUpdatePermission({ ...perm, permissionLevel: newLevel });
+                          }}
+                          onTouchEnd={(e) => {
+                            const newLevel = parseInt((e.target as HTMLInputElement).value);
+                            handleUpdatePermission({ ...perm, permissionLevel: newLevel });
+                          }}
+                          className={styles.slider}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={perm.permissionLevel ?? 50}
+                          onChange={(e) => {
+                            const newLevel = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                            setPermissions(prevPermissions =>
+                              prevPermissions.map(p =>
+                                p.path === perm.path ? { ...p, permissionLevel: newLevel } : p
+                              )
+                            );
+                          }}
+                          onBlur={(e) => {
+                            const newLevel = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                            handleUpdatePermission({ ...perm, permissionLevel: newLevel });
+                          }}
+                          className={styles.numberInput}
+                        />
+                      </div>
                       <div className={styles.levelLabels}>
                         <span>Most Restricted (0)</span>
                         <span>Most Permissive (100)</span>

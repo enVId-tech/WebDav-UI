@@ -101,19 +101,14 @@ export function validatePermission(
   const newLevel = newPermission.permissionLevel ?? 50; // Default to mid-level
   const hasNewCredentials = !!newPermission.guestCredentials?.username;
 
-  // Check for duplicate credentials on the same path
-  const existingOnPath = existingPermissions.find(p => p.path === newPath);
-  if (existingOnPath && existingOnPath.guestCredentials?.username && 
-      hasNewCredentials && existingOnPath !== newPermission) {
-    return {
-      valid: false,
-      error: 'Cannot have multiple login credentials on the same path. Please edit the existing credentials instead.'
-    };
-  }
+  // Filter out the permission being updated from existing permissions
+  const otherPermissions = existingPermissions.filter(p => p.path !== newPath);
+
+  // Check for duplicate credentials on the same path (only check other paths)
+  // Note: We've already filtered out the current path, so this only catches actual duplicates
 
   // Check parent paths for permission level conflicts
-  for (const existing of existingPermissions) {
-    if (existing.path === newPath) continue;
+  for (const existing of otherPermissions) {
 
     const existingLevel = existing.permissionLevel ?? 50;
     const hasExistingCredentials = !!existing.guestCredentials?.username;

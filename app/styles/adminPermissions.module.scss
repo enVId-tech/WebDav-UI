@@ -528,8 +528,14 @@
     }
   }
 
+  .levelInputs {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
   .slider {
-    width: 100%;
+    flex: 1;
     height: 6px;
     border-radius: 3px;
     background: linear-gradient(to right, #ef4444 0%, #eab308 50%, #22c55e 100%);
@@ -569,6 +575,41 @@
         transform: scale(1.2);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       }
+    }
+  }
+
+  .numberInput {
+    width: 70px;
+    padding: 0.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    background: white;
+    color: #4a5568;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    &:hover {
+      border-color: #cbd5e0;
+    }
+
+    /* Remove spinner arrows */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Firefox */
+    &[type=number] {
+      -moz-appearance: textfield;
     }
   }
 
