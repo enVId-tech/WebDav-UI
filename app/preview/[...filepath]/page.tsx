@@ -148,6 +148,7 @@ const FilePreview = () => {
         </header>
         {fileType === 'video' && (
             <VideoPreview
+                onBack={() => router.push(directoryPath)}
                 src={fileUrl}
                 mimeType={mimeType}
                 fileName={fileName}

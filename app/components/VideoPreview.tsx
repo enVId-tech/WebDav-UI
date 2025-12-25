@@ -7,9 +7,10 @@ interface VideoPreviewProps {
     src: string;
     mimeType: string;
     fileName: string;
+    onBack?: () => void;
 }
 
-const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) => {
+const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName, onBack }) => {
     const [videoUrl, setVideoUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,9 +24,24 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
     const [isSeeking, setIsSeeking] = useState(false);
     const [showControls, setShowControls] = useState(true);
     const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [rotation, setRotation] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
     
     // Decode the filename for display (convert %20 back to spaces, etc.)
     const displayFileName = decodeURIComponent(fileName);
+
+    // Detect if device is mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                || window.innerWidth <= 768;
+            setIsMobile(mobile);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         // Fetch WebDAV base URL from config API
@@ -51,14 +67,23 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
 
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
+            const isNowFullscreen = !!document.fullscreenElement;
+            setIsFullscreen(isNowFullscreen);
+            
+            // Auto-rotate to landscape (90 degrees) when entering fullscreen on mobile
+            if (isNowFullscreen && isMobile) {
+                setRotation(90);
+            } else if (!isNowFullscreen && isMobile) {
+                // Reset rotation when exiting fullscreen
+                setRotation(0);
+            }
         };
 
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => {
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
         };
-    }, []);
+    }, [isMobile]);
 
     useEffect(() => {
         // Auto-hide controls in fullscreen after 4 seconds of no mouse movement
@@ -163,6 +188,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
         }
     };
 
+    const rotateVideo = () => {
+        setRotation((prev) => (prev + 90) % 360);
+    };
+
     const downloadVideo = async () => {
         // Use the proxy URL (src) for download to avoid CORS issues with direct WebDAV URL
         if (!src) return;
@@ -265,6 +294,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     onLoadedMetadata={handleLoadedMetadata}
                     onEnded={handleEnded}
                     onClick={togglePlay}
+                    style={{
+                        transform: `rotate(${rotation}deg)`,
+                        transition: 'transform 0.3s ease'
+                    }}
                 >
                     Your browser does not support video playback.
                 </video>
@@ -312,10 +345,20 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ src, mimeType, fileName }) 
                     </div>
 
                     <div className={styles.controlsContainer}>
-                        <button className={styles.controlButton} onClick={() =>
-                            window.history.back()} title="Back to Files">
+                        <button className={styles.controlButton} onClick={() => {
+                            if (onBack) {
+                                onBack();
+                            } else {
+                                window.history.back();
+                            }
+                        }} title="Back to Files">
                             ⬅
                         </button>
+                    {isMobile && (
+                        <button className={styles.controlButton} onClick={rotateVideo} title="Rotate Video">
+                            ↻
+                        </button>
+                    )}
                     <button className={styles.controlButton} onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
                         {isFullscreen ? "⏏" : "⤢"}
                     </button>
