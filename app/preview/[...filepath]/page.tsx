@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/app/context/AuthContext';
 import styles from '@/app/styles/preview.module.scss';
 import VideoPreview from '@/app/components/VideoPreview';
 import ImagePreview from '@/app/components/ImagePreview';
@@ -17,6 +18,7 @@ import ThemeToggle from '@/app/components/ThemeToggle';
 const FilePreview = () => {
   const params = useParams();
   const router = useRouter();
+  const { loggedIn, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState('');
@@ -24,27 +26,55 @@ const FilePreview = () => {
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'database' | 'other'>('other');
   const [directoryPath, setDirectoryPath] = useState<string>('/etran');
+  const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [permissionChecked, setPermissionChecked] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!params.filepath) return;
+    const checkPermissionsAndLoad = async () => {
+      if (!params.filepath || authLoading || permissionChecked) return;
 
-    try {
-      // Convert filepath array to path string
-      const filePath = Array.isArray(params.filepath)
-          ? params.filepath.join('/')
-          : params.filepath;
+      try {
+        // Convert filepath array to path string
+        const filePath = Array.isArray(params.filepath)
+            ? params.filepath.join('/')
+            : params.filepath;
 
-      // IMPORTANT: Remove any leading "etran/" from the filepath to prevent duplication
-      const cleanPath = filePath.replace(/^etran\//, '');
+        // IMPORTANT: Remove any leading "etran/" from the filepath to prevent duplication
+        const cleanPath = filePath.replace(/^etran\//, '');
 
-      // Compute parent directory for the back button (within the /etran share)
-      const segments = cleanPath.split('/').filter(Boolean);
-      if (segments.length >= 1) {
-        const parentSegments = segments.slice(0, -1);
-        setDirectoryPath(`/${parentSegments.join('/')}`);
-      } else {
-        setDirectoryPath('/');
-      }
+        // Compute parent directory for the back button (within the /etran share)
+        const segments = cleanPath.split('/').filter(Boolean);
+        let parentPath = '/';
+        if (segments.length >= 1) {
+          const parentSegments = segments.slice(0, -1);
+          parentPath = `/${parentSegments.join('/')}`;
+          setDirectoryPath(parentPath);
+        } else {
+          setDirectoryPath('/');
+        }
+
+        // Only check permissions once
+        setPermissionChecked(true);
+
+        // Check permissions for the parent directory
+        const permissionCheck = await fetch('/api/permissions/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ path: parentPath })
+        });
+
+        const permissionData = await permissionCheck.json();
+
+        // If user doesn't have access, redirect to login
+        if (!permissionData.hasAccess) {
+          const currentUrl = encodeURIComponent(window.location.pathname);
+          const sharePath = encodeURIComponent(parentPath);
+          router.push(`/login?redirect=${currentUrl}&path=${sharePath}`);
+          return;
+        }
+
+        setHasPermission(true);
 
       // Get filename for mime type detection
       const fileNameOnly = cleanPath.split('/').pop() || '';
@@ -121,7 +151,15 @@ const FilePreview = () => {
       setError(err.message || 'Failed to load file preview');
       setIsLoading(false);
     }
-  }, [params.filepath]);
+    };
+
+    checkPermissionsAndLoad();
+  }, [params.filepath, router, authLoading, permissionChecked]);
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return <div className={`${styles.loading} ${geistSans.className}`}>Loading...</div>;
+  }
 
   if (isLoading) {
     return <div className={`${styles.loading} ${geistSans.className}`}>Loading...</div>;

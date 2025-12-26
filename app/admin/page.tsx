@@ -28,6 +28,8 @@ export default function AdminPermissionsPage() {
   const [editingPath, setEditingPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [globalPermissionLevel, setGlobalPermissionLevel] = useState<number>(50);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
 
   // Fetch permissions
   useEffect(() => {
@@ -197,6 +199,66 @@ export default function AdminPermissionsPage() {
     await loadPermissions();
   }
 
+  const handleGlobalPermissionChange = async () => {
+    if (permissions.length === 0) {
+      setError('No permissions to update');
+      return;
+    }
+
+    try {
+      const updates = { permissionLevel: globalPermissionLevel };
+      const paths = permissions.map(p => p.path);
+
+      const response = await fetch('/api/permissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths, updates }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`Updated all ${paths.length} path(s) to permission level ${globalPermissionLevel}`);
+        await loadPermissions();
+      } else {
+        setError(data.message || 'Failed to update global permissions');
+      }
+    } catch (err) {
+      setError('Error updating global permissions');
+      console.error(err);
+    }
+  };
+
+  const handleGlobalAccessToggle = async (enabled: boolean) => {
+    if (permissions.length === 0) {
+      setError('No permissions to update');
+      return;
+    }
+
+    try {
+      const updates = { guestAccessEnabled: enabled };
+      const paths = permissions.map(p => p.path);
+
+      const response = await fetch('/api/permissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths, updates }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`${enabled ? 'Enabled' : 'Disabled'} guest access for all ${paths.length} path(s)`);
+        await loadPermissions();
+      } else {
+        setError(data.message || 'Failed to update global guest access');
+      }
+    } catch (err) {
+      setError('Error updating global guest access');
+      console.error(err);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className={`${styles.container} ${geistMono.className}`}>
@@ -235,6 +297,68 @@ export default function AdminPermissionsPage() {
           ✅ {success}
         </div>
       )}
+
+      <section className={styles.globalSettings}>
+        <div className={styles.globalSettingsHeader}>
+          <h2>Global Settings</h2>
+          <button 
+            onClick={() => setShowGlobalSettings(!showGlobalSettings)} 
+            className={styles.toggleButton}
+          >
+            {showGlobalSettings ? '▼' : '▶'} {showGlobalSettings ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        
+        {showGlobalSettings && (
+          <div className={styles.globalSettingsContent}>
+            <p className={styles.globalSettingsDescription}>
+              Apply settings to all {permissions.length} configured path(s) at once
+            </p>
+            
+            <div className={styles.globalControl}>
+              <h3>Global Permission Level</h3>
+              <div className={styles.globalLevelControl}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={globalPermissionLevel}
+                  onChange={(e) => setGlobalPermissionLevel(parseInt(e.target.value))}
+                  className={styles.slider}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={globalPermissionLevel}
+                  onChange={(e) => setGlobalPermissionLevel(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className={styles.numberInput}
+                />
+              </div>
+              <div className={styles.levelLabels}>
+                <span>Most Restricted (0)</span>
+                <span>Current: {globalPermissionLevel}</span>
+                <span>Most Permissive (100)</span>
+              </div>
+              <button onClick={handleGlobalPermissionChange} className={styles.applyButton}>
+                Apply to All Paths
+              </button>
+            </div>
+
+            <div className={styles.globalControl}>
+              <h3>Global Guest Access</h3>
+              <div className={styles.globalAccessButtons}>
+                <button onClick={() => handleGlobalAccessToggle(true)} className={styles.enableButton}>
+                  Enable Guest Access for All
+                </button>
+                <button onClick={() => handleGlobalAccessToggle(false)} className={styles.disableButton}>
+                  Disable Guest Access for All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className={styles.addSection}>
         <h2>Add New Path</h2>
