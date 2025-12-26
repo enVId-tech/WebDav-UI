@@ -17,7 +17,6 @@ export default function LoginPage() {
 
   // Get the redirect URL from query params, default to '/'
   const redirectUrl = searchParams.get('redirect') || '/';
-  const requestedRole = searchParams.get('role');
   const requestedPath = searchParams.get('path') || undefined;
 
   // If already logged in, redirect immediately
@@ -33,7 +32,6 @@ export default function LoginPage() {
     const success = await login(
       username,
       password,
-      requestedRole === 'guest' ? 'guest' : undefined,
       requestedPath
     );
     if (success) {

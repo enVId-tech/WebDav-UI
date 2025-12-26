@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import styles from '@/app/styles/loginForm.module.scss';
 import { geistSans } from '@/app/types/font';
@@ -10,11 +11,16 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login, isLoading } = useAuth();
+  const searchParams = useSearchParams();
+  
+  // Get the path from query parameters
+  const requestedPath = searchParams.get('redirect') || undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const success = await login(username, password);
+    console.log("requestedPath in LoginForm:", requestedPath);
+    const success = await login(username, password, requestedPath);
     if (!success) {
       setError('Invalid username or password.');
     }

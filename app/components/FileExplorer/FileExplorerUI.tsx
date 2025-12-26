@@ -523,7 +523,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!loggedIn) {
       const currentUrl = encodeURIComponent(pathname);
-      routerPush(`/login?redirect=${currentUrl}`);
+      const sharePath = encodeURIComponent(`/${share}${relativePath}`);
+      routerPush(`/login?redirect=${currentUrl}&path=${sharePath}`);
       return;
     }
     const file = event.target.files?.[0];
@@ -536,7 +537,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const handleToggleDeleteMode = () => {
     if (!loggedIn) {
       const currentUrl = encodeURIComponent(pathname);
-      routerPush(`/login?redirect=${currentUrl}`);
+      const sharePath = encodeURIComponent(`/${share}${relativePath}`);
+      routerPush(`/login?redirect=${currentUrl}&path=${sharePath}`);
       return;
     }
     const next = !deleteModeActive;
@@ -714,7 +716,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 <button 
                   onClick={() => {
                     const currentUrl = encodeURIComponent(pathname);
-                    routerPush(`/login?redirect=${currentUrl}`);
+                    const sharePath = encodeURIComponent(`/${share}${relativePath}`);
+                    routerPush(`/login?redirect=${currentUrl}&path=${sharePath}`);
                   }} 
                   className={styles.modernButton} 
                   style={{ marginRight: '10px' }}

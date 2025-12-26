@@ -1,56 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSession, setSessionCookie, UserRole } from '@/lib/session';
-import { getGuestCredentials } from '@/lib/permissions';
+import { getAllPermissions } from '@/lib/permissions';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password, role, path } = await request.json() as {
+    const { username, password } = await request.json() as {
       username: string;
       password: string;
-      role?: 'admin' | 'guest';
-      path?: string; // For guest login, which path are they accessing
     };
+
+    console.log('Login attempt:', { username });
 
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || 'password';
 
-    let authenticatedRole: UserRole;
-    let authenticatedUsername: string;
+    let authenticatedRole!: UserRole;
+    let authenticatedUsername!: string;
 
-    // Check if credentials match admin (regardless of role parameter)
+    // Always check admin credentials first
     if (username === adminUsername && password === adminPassword) {
       authenticatedRole = 'admin';
       authenticatedUsername = username;
     }
-    // Guest login
-    else if (role === 'guest' && path) {
-      // Get guest credentials for the requested path
-      const guestCreds = await getGuestCredentials(path);
-      
-      if (!guestCreds) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Guest access not configured for this path' 
-        }, { status: 401 });
-      }
-      
-      if (username === guestCreds.username && password === guestCreds.password) {
-        authenticatedRole = 'guest';
-        authenticatedUsername = username;
-      } else {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Invalid guest credentials' 
-        }, { status: 401 });
-      }
-    }
+    // Check against all guest credentials
     else {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      }, { status: 401 });
+      const permissions = await getAllPermissions();
+      let guestMatch = false;
+      
+      // Check if the provided credentials match any guest credentials
+      for (const perm of permissions) {
+        if (perm.guestCredentials?.username === username && 
+            perm.guestCredentials?.password === password) {
+          authenticatedRole = 'guest';
+          authenticatedUsername = username;
+          guestMatch = true;
+          break;
+        }
+      }
+      
+      if (!guestMatch) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Invalid credentials' 
+        }, { status: 401 });
+      }
     }
-
+    
     // Create a new session with role
     const { token, sessionData } = createSession(authenticatedUsername, authenticatedRole);
     
@@ -72,4 +67,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
-

@@ -8,7 +8,7 @@ interface AuthContextType {
   loggedIn: boolean;
   username: string | null;
   role: UserRole | null;
-  login: (user: string, pass: string, role?: UserRole, path?: string) => Promise<boolean>;
+  login: (user: string, pass: string, path?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAdmin: boolean;
@@ -60,8 +60,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkStatus();
   }, []);
 
-  const login = async (user: string, pass: string, loginRole?: UserRole, path?: string) => {
+  const login = async (user: string, pass: string, path?: string) => {
     setIsLoading(true);
+    
+    console.log('Attempting login with', { user, path });
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -70,7 +73,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ 
           username: user, 
           password: pass,
-          role: loginRole,
           path: path
         }),
       });
@@ -108,6 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoggedIn(false);
       setUsername(null);
       setRole(null);
+      window.location.reload();
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
