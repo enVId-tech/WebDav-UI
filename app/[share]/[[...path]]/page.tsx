@@ -378,6 +378,7 @@ export default function ShareFileBrowser() {
       const response = await fetch('/api/webdav/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'same-origin', // Include cookies
       });
 
       clearInterval(progressInterval);

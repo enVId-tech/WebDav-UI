@@ -275,10 +275,20 @@ class WebDavService {
     
     public async uploadFile(filePath: string, data: Buffer | string): Promise<void> {
         try {
+            console.log(`[WebDavService] Attempting upload to: ${filePath}`);
+            console.log(`[WebDavService] Current client URL: ${this.currentUrl}`);
+            console.log(`[WebDavService] Data size: ${Buffer.isBuffer(data) ? data.length : data.length} bytes`);
+            
             await this.client.putFileContents(filePath, data, { overwrite: true });
-            console.log(`File uploaded successfully to ${filePath}`);
-        } catch (error) {
-            console.error(`Error uploading file to ${filePath}:`, error);
+            console.log(`[WebDavService] File uploaded successfully to ${filePath}`);
+        } catch (error: any) {
+            console.error(`[WebDavService] Error uploading file to ${filePath}:`, error);
+            console.error(`[WebDavService] Error details:`, {
+                message: error.message,
+                status: error.status,
+                response: error.response?.statusText,
+                currentUrl: this.currentUrl
+            });
             throw error;
         }
     }

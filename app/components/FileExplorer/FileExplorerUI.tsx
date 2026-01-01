@@ -71,6 +71,8 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [isResizing, setIsResizing] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Theme management
   React.useEffect(() => {
@@ -527,10 +529,48 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
       routerPush(`/login?redirect=${currentUrl}&path=${sharePath}`);
       return;
     }
-    const file = event.target.files?.[0];
-    if (file) {
-      onUploadFile(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      // Handle multiple files if needed, for now just first file
+      onUploadFile(files[0]);
       event.target.value = ''; // Reset file input
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (loggedIn && !isDragging) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    // Check if we're really leaving (not entering child element)
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    
+    if (!loggedIn) {
+      const currentUrl = encodeURIComponent(pathname);
+      const sharePath = encodeURIComponent(`/${share}${relativePath}`);
+      routerPush(`/login?redirect=${currentUrl}&path=${sharePath}`);
+      return;
+    }
+
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Handle first file for now
+      onUploadFile(files[0]);
     }
   };
 
@@ -598,6 +638,12 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
   }
   return (
       <div className={`${styles.modernExplorerContainer} ${commonStyles.themeVariables}`}>
+        <div 
+          className={styles.explorerContentWrapper}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
         <div className={`${styles.modernSidebar} ${sidebarCollapsed ? styles.collapsed : ''}`} style={{ width: sidebarCollapsed ? '60px' : `${sidebarWidth}px` }}>
           <div className={styles.sidebarHeader}>
             <div className={styles.sidebarHeaderContent}>
@@ -755,13 +801,18 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 <>
                   <input
                     type="file"
+                    ref={fileInputRef}
                     id="fileUpload"
                     style={{ display: 'none' }}
                     onChange={handleFileSelected}
-                    disabled={!loggedIn} // Disable if not logged in
+                    disabled={!loggedIn}
                   />
-                  <label htmlFor="fileUpload" className={`${styles.modernButton} ${!loggedIn ? styles.disabledButton : ''}`} style={{ marginRight: '10px', cursor: loggedIn ? 'pointer' : 'not-allowed' }}>
-                    Upload File
+                  <label 
+                    htmlFor="fileUpload" 
+                    className={`${styles.modernButton} ${styles.uploadButton} ${!loggedIn ? styles.disabledButton : ''}`} 
+                    style={{ marginRight: '10px', cursor: loggedIn ? 'pointer' : 'not-allowed' }}
+                  >
+                    📤 Upload
                   </label>
                   {/* Toggle Delete Mode Button */}
                   <button
@@ -859,6 +910,14 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
           </div>
 
           <div className={styles.modernFileList}>
+            {isDragging && loggedIn && (
+              <div className={styles.dropZone}>
+                <div className={styles.dropZoneContent}>
+                  <div className={styles.dropZoneIcon}>📁</div>
+                  <div className={styles.dropZoneText}>Drop file here to upload</div>
+                </div>
+              </div>
+            )}
             {showSearchResults ? (
                 <>
                   <div className={styles.searchResultsHeader}>
@@ -1046,6 +1105,7 @@ const FileExplorerUI: React.FC<FileExplorerUIProps> = ({
                 </>
             )}
           </div>
+        </div>
         </div>
       </div>
   );

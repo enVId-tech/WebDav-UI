@@ -1615,3 +1615,78 @@
   }
 }
 
+// Drag and drop overlay
+.explorerContentWrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  height: 100%;
+}
+
+.dropZone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 123, 255, 0.1);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+  border: 3px dashed var(--accent-color);
+  animation: pulseDropZone 1.5s ease-in-out infinite;
+
+  @keyframes pulseDropZone {
+    0%, 100% {
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .dropZoneContent {
+    text-align: center;
+    padding: 3rem;
+    background-color: var(--bg-secondary);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+
+    .dropZoneIcon {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+      animation: bounceIcon 1s ease-in-out infinite;
+
+      @keyframes bounceIcon {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+    }
+
+    .dropZoneText {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+  }
+}
+
+// Enhanced upload button
+.uploadButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4) !important;
+
+  &:hover {
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.6) !important;
+    transform: translateY(-2px) !important;
+  }
+}

@@ -49,11 +49,20 @@ export async function POST(request: NextRequest) {
         const fileName = file.name;
         
         console.log(`[upload] Processing file: ${fileName} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
+        console.log(`[upload] Upload params - path: ${path}, sharePath: ${sharePath}`);
 
-        // Construct the WebDAV client's target directory URL
+        // Construct the WebDAV client's target directory URL (same as delete route)
+        // Build the full directory URL where the file will be uploaded
         let clientTargetDirectoryUrl = `${process.env.WEBDAV_URL}/${sharePath}`;
+        
+        // Remove leading slash from sharePath to avoid double slashes
+        const cleanSharePath = sharePath.startsWith('/') ? sharePath.substring(1) : sharePath;
+        clientTargetDirectoryUrl = `${process.env.WEBDAV_URL}/${cleanSharePath}`;
+        
+        // Add the path within the share if not root
         if (path && path !== '/') {
-            clientTargetDirectoryUrl += path.startsWith('/') ? path : `/${path}`;
+            const cleanPath = path.startsWith('/') ? path : `/${path}`;
+            clientTargetDirectoryUrl += cleanPath;
         }
 
         // Ensure the client target directory URL ends with a slash
@@ -61,7 +70,12 @@ export async function POST(request: NextRequest) {
             clientTargetDirectoryUrl += '/';
         }
 
-        console.log(`[upload] Target directory: ${clientTargetDirectoryUrl}`);
+        console.log(`[upload] Target directory URL: ${clientTargetDirectoryUrl}`);
+        console.log(`[upload] Target directory URL: ${clientTargetDirectoryUrl}`);
+        console.log(`[upload] Filename: ${fileName}`);
+        console.log(`[upload] WebDAV base URL: ${process.env.WEBDAV_URL}`);
+        
+        // Update the WebDAV client to point to the target directory
         webdavService.updateUrl(clientTargetDirectoryUrl);
 
         // Convert file to buffer efficiently using streams for large files
@@ -70,8 +84,9 @@ export async function POST(request: NextRequest) {
         const bufferTime = Date.now() - bufferStartTime;
         
         console.log(`[upload] Buffer conversion took ${bufferTime}ms for ${fileName}`);
+        console.log(`[upload] Buffer size: ${fileBuffer.length} bytes`);
 
-        // Upload the file
+        // Upload the file (just the filename, since client URL is set to directory)
         const uploadStartTime = Date.now();
         await webdavService.uploadFile(fileName, fileBuffer);
         const uploadTime = Date.now() - uploadStartTime;
