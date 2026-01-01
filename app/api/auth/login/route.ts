@@ -22,23 +22,23 @@ export async function POST(request: NextRequest) {
       authenticatedRole = 'admin';
       authenticatedUsername = username;
     }
-    // Check against all guest credentials
+    // Check against all user credentials
     else {
       const permissions = await getAllPermissions();
-      let guestMatch = false;
+      let userMatch = false;
       
-      // Check if the provided credentials match any guest credentials
+      // Check if the provided credentials match any user credentials
       for (const perm of permissions) {
-        if (perm.guestCredentials?.username === username && 
-            perm.guestCredentials?.password === password) {
+        if (perm.userCredentials?.username === username && 
+            perm.userCredentials?.password === password) {
           authenticatedRole = 'guest';
           authenticatedUsername = username;
-          guestMatch = true;
+          userMatch = true;
           break;
         }
       }
       
-      if (!guestMatch) {
+      if (!userMatch) {
         return NextResponse.json({ 
           success: false, 
           message: 'Invalid credentials' 

@@ -8,10 +8,10 @@ import { geistMono } from '../types/font';
 
 interface PathPermission {
   path: string;
-  guestAccessEnabled: boolean;
+  anonymousAccessEnabled: boolean;
   inheritToChildren: boolean;
   permissionLevel: number;
-  guestCredentials?: {
+  userCredentials?: {
     username: string;
     password: string;
   };
@@ -73,7 +73,7 @@ export default function AdminPermissionsPage() {
 
     const newPermission: PathPermission = {
       path: normalizedPath,
-      guestAccessEnabled: false,
+      anonymousAccessEnabled: false,
       inheritToChildren: false,
       permissionLevel: 50, // Default to mid-level
     };
@@ -236,7 +236,7 @@ export default function AdminPermissionsPage() {
     }
 
     try {
-      const updates = { guestAccessEnabled: enabled };
+      const updates = { anonymousAccessEnabled: enabled };
       const paths = permissions.map(p => p.path);
 
       const response = await fetch('/api/permissions', {
@@ -381,11 +381,11 @@ export default function AdminPermissionsPage() {
         <section className={styles.bulkActions}>
           <h3>{selectedPaths.size} path(s) selected</h3>
           <div className={styles.bulkButtons}>
-            <button onClick={() => handleBulkUpdate({ guestAccessEnabled: true })}>
-              Enable Guest Access
+            <button onClick={() => handleBulkUpdate({ anonymousAccessEnabled: true })}>
+              Enable Anonymous Access
             </button>
-            <button onClick={() => handleBulkUpdate({ guestAccessEnabled: false })}>
-              Disable Guest Access
+            <button onClick={() => handleBulkUpdate({ anonymousAccessEnabled: false })}>
+              Disable Anonymous Access
             </button>
             <button onClick={() => handleBulkUpdate({ inheritToChildren: true })}>
               Enable Inheritance
@@ -438,8 +438,8 @@ export default function AdminPermissionsPage() {
                 </div>
 
                 <div className={styles.permissionStatus}>
-                  <span className={perm.guestAccessEnabled ? styles.statusOn : styles.statusOff}>
-                    Guest access: {perm.guestAccessEnabled ? 'ON' : 'OFF'}
+                  <span className={perm.anonymousAccessEnabled ? styles.statusOn : styles.statusOff}>
+                    Anonymous access: {perm.anonymousAccessEnabled ? 'ON' : 'OFF'}
                   </span>
                   <span className={perm.inheritToChildren ? styles.statusOn : styles.statusOff}>
                     Inheritance: {perm.inheritToChildren ? 'ON (subdirs)' : 'OFF'}
@@ -450,12 +450,12 @@ export default function AdminPermissionsPage() {
                   <label className={styles.checkbox}>
                     <input
                       type="checkbox"
-                      checked={perm.guestAccessEnabled}
+                      checked={perm.anonymousAccessEnabled}
                       onChange={(e) =>
-                        handleUpdatePermission({ ...perm, guestAccessEnabled: e.target.checked })
+                        handleUpdatePermission({ ...perm, anonymousAccessEnabled: e.target.checked })
                       }
                     />
-                    <span>Guest Access Enabled</span>
+                    <span>Anonymous Access Enabled</span>
                   </label>
 
                   <label className={styles.checkbox}>
@@ -529,20 +529,20 @@ export default function AdminPermissionsPage() {
 
                 {editingPath === perm.path ? (
                   <div className={styles.credentialsEdit}>
-                    <h4>Guest Credentials</h4>
+                    <h4>User Login Credentials</h4>
                     <input
                       type="text"
                       placeholder="Username"
-                      value={perm.guestCredentials?.username || ''}
+                      value={perm.userCredentials?.username || ''}
                       onChange={(e) => {
                         setPermissions(prevPermissions =>
                           prevPermissions.map(p =>
                             p.path === perm.path
                               ? {
                                   ...p,
-                                  guestCredentials: {
+                                  userCredentials: {
                                     username: e.target.value,
-                                    password: p.guestCredentials?.password || '',
+                                    password: p.userCredentials?.password || '',
                                   },
                                 }
                               : p
@@ -554,15 +554,15 @@ export default function AdminPermissionsPage() {
                     <input
                       type="password"
                       placeholder="Password"
-                      value={perm.guestCredentials?.password || ''}
+                      value={perm.userCredentials?.password || ''}
                       onChange={(e) => {
                         setPermissions(prevPermissions =>
                           prevPermissions.map(p =>
                             p.path === perm.path
                               ? {
                                   ...p,
-                                  guestCredentials: {
-                                    username: p.guestCredentials?.username || '',
+                                  userCredentials: {
+                                    username: p.userCredentials?.username || '',
                                     password: e.target.value,
                                   },
                                 }
@@ -584,10 +584,10 @@ export default function AdminPermissionsPage() {
                   </div>
                 ) : (
                   <div className={styles.credentialsView}>
-                    {perm.guestCredentials ? (
-                      <span>Guest: {perm.guestCredentials.username}</span>
+                    {perm.userCredentials ? (
+                      <span>User: {perm.userCredentials.username}</span>
                     ) : (
-                      <span className={styles.noCredentials}>No guest credentials set</span>
+                      <span className={styles.noCredentials}>No user credentials set (anonymous access)</span>
                     )}
                     <button onClick={() => setEditingPath(perm.path)} className={styles.editButton}>
                       Edit Credentials

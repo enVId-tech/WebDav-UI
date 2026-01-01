@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { hasGuestAccess, requiresGuestCredentials } from '@/lib/permissions';
+import { hasAnonymousAccess, requiresUserLogin } from '@/lib/permissions';
 
 /**
  * POST /api/permissions/check - Check if user has access to a path
@@ -30,21 +30,21 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // If user is authenticated as guest, check if guest credentials exist for this path
-    // Authenticated guests have access if credentials are configured
+    // If user is authenticated (with login), check if user credentials exist for this path
+    // Authenticated users have access if credentials are configured
     if (isGuest) {
-      const guestCreds = await requiresGuestCredentials(path, false);
+      const userCreds = await requiresUserLogin(path, false);
       return NextResponse.json({
-        hasAccess: guestCreds, // Authenticated guest has access if credentials are configured
+        hasAccess: userCreds, // Authenticated user has access if credentials are configured
         needsCredentials: false,
         isAuthenticated: true,
         isAdmin: false
       });
     }
     
-    // For unauthenticated users, check if guest access is enabled
-    const needsCredentials = await requiresGuestCredentials(path, false);
-    const hasAccess = await hasGuestAccess(path, false);
+    // For unauthenticated users, check if anonymous access is enabled
+    const needsCredentials = await requiresUserLogin(path, false);
+    const hasAccess = await hasAnonymousAccess(path, false);
     
     return NextResponse.json({
       hasAccess,

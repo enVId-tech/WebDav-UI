@@ -1,22 +1,22 @@
 /**
  * Permissions Management System
  * 
- * This module handles per-directory guest access permissions and credentials.
+ * This module handles per-directory anonymous access permissions and user login credentials.
  * Permissions are stored in a JSON file and cached in memory for performance.
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 
-export interface GuestCredentials {
+export interface UserCredentials {
   username: string;
   password: string;
 }
 
 export interface PathPermission {
   path: string; // WebDAV path like "/share/folder"
-  guestAccessEnabled: boolean;
-  guestCredentials?: GuestCredentials; // Optional guest-specific credentials
+  anonymousAccessEnabled: boolean;
+  userCredentials?: UserCredentials; // Optional user login credentials
   inheritToChildren: boolean; // Whether subdirectories inherit this permission
   permissionLevel?: number; // 0 = lowest (most restricted), 100 = highest (most permissive)
 }
@@ -99,7 +99,7 @@ export function validatePermission(
 ): { valid: boolean; error?: string } {
   const newPath = newPermission.path;
   const newLevel = newPermission.permissionLevel ?? 50; // Default to mid-level
-  const hasNewCredentials = !!newPermission.guestCredentials?.username;
+  const hasNewCredentials = !!newPermission.userCredentials?.username;
 
   // Filter out the permission being updated from existing permissions
   const otherPermissions = existingPermissions.filter(p => p.path !== newPath);
@@ -111,7 +111,7 @@ export function validatePermission(
   for (const existing of otherPermissions) {
 
     const existingLevel = existing.permissionLevel ?? 50;
-    const hasExistingCredentials = !!existing.guestCredentials?.username;
+    const hasExistingCredentials = !!existing.userCredentials?.username;
 
     // Check if newPath is a child of existing path
     if (newPath.startsWith(existing.path + '/') || 
@@ -146,13 +146,13 @@ export function validatePermission(
 }
 
 /**
- * Check if a path has guest access enabled
+ * Check if a path has anonymous access enabled
  * Checks the path itself and parent paths with inheritToChildren
  * Path-specific permissions OVERRIDE inherited permissions from parent paths
  * @param requestPath - The path to check
  * @param isAdmin - If true, bypasses all permission checks and grants access
  */
-export async function hasGuestAccess(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
+export async function hasAnonymousAccess(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
   // Admin users have full access to everything
   if (isAdmin) {
     return true;
@@ -166,7 +166,7 @@ export async function hasGuestAccess(requestPath: string, isAdmin: boolean = fal
   // Check exact match first - this ALWAYS takes precedence over inherited permissions
   const exactMatch = store.permissions.find(p => p.path === normalizedPath);
   if (exactMatch) {
-    return exactMatch.guestAccessEnabled;
+    return exactMatch.anonymousAccessEnabled;
   }
   
   // Only check parent paths if no exact match exists
@@ -178,26 +178,26 @@ export async function hasGuestAccess(requestPath: string, isAdmin: boolean = fal
     const parentPermission = store.permissions.find(p => p.path === parentPath);
     
     if (parentPermission && parentPermission.inheritToChildren) {
-      return parentPermission.guestAccessEnabled;
+      return parentPermission.anonymousAccessEnabled;
     }
   }
   
   // Check root path
   const rootPermission = store.permissions.find(p => p.path === '/');
   if (rootPermission && rootPermission.inheritToChildren) {
-    return rootPermission.guestAccessEnabled;
+    return rootPermission.anonymousAccessEnabled;
   }
   
-  // Default: no guest access
+  // Default: no anonymous access
   return false;
 }
 
 /**
- * Get guest credentials for a specific path
+ * Get user credentials for a specific path
  * Returns the most specific credentials (checks path and parents)
  * Path-specific credentials OVERRIDE inherited credentials from parent paths
  */
-export async function getGuestCredentials(requestPath: string): Promise<GuestCredentials | null> {
+export async function getUserCredentials(requestPath: string): Promise<UserCredentials | null> {
   const store = await loadPermissions();
   
   const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
@@ -207,7 +207,7 @@ export async function getGuestCredentials(requestPath: string): Promise<GuestCre
   if (exactMatch) {
     // If exact match exists, return its credentials (even if undefined/null)
     // This allows a specific path to override inherited credentials by not having any
-    return exactMatch.guestCredentials || null;
+    return exactMatch.userCredentials || null;
   }
   
   // Only check parent paths if no exact match exists
@@ -217,8 +217,8 @@ export async function getGuestCredentials(requestPath: string): Promise<GuestCre
     const parentPath = '/' + pathParts.slice(0, i).join('/');
     const parentPermission = store.permissions.find(p => p.path === parentPath);
     
-    if (parentPermission?.guestCredentials) {
-      return parentPermission.guestCredentials;
+    if (parentPermission?.userCredentials) {
+      return parentPermission.userCredentials;
     }
   }
   
@@ -226,18 +226,18 @@ export async function getGuestCredentials(requestPath: string): Promise<GuestCre
 }
 
 /**
- * Check if a path requires guest credentials (i.e. has guest credentials
+ * Check if a path requires user login (i.e. has user credentials
  * configured either on the exact path or an inheritable parent).
  * @param requestPath - The path to check
- * @param isAdmin - If true, bypasses credential requirements
+ * @param isAdmin - If true, bypasses login requirements
  */
-export async function requiresGuestCredentials(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
-  // Admin users don't need guest credentials
+export async function requiresUserLogin(requestPath: string, isAdmin: boolean = false): Promise<boolean> {
+  // Admin users don't need user login
   if (isAdmin) {
     return false;
   }
   
-  const creds = await getGuestCredentials(requestPath);
+  const creds = await getUserCredentials(requestPath);
   return !!creds;
 }
 
@@ -360,9 +360,9 @@ export async function bulkUpdatePermissions(
       // Create new
       store.permissions.push({
         path: normalizedPath,
-        guestAccessEnabled: updates.guestAccessEnabled ?? false,
+        anonymousAccessEnabled: updates.anonymousAccessEnabled ?? false,
         inheritToChildren: updates.inheritToChildren ?? false,
-        guestCredentials: updates.guestCredentials
+        userCredentials: updates.userCredentials
       });
     }
   }

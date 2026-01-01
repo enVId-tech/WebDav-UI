@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSessionFromRequest } from '@/lib/session';
-import { hasGuestAccess, requiresGuestCredentials, hasAnyPermissionForPath } from '@/lib/permissions';
+import { hasAnonymousAccess, requiresUserLogin, hasAnyPermissionForPath } from '@/lib/permissions';
 
 // Define public routes that don't require authentication
 const publicRoutes = ['/login', '/api/auth/login', '/api/auth/status'];
@@ -44,10 +44,10 @@ export async function proxy(request: NextRequest) {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const isAdminUser = session.role === 'admin' || session.username === adminUsername;
     
-    // Guests cannot perform write operations (but admins can)
+    // Users with restricted permissions cannot perform write operations (but admins can)
     if (session.role === 'guest' && !isAdminUser) {
       return NextResponse.json(
-        { error: 'Forbidden', message: 'Guest users cannot modify files' },
+        { error: 'Forbidden', message: 'Insufficient permissions to modify files' },
         { status: 403 }
       );
     }
@@ -68,40 +68,65 @@ export async function proxy(request: NextRequest) {
   const isApiRoute = pathname.startsWith('/api/');
   const isHome = pathname === '/';
   const isAuthOrAdmin = pathname.startsWith('/login') || pathname.startsWith('/admin');
+  
+  // Special handling for preview API - should follow same rules as page routes
+  const isPreviewApi = pathname.startsWith('/api/preview/');
+  
+  // Also handle preview page routes
+  const isPreviewPage = pathname.startsWith('/preview/');
 
-  if (!isApiRoute && !isHome && !isAuthOrAdmin) {
+  if ((!isApiRoute || isPreviewApi) && !isHome && !isAuthOrAdmin) {
     // Check if user is admin (logged in sessions were already handled above)
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const isAdminUser = session ? (session.role === 'admin' || session.username === adminUsername) : false;
     
+    // For preview API or page, extract the actual path from the URL
+    // e.g., /api/preview/etran/folder/file.mp4 -> /etran/folder
+    // e.g., /preview/etran/folder/file.mp4 -> /etran/folder
+    let checkPath = pathname;
+    if (isPreviewApi) {
+      // Remove /api/preview prefix
+      const filePath = pathname.replace('/api/preview/', '/');
+      // Get parent directory
+      const segments = filePath.split('/').filter(Boolean);
+      const parentSegments = segments.slice(0, -1);
+      checkPath = parentSegments.length > 0 ? `/${parentSegments.join('/')}` : '/';
+    } else if (isPreviewPage) {
+      // Remove /preview prefix
+      const filePath = pathname.replace('/preview/', '/');
+      // Get parent directory
+      const segments = filePath.split('/').filter(Boolean);
+      const parentSegments = segments.slice(0, -1);
+      checkPath = parentSegments.length > 0 ? `/${parentSegments.join('/')}` : '/';
+    }
+    
     // Only enforce permissions if there is an entry (direct or
     // inherited) for this path. Otherwise, allow anonymous access
     // as before.
-    const hasPermission = await hasAnyPermissionForPath(pathname, isAdminUser);
+    const hasPermission = await hasAnyPermissionForPath(checkPath, isAdminUser);
     if (!hasPermission) {
       return NextResponse.next();
     }
 
-    const allowed = await hasGuestAccess(pathname, isAdminUser);
+    const allowed = await hasAnonymousAccess(checkPath, isAdminUser);
 
     if (!allowed) {
-      // Path without guest access: require full login
+      // Path without anonymous access: require full login
       const url = request.nextUrl.clone();
       url.pathname = '/login';
-      url.searchParams.set('redirect', pathname);
+      url.searchParams.set('redirect', (isPreviewApi || isPreviewPage) ? checkPath : pathname);
       return NextResponse.redirect(url);
     }
 
-    // Guest access is enabled for this path; if guest credentials are
-    // configured, force a credential-based guest login instead of
-    // anonymous access.
-    const needsGuestLogin = await requiresGuestCredentials(pathname, isAdminUser);
-    if (needsGuestLogin) {
+    // Anonymous access is enabled for this path; if user credentials are
+    // configured, require user login instead of allowing anonymous access.
+    const needsUserLogin = await requiresUserLogin(checkPath, isAdminUser);
+    if (needsUserLogin) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
-      url.searchParams.set('redirect', pathname);
+      url.searchParams.set('redirect', (isPreviewApi || isPreviewPage) ? checkPath : pathname);
       url.searchParams.set('role', 'guest');
-      url.searchParams.set('path', pathname);
+      url.searchParams.set('path', (isPreviewApi || isPreviewPage) ? checkPath : pathname);
       return NextResponse.redirect(url);
     }
   }

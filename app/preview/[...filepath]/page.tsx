@@ -26,12 +26,25 @@ const FilePreview = () => {
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState<'video' | 'image' | 'audio' | 'text' | 'pdf' | 'office' | 'document' | 'database' | 'other'>('other');
   const [directoryPath, setDirectoryPath] = useState<string>('/etran');
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
-  const [permissionChecked, setPermissionChecked] = useState<boolean>(false);
+
+  // Redirect to login if not authenticated
+  // Note: Server-side middleware handles permission checks, but we add client-side
+  // protection for better UX and to prevent accessing preview UI without auth
+  useEffect(() => {
+    if (!authLoading && !loggedIn) {
+      // Construct the current path for redirect parameter
+      const filePath = Array.isArray(params.filepath)
+        ? params.filepath.join('/')
+        : params.filepath;
+      if (!filePath) return;
+      const cleanPath = filePath.replace(/^etran\//, '');
+      router.push(`/login?redirect=/preview/${cleanPath}`);
+    }
+  }, [authLoading, loggedIn, params.filepath, router]);
 
   useEffect(() => {
-    const checkPermissionsAndLoad = async () => {
-      if (!params.filepath || authLoading || permissionChecked) return;
+    const loadFilePreview = async () => {
+      if (!params.filepath) return;
 
       try {
         // Convert filepath array to path string
@@ -52,29 +65,6 @@ const FilePreview = () => {
         } else {
           setDirectoryPath('/');
         }
-
-        // Only check permissions once
-        setPermissionChecked(true);
-
-        // Check permissions for the parent directory
-        const permissionCheck = await fetch('/api/permissions/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ path: parentPath })
-        });
-
-        const permissionData = await permissionCheck.json();
-
-        // If user doesn't have access, redirect to login
-        if (!permissionData.hasAccess) {
-          const currentUrl = encodeURIComponent(window.location.pathname);
-          const sharePath = encodeURIComponent(parentPath);
-          router.push(`/login?redirect=${currentUrl}&path=${sharePath}`);
-          return;
-        }
-
-        setHasPermission(true);
 
       // Get filename for mime type detection
       const fileNameOnly = cleanPath.split('/').pop() || '';
@@ -153,8 +143,8 @@ const FilePreview = () => {
     }
     };
 
-    checkPermissionsAndLoad();
-  }, [params.filepath, router, authLoading, permissionChecked]);
+    loadFilePreview();
+  }, [params.filepath, router]);
 
   // Show loading while auth is being checked
   if (authLoading) {
