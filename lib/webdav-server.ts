@@ -67,7 +67,7 @@ class WebDavService {
      */
     public async getDirectoryContents(path: string = '/'): Promise<any[]> {
         try {
-            const contents = await this.client.getDirectoryContents(path);
+            const contents = await this.client.getDirectoryContents(path) as unknown as { data: any[] } | any[];
             return Array.isArray(contents) ? contents : contents.data; // Ensure it returns an array
         } catch (error: any) {
             // If directory doesn't exist (404), return empty array instead of throwing
