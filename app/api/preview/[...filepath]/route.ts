@@ -24,7 +24,7 @@ export async function GET(
     // Get file metadata
     const fileName = cleanPath.split('/').pop() || 'file';
     const mimeType = lookup(fileName) || 'application/octet-stream';
-    
+
     // Initialize WebDAV service
     webdavService.updateUrl(process.env.WEBDAV_URL || '');
     
